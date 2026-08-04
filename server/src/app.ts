@@ -14,16 +14,10 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 
 import swaggerUi from 'swagger-ui-express';
-import fs from 'fs';
-import path from 'path';
 import { env } from './config';
 
-// Read the server package version at runtime (avoids importing outside rootDir).
-const packageJson = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf-8'),
-) as { version: string };
-
 import { swaggerSpec } from './config/swagger';
+
 
 import { requestIdMiddleware } from './utils';
 import { errorHandler } from './middlewares';
@@ -210,11 +204,12 @@ export function createApp(): AppInstance {
     res.json({
       success: true,
       service: 'Radiant Lucky Draw API',
-      version: packageJson.version,
+      version: '1.0.0',
       docs: '/api/docs',
       health: '/api/health',
     });
   });
+
 
   // =========================================================
   // Error Handler (must be last)

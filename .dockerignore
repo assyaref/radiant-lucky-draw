@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Build output
+dist
+server/dist
+
+# Environment
+.env
+.env.local
+.env.development
+.env.production
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+*.md
+LICENSE
+
+# Tests
+__tests__
+coverage
+*.test.ts
+*.spec.ts
+
+# Misc
+task_progress.md

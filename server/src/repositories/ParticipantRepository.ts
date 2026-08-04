@@ -1,0 +1,90 @@
+/**
+ * Participant Repository
+ *
+ * PostgreSQL-backed repository for Participant entities.
+ */
+
+import { PrismaRepository } from './BaseRepository';
+import { prisma } from '../lib/prisma';
+import type { Participant } from '../entities';
+
+export class ParticipantRepository extends PrismaRepository<Participant> {
+  protected get model() {
+    return prisma.participant;
+  }
+
+  protected toEntity(record: any): Participant {
+    return {
+      id: record.id,
+      name: record.name,
+      email: record.email ?? '',
+      phone: record.phone ?? '',
+      company: record.company ?? '',
+      queueNumber: record.queueNumber ?? '',
+      status: record.status,
+      registeredAt: record.registeredAt.toISOString(),
+      calledAt: record.calledAt ? record.calledAt.toISOString() : undefined,
+      completedAt: record.completedAt ? record.completedAt.toISOString() : undefined,
+    };
+  }
+
+  protected toPrisma(data: any): any {
+    const prismaData: any = {};
+    if (data.name !== undefined) prismaData.name = data.name;
+    if (data.email !== undefined) prismaData.email = data.email;
+    if (data.phone !== undefined) prismaData.phone = data.phone;
+    if (data.company !== undefined) prismaData.company = data.company;
+    if (data.queueNumber !== undefined) prismaData.queueNumber = data.queueNumber;
+    if (data.status !== undefined) prismaData.status = data.status;
+    if (data.registeredAt !== undefined) prismaData.registeredAt = new Date(data.registeredAt);
+    if (data.calledAt !== undefined) {
+      prismaData.calledAt = data.calledAt ? new Date(data.calledAt) : null;
+    }
+    if (data.completedAt !== undefined) {
+      prismaData.completedAt = data.completedAt ? new Date(data.completedAt) : null;
+    }
+    return prismaData;
+  }
+
+  async findByQueueNumber(queueNumber: string): Promise<Participant | null> {
+    const record = await this.model.findFirst({
+      where: { queueNumber, deletedAt: null },
+    });
+    return record ? this.toEntity(record) : null;
+  }
+
+  async findByStatus(status: string): Promise<Participant[]> {
+    const records = await this.model.findMany({
+      where: { status, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+    return records.map((r: any) => this.toEntity(r));
+  }
+
+  async findByPhone(phone: string): Promise<Participant | null> {
+    const normalized = phone.replace(/[\s()-]/g, '');
+    const records = await this.model.findMany({
+      where: { deletedAt: null },
+    });
+    const match = records.find(
+      (r: any) => (r.phone ?? '').replace(/[\s()-]/g, '') === normalized,
+    );
+    return match ? this.toEntity(match) : null;
+  }
+
+  async count(): Promise<number> {
+    return this.model.count({ where: { deletedAt: null } });
+  }
+
+  async getNextQueueNumber(): Promise<string> {
+    const records = await this.model.findMany({
+      where: { deletedAt: null },
+      select: { queueNumber: true },
+    });
+    const max = records.reduce((max: number, r: any) => {
+      const num = parseInt(r.queueNumber, 10);
+      return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+    return String(max + 1).padStart(3, '0');
+  }
+}

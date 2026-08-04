@@ -1,0 +1,133 @@
+import { lazy, Suspense } from 'react';
+import { createBrowserRouter, type RouteObject } from 'react-router-dom';
+import { ProtectedRoute } from '@features/auth';
+
+
+function LazyPage({ Component }: { Component: React.LazyExoticComponent<React.ComponentType> }) {
+  return (
+    <Suspense fallback={<div className="flex-center min-h-screen">Loading...</div>}>
+      <Component />
+    </Suspense>
+  );
+}
+
+const Home = lazy(() => import('@pages/Home'));
+const Login = lazy(() => import('@pages/Login'));
+const Register = lazy(() => import('@pages/Register'));
+const Dashboard = lazy(() => import('@pages/Dashboard'));
+const Draws = lazy(() => import('@pages/Draws'));
+const DrawDetail = lazy(() => import('@pages/DrawDetail'));
+const DrawCreate = lazy(() => import('@pages/DrawCreate'));
+const DrawEdit = lazy(() => import('@pages/DrawEdit'));
+const NotFound = lazy(() => import('@pages/NotFound'));
+const RegistrationPage = lazy(() => import('@pages/registration/RegistrationPage'));
+const QueueTVPage = lazy(() => import('@pages/queue/QueueTVPage'));
+const OperatorPage = lazy(() => import('@pages/queue/OperatorPage'));
+const LiveTVPage = lazy(() => import('@pages/live-tv/LiveTVPage'));
+const PrizeManagement = lazy(() => import('@pages/PrizeManagement'));
+
+// ─── Operator Pages ──────────────────────────────────────────────────
+const AdminLayout = lazy(() => import('@layouts/AdminLayout'));
+const OperatorDashboard = lazy(() => import('@pages/operator/DashboardPage'));
+const OperatorParticipants = lazy(() => import('@pages/operator/ParticipantsPage'));
+const OperatorQueue = lazy(() => import('@pages/operator/QueuePage'));
+const OperatorDraws = lazy(() => import('@pages/operator/DrawsPage'));
+const OperatorPrizes = lazy(() => import('@pages/operator/PrizesPage'));
+const OperatorSponsors = lazy(() => import('@pages/operator/SponsorsPage'));
+const OperatorAnnouncements = lazy(() => import('@pages/operator/AnnouncementsPage'));
+const OperatorReports = lazy(() => import('@pages/operator/ReportsPage'));
+const OperatorSettings = lazy(() => import('@pages/operator/SettingsPage'));
+const OperatorUsers = lazy(() => import('@pages/operator/UsersPage'));
+const OperatorAuditLogs = lazy(() => import('@pages/operator/AuditLogsPage'));
+
+const routes: RouteObject[] = [
+  // ─── Operator Routes ──────────────────────────────────────────────
+  {
+    path: '/operator',
+    element: (
+      <ProtectedRoute>
+        <Suspense fallback={<div className="flex-center min-h-screen bg-dark-surface">Loading...</div>}>
+          <AdminLayout />
+        </Suspense>
+      </ProtectedRoute>
+    ),
+    children: [
+
+      { index: true, element: <LazyPage Component={OperatorDashboard} /> },
+      { path: 'participants', element: <LazyPage Component={OperatorParticipants} /> },
+      { path: 'queue', element: <LazyPage Component={OperatorQueue} /> },
+      { path: 'draws', element: <LazyPage Component={OperatorDraws} /> },
+      { path: 'prizes', element: <LazyPage Component={OperatorPrizes} /> },
+      { path: 'sponsors', element: <LazyPage Component={OperatorSponsors} /> },
+      { path: 'announcements', element: <LazyPage Component={OperatorAnnouncements} /> },
+      { path: 'reports', element: <LazyPage Component={OperatorReports} /> },
+      { path: 'settings', element: <LazyPage Component={OperatorSettings} /> },
+      { path: 'users', element: <LazyPage Component={OperatorUsers} /> },
+      { path: 'audit-logs', element: <LazyPage Component={OperatorAuditLogs} /> },
+    ],
+  },
+  // ─── Public Routes ────────────────────────────────────────────────
+  {
+    path: '/',
+    element: <LazyPage Component={Home} />,
+  },
+  {
+    path: '/login',
+    element: <LazyPage Component={Login} />,
+  },
+  {
+    path: '/register',
+    element: <LazyPage Component={Register} />,
+  },
+  {
+    path: '/dashboard',
+    element: <LazyPage Component={Dashboard} />,
+  },
+  {
+    path: '/registration',
+    element: <LazyPage Component={RegistrationPage} />,
+  },
+  {
+    path: '/queue/tv',
+    element: <LazyPage Component={QueueTVPage} />,
+  },
+  {
+    path: '/queue/operator',
+    element: <LazyPage Component={OperatorPage} />,
+  },
+  {
+    path: '/live-tv',
+    element: <LazyPage Component={LiveTVPage} />,
+  },
+  {
+    path: '/prizes',
+    element: <LazyPage Component={PrizeManagement} />,
+  },
+  {
+    path: '/draws',
+    children: [
+      {
+        index: true,
+        element: <LazyPage Component={Draws} />,
+      },
+      {
+        path: ':id',
+        element: <LazyPage Component={DrawDetail} />,
+      },
+      {
+        path: 'create',
+        element: <LazyPage Component={DrawCreate} />,
+      },
+      {
+        path: ':id/edit',
+        element: <LazyPage Component={DrawEdit} />,
+      },
+    ],
+  },
+  {
+    path: '*',
+    element: <LazyPage Component={NotFound} />,
+  },
+];
+
+export const router = createBrowserRouter(routes);

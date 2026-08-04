@@ -1,0 +1,88 @@
+# ============================================================
+# RADIANT LUCKY DRAW - Docker Compose
+# ============================================================
+
+version: "3.9"
+
+services:
+  # ─── PostgreSQL Database ──────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: radiant-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-radiant_lucky_draw}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - radiant-network
+
+  # ─── Backend API ──────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: radiant-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-radiant_lucky_draw}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      LOG_LEVEL: ${LOG_LEVEL:-combined}
+    ports:
+      - "3001:3001"
+    volumes:
+      - backend_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - radiant-network
+
+  # ─── Database Migration Job ───────────────────────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: radiant-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-radiant_lucky_draw}?schema=public
+    command: >
+      sh -c "npx prisma migrate deploy && npx prisma db seed"
+    profiles:
+      - migrate
+    networks:
+      - radiant-network
+
+networks:
+  radiant-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_logs:
+    driver: local

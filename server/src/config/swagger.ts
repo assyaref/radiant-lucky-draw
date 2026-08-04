@@ -3,9 +3,23 @@
  *
  * OpenAPI 3.0 specification for the Lucky Draw API.
  * Serves Swagger UI at /api/docs.
+ *
+ * IMPORTANT: This module loads dotenv itself BEFORE reading any environment
+ * variables. This guarantees APP_URL / NODE_ENV / PORT are populated at
+ * module-evaluation time regardless of import order in the rest of the app.
  */
 
+import dotenv from 'dotenv';
+import path from 'path';
 import swaggerJsdoc from 'swagger-jsdoc';
+
+// Load environment variables FIRST so the OpenAPI servers section is built
+// from the correct values (APP_URL in production, localhost in development).
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+const serverUrl =
+  process.env.APP_URL ??
+  `http://localhost:${process.env.PORT || 3001}`;
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -20,10 +34,14 @@ const options: swaggerJsdoc.Options = {
     },
     servers: [
       {
-        url: 'http://localhost:3001',
-        description: 'Development server',
+        url: serverUrl,
+        description:
+          process.env.NODE_ENV === 'production'
+            ? 'Production Server'
+            : 'Development Server',
       },
     ],
+
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -53,3 +71,9 @@ const options: swaggerJsdoc.Options = {
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
+
+// ─── Startup diagnostics ───────────────────────────────────
+console.log('NODE_ENV =', process.env.NODE_ENV);
+console.log('PORT =', process.env.PORT);
+console.log('APP_URL =', process.env.APP_URL);
+console.log('Swagger Server =', serverUrl);

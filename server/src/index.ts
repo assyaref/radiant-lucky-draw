@@ -30,11 +30,13 @@ process.on('unhandledRejection', (reason) => {
 async function main() {
   const { app, realtimeService } = createApp();
 
+  const baseUrl = process.env.APP_URL ?? `http://localhost:${env.PORT}`;
+
   const server = app.listen(env.PORT, () => {
     logger.info(`Server started on port ${env.PORT}`, {
       environment: env.NODE_ENV,
-      apiDocs: `http://localhost:${env.PORT}/api/docs`,
-      healthCheck: `http://localhost:${env.PORT}/api/health`,
+      apiDocs: `${baseUrl}/api/docs`,
+      healthCheck: `${baseUrl}/api/health`,
     });
   });
 

@@ -18,7 +18,6 @@ import { env } from './config';
 
 import { swaggerSpec } from './config/swagger';
 
-
 import { requestIdMiddleware } from './utils';
 import { errorHandler } from './middlewares';
 import {
@@ -65,8 +64,6 @@ import {
 } from './repositories';
 import { RealtimeService } from './realtime';
 
-
-
 export interface AppInstance {
   app: express.Express;
   realtimeService: RealtimeService;
@@ -74,7 +71,6 @@ export interface AppInstance {
 
 export function createApp(): AppInstance {
   const app = express();
-
 
   // =========================================================
   // Repositories (DI)
@@ -94,18 +90,12 @@ export function createApp(): AppInstance {
   const tokenService = new TokenService();
   const sessionService = new SessionService(sessionRepository, tokenService);
   const auditService = new AuditService(auditLogRepository);
-  const authService = new AuthService(
-    userRepository,
-    tokenService,
-    sessionService,
-    auditService,
-  );
+  const authService = new AuthService(userRepository, tokenService, sessionService, auditService);
   const participantService = new ParticipantService(
     participantRepository,
     settingsRepository,
     queueRepository,
   );
-
 
   const prizeService = new PrizeService(prizeRepository);
   const realtimeService = new RealtimeService();
@@ -117,9 +107,12 @@ export function createApp(): AppInstance {
   );
   const queueService = new QueueService(queueRepository, participantRepository, realtimeService);
 
-
   const settingsService = new SettingsService(settingsRepository);
-  const analyticsService = new AnalyticsService(drawRepository, participantRepository, prizeRepository);
+  const analyticsService = new AnalyticsService(
+    drawRepository,
+    participantRepository,
+    prizeRepository,
+  );
 
   // =========================================================
   // Controllers (DI)
@@ -144,7 +137,6 @@ export function createApp(): AppInstance {
   app.use(cookieParser());
   app.use(morgan(env.LOG_LEVEL));
   app.use(requestIdMiddleware);
-
 
   // Rate limiting
   const limiter = rateLimit({
@@ -178,10 +170,14 @@ export function createApp(): AppInstance {
   // =========================================================
   // Swagger Docs
   // =========================================================
-  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-    customCss: '.swagger-ui .topbar { display: none }',
-    customSiteTitle: 'Radiant Lucky Draw API Docs',
-  }));
+  app.use(
+    '/api/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'Radiant Lucky Draw API Docs',
+    }),
+  );
 
   // =========================================================
   // API Routes
@@ -196,7 +192,6 @@ export function createApp(): AppInstance {
   app.use('/api/settings', createSettingsRoutes(settingsController, tokenService));
   app.use('/api/analytics', createAnalyticsRoutes(analyticsController, tokenService));
 
-
   // =========================================================
   // Root Route
   // =========================================================
@@ -210,14 +205,10 @@ export function createApp(): AppInstance {
     });
   });
 
-
   // =========================================================
   // Error Handler (must be last)
   // =========================================================
   app.use(errorHandler);
 
-
   return { app, realtimeService };
 }
-
-

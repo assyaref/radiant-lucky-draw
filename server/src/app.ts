@@ -14,9 +14,17 @@ import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 
 import swaggerUi from 'swagger-ui-express';
+import fs from 'fs';
 import path from 'path';
 import { env } from './config';
+
+// Read the server package version at runtime (avoids importing outside rootDir).
+const packageJson = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf-8'),
+) as { version: string };
+
 import { swaggerSpec } from './config/swagger';
+
 import { requestIdMiddleware } from './utils';
 import { errorHandler } from './middlewares';
 import {
@@ -196,22 +204,23 @@ export function createApp(): AppInstance {
 
 
   // =========================================================
-  // Static Files (Production)
+  // Root Route
   // =========================================================
-  if (env.isProduction) {
-    const publicPath = path.resolve(__dirname, '../public');
-    app.use(express.static(publicPath));
-
-    // SPA fallback - serve index.html for all non-API routes
-    app.get('*', (_req, res) => {
-      res.sendFile(path.join(publicPath, 'index.html'));
+  app.get('/', (_req, res) => {
+    res.json({
+      success: true,
+      service: 'Radiant Lucky Draw API',
+      version: packageJson.version,
+      docs: '/api/docs',
+      health: '/api/health',
     });
-  }
+  });
 
   // =========================================================
   // Error Handler (must be last)
   // =========================================================
   app.use(errorHandler);
+
 
   return { app, realtimeService };
 }

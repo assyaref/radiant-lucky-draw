@@ -39,8 +39,8 @@ export interface TVState {
 // Socket.IO preparation - future event types
 export interface TVSocketEvents {
   'tv:start': { participantId: string };
-  'tv:skip': {};
-  'tv:reset': {};
+  'tv:skip': Record<string, never>;
+  'tv:reset': Record<string, never>;
   'tv:set-prize': { prize: TVPrize };
 }
 

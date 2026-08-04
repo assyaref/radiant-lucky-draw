@@ -5,11 +5,12 @@
 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { logger } from '../src/utils/logger';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  logger.info('🌱 Seeding database...');
 
   // Clean existing data in reverse dependency order
   await prisma.auditLog.deleteMany();
@@ -24,7 +25,6 @@ async function main() {
   await prisma.sponsor.deleteMany();
   await prisma.settings.deleteMany();
   await prisma.user.deleteMany();
-
 
   // ==========================================================
   // USERS
@@ -42,7 +42,7 @@ async function main() {
     },
   });
 
-  const operator1 = await prisma.user.create({
+  await prisma.user.create({
     data: {
       username: 'operator1',
       email: 'operator1@radiantluckydraw.com',
@@ -52,7 +52,7 @@ async function main() {
     },
   });
 
-  const operator2 = await prisma.user.create({
+  await prisma.user.create({
     data: {
       username: 'operator2',
       email: 'operator2@radiantluckydraw.com',
@@ -62,20 +62,42 @@ async function main() {
     },
   });
 
-  console.log('  ✅ Users created');
+  logger.info('  ✅ Users created');
 
   // ==========================================================
   // PARTICIPANTS
   // ==========================================================
   const participantNames = [
-    'Alice Johnson', 'Bob Smith', 'Charlie Brown', 'Diana Prince',
-    'Edward Norton', 'Fiona Apple', 'George Lucas', 'Hannah Montana',
-    'Ivan Petrov', 'Julia Roberts', 'Kevin Hart', 'Laura Croft',
-    'Michael Jordan', 'Nina Simone', 'Oscar Wilde', 'Patricia Arquette',
-    'Quincy Jones', 'Rachel Green', 'Steve Jobs', 'Tina Turner',
-    'Uma Thurman', 'Victor Hugo', 'Wendy Williams', 'Xander Cage',
-    'Yoko Ono', 'Zack Morris', 'Amelia Earhart', 'Bruce Wayne',
-    'Clark Kent', 'Daisy Duke',
+    'Alice Johnson',
+    'Bob Smith',
+    'Charlie Brown',
+    'Diana Prince',
+    'Edward Norton',
+    'Fiona Apple',
+    'George Lucas',
+    'Hannah Montana',
+    'Ivan Petrov',
+    'Julia Roberts',
+    'Kevin Hart',
+    'Laura Croft',
+    'Michael Jordan',
+    'Nina Simone',
+    'Oscar Wilde',
+    'Patricia Arquette',
+    'Quincy Jones',
+    'Rachel Green',
+    'Steve Jobs',
+    'Tina Turner',
+    'Uma Thurman',
+    'Victor Hugo',
+    'Wendy Williams',
+    'Xander Cage',
+    'Yoko Ono',
+    'Zack Morris',
+    'Amelia Earhart',
+    'Bruce Wayne',
+    'Clark Kent',
+    'Daisy Duke',
   ];
 
   const participants = await Promise.all(
@@ -85,33 +107,115 @@ async function main() {
           name,
           email: `${name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
           phone: `+1-555-${String(1000 + index).padStart(4, '0')}`,
-          company: ['Acme Corp', 'Globex Inc', 'Initech', 'Umbrella Corp', 'Wayne Enterprises'][index % 5],
+          company: ['Acme Corp', 'Globex Inc', 'Initech', 'Umbrella Corp', 'Wayne Enterprises'][
+            index % 5
+          ],
           queueNumber: `Q${String(index + 1).padStart(3, '0')}`,
           status: index < 5 ? 'completed' : index < 10 ? 'called' : 'registered',
           registeredAt: new Date(Date.now() - (30 - index) * 60000),
           calledAt: index < 10 ? new Date(Date.now() - (20 - index) * 60000) : null,
           completedAt: index < 5 ? new Date(Date.now() - (10 - index) * 60000) : null,
         },
-      })
-    )
+      }),
+    ),
   );
 
-  console.log('  ✅ Participants created');
+  logger.info('  ✅ Participants created');
 
   // ==========================================================
   // PRIZES
   // ==========================================================
   const prizeData = [
-    { name: 'Smartphone X', description: 'Latest flagship smartphone with AI features', value: 999.99, tier: 'gold', quantity: 3, remaining: 3, sponsor: 'TechCorp' },
-    { name: 'Laptop Pro', description: 'High-performance laptop for professionals', value: 1999.99, tier: 'platinum', quantity: 2, remaining: 2, sponsor: 'TechCorp' },
-    { name: 'Wireless Earbuds', description: 'Premium noise-cancelling earbuds', value: 199.99, tier: 'silver', quantity: 10, remaining: 10, sponsor: 'SoundWave' },
-    { name: 'Smart Watch', description: 'Fitness tracking smartwatch', value: 349.99, tier: 'gold', quantity: 5, remaining: 5, sponsor: 'WearableTech' },
-    { name: 'Gift Card $50', description: 'Universal gift card worth $50', value: 50.00, tier: 'bronze', quantity: 50, remaining: 50, sponsor: 'GiftWorld' },
-    { name: 'Gift Card $100', description: 'Universal gift card worth $100', value: 100.00, tier: 'silver', quantity: 25, remaining: 25, sponsor: 'GiftWorld' },
-    { name: 'Tablet Ultra', description: 'Versatile tablet for work and play', value: 699.99, tier: 'gold', quantity: 4, remaining: 4, sponsor: 'TechCorp' },
-    { name: 'Diamond Ring', description: 'Exquisite diamond ring with certificate', value: 4999.99, tier: 'diamond', quantity: 1, remaining: 1, sponsor: 'LuxuryGems' },
-    { name: 'Bluetooth Speaker', description: 'Portable waterproof speaker', value: 149.99, tier: 'bronze', quantity: 15, remaining: 15, sponsor: 'SoundWave' },
-    { name: 'Vacation Package', description: 'All-inclusive 5-day vacation for two', value: 2999.99, tier: 'platinum', quantity: 2, remaining: 2, sponsor: 'TravelEase' },
+    {
+      name: 'Smartphone X',
+      description: 'Latest flagship smartphone with AI features',
+      value: 999.99,
+      tier: 'gold',
+      quantity: 3,
+      remaining: 3,
+      sponsor: 'TechCorp',
+    },
+    {
+      name: 'Laptop Pro',
+      description: 'High-performance laptop for professionals',
+      value: 1999.99,
+      tier: 'platinum',
+      quantity: 2,
+      remaining: 2,
+      sponsor: 'TechCorp',
+    },
+    {
+      name: 'Wireless Earbuds',
+      description: 'Premium noise-cancelling earbuds',
+      value: 199.99,
+      tier: 'silver',
+      quantity: 10,
+      remaining: 10,
+      sponsor: 'SoundWave',
+    },
+    {
+      name: 'Smart Watch',
+      description: 'Fitness tracking smartwatch',
+      value: 349.99,
+      tier: 'gold',
+      quantity: 5,
+      remaining: 5,
+      sponsor: 'WearableTech',
+    },
+    {
+      name: 'Gift Card $50',
+      description: 'Universal gift card worth $50',
+      value: 50.0,
+      tier: 'bronze',
+      quantity: 50,
+      remaining: 50,
+      sponsor: 'GiftWorld',
+    },
+    {
+      name: 'Gift Card $100',
+      description: 'Universal gift card worth $100',
+      value: 100.0,
+      tier: 'silver',
+      quantity: 25,
+      remaining: 25,
+      sponsor: 'GiftWorld',
+    },
+    {
+      name: 'Tablet Ultra',
+      description: 'Versatile tablet for work and play',
+      value: 699.99,
+      tier: 'gold',
+      quantity: 4,
+      remaining: 4,
+      sponsor: 'TechCorp',
+    },
+    {
+      name: 'Diamond Ring',
+      description: 'Exquisite diamond ring with certificate',
+      value: 4999.99,
+      tier: 'diamond',
+      quantity: 1,
+      remaining: 1,
+      sponsor: 'LuxuryGems',
+    },
+    {
+      name: 'Bluetooth Speaker',
+      description: 'Portable waterproof speaker',
+      value: 149.99,
+      tier: 'bronze',
+      quantity: 15,
+      remaining: 15,
+      sponsor: 'SoundWave',
+    },
+    {
+      name: 'Vacation Package',
+      description: 'All-inclusive 5-day vacation for two',
+      value: 2999.99,
+      tier: 'platinum',
+      quantity: 2,
+      remaining: 2,
+      sponsor: 'TravelEase',
+    },
   ];
 
   const prizes = await Promise.all(
@@ -128,29 +232,39 @@ async function main() {
           sponsor: p.sponsor,
           isActive: true,
         },
-      })
-    )
+      }),
+    ),
   );
 
-  console.log('  ✅ Prizes created');
+  logger.info('  ✅ Prizes created');
 
   // ==========================================================
   // DRAWS
   // ==========================================================
   const drawData = [
-    { name: 'Opening Draw', prize: prizes[4], status: 'completed', winner: participants[0] }, // Gift Card $50
-    { name: 'Bronze Round 1', prize: prizes[8], status: 'completed', winner: participants[1] }, // Bluetooth Speaker
-    { name: 'Silver Round 1', prize: prizes[2], status: 'completed', winner: participants[2] }, // Wireless Earbuds
-    { name: 'Gold Round 1', prize: prizes[0], status: 'completed', winner: participants[3] }, // Smartphone X
-    { name: 'Bronze Round 2', prize: prizes[4], status: 'completed', winner: participants[4] }, // Gift Card $50
-    { name: 'Silver Round 2', prize: prizes[5], status: 'countdown', winner: null }, // Gift Card $100
-    { name: 'Gold Round 2', prize: prizes[6], status: 'pending', winner: null }, // Tablet Ultra
-    { name: 'Platinum Round 1', prize: prizes[1], status: 'pending', winner: null }, // Laptop Pro
-    { name: 'Diamond Round', prize: prizes[7], status: 'pending', winner: null }, // Diamond Ring
-    { name: 'Grand Finale', prize: prizes[9], status: 'pending', winner: null }, // Vacation Package
+    // Gift Card $50
+    { name: 'Opening Draw', prize: prizes[4], status: 'completed', winner: participants[0] },
+    // Bluetooth Speaker
+    { name: 'Bronze Round 1', prize: prizes[8], status: 'completed', winner: participants[1] },
+    // Wireless Earbuds
+    { name: 'Silver Round 1', prize: prizes[2], status: 'completed', winner: participants[2] },
+    // Smartphone X
+    { name: 'Gold Round 1', prize: prizes[0], status: 'completed', winner: participants[3] },
+    // Gift Card $50
+    { name: 'Bronze Round 2', prize: prizes[4], status: 'completed', winner: participants[4] },
+    // Gift Card $100
+    { name: 'Silver Round 2', prize: prizes[5], status: 'countdown', winner: null },
+    // Tablet Ultra
+    { name: 'Gold Round 2', prize: prizes[6], status: 'pending', winner: null },
+    // Laptop Pro
+    { name: 'Platinum Round 1', prize: prizes[1], status: 'pending', winner: null },
+    // Diamond Ring
+    { name: 'Diamond Round', prize: prizes[7], status: 'pending', winner: null },
+    // Vacation Package
+    { name: 'Grand Finale', prize: prizes[9], status: 'pending', winner: null },
   ];
 
-  const draws = [];
+  const draws: Array<{ id: string }> = [];
   for (let i = 0; i < drawData.length; i++) {
     const d = drawData[i];
     const draw = await prisma.draw.create({
@@ -166,7 +280,7 @@ async function main() {
     draws.push(draw);
   }
 
-  console.log('  ✅ Draws created');
+  logger.info('  ✅ Draws created');
 
   // ==========================================================
   // DRAW PARTICIPANTS (Join Table)
@@ -174,18 +288,20 @@ async function main() {
   for (let i = 0; i < draws.length; i++) {
     const participantCount = Math.min(participants.length, 5 + i * 2);
     for (let j = 0; j < participantCount; j++) {
-      await prisma.drawParticipant.create({
-        data: {
-          drawId: draws[i].id,
-          participantId: participants[j].id,
-        },
-      }).catch(() => {
-        // Skip duplicates silently
-      });
+      await prisma.drawParticipant
+        .create({
+          data: {
+            drawId: draws[i].id,
+            participantId: participants[j].id,
+          },
+        })
+        .catch(() => {
+          // Skip duplicates silently
+        });
     }
   }
 
-  console.log('  ✅ Draw participants linked');
+  logger.info('  ✅ Draw participants linked');
 
   // ==========================================================
   // WINNERS
@@ -215,7 +331,7 @@ async function main() {
     }
   }
 
-  console.log('  ✅ Winners created');
+  logger.info('  ✅ Winners created');
 
   // ==========================================================
   // QUEUE ENTRIES
@@ -229,7 +345,8 @@ async function main() {
 
   for (let i = 10; i < participants.length; i++) {
     const statusIdx = Math.min(Math.floor((i - 10) / 5), queueStatuses.length - 1);
-    const status = queueStatuses[statusIdx][(i - 10) % queueStatuses[statusIdx].length] || 'waiting';
+    const status =
+      queueStatuses[statusIdx][(i - 10) % queueStatuses[statusIdx].length] || 'waiting';
 
     await prisma.queueEntry.create({
       data: {
@@ -237,26 +354,37 @@ async function main() {
         participantName: participants[i].name,
         queueNumber: participants[i].queueNumber || `Q${String(i + 1).padStart(3, '0')}`,
         status,
-        calledAt: status === 'called' || status === 'completed' ? new Date(Date.now() - 300000) : null,
+        calledAt:
+          status === 'called' || status === 'completed' ? new Date(Date.now() - 300000) : null,
         completedAt: status === 'completed' ? new Date(Date.now() - 120000) : null,
       },
     });
   }
 
-  console.log('  ✅ Queue entries created');
+  logger.info('  ✅ Queue entries created');
 
   // ==========================================================
   // SPONSORS
   // ==========================================================
   const sponsorData = [
-    { name: 'TechCorp', description: 'Leading technology innovator', tier: 'platinum', sortOrder: 0 },
+    {
+      name: 'TechCorp',
+      description: 'Leading technology innovator',
+      tier: 'platinum',
+      sortOrder: 0,
+    },
     { name: 'SoundWave', description: 'Premium audio equipment', tier: 'gold', sortOrder: 1 },
     { name: 'LuxuryGems', description: 'Exquisite jewelry and gems', tier: 'gold', sortOrder: 2 },
     { name: 'TravelEase', description: 'Your travel companion', tier: 'silver', sortOrder: 3 },
     { name: 'GiftWorld', description: 'Universal gift solutions', tier: 'silver', sortOrder: 4 },
     { name: 'WearableTech', description: 'Smart wearable devices', tier: 'standard', sortOrder: 5 },
     { name: 'AutoElite', description: 'Premium automotive brand', tier: 'platinum', sortOrder: 6 },
-    { name: 'FashionHub', description: 'Trendsetting fashion brand', tier: 'standard', sortOrder: 7 },
+    {
+      name: 'FashionHub',
+      description: 'Trendsetting fashion brand',
+      tier: 'standard',
+      sortOrder: 7,
+    },
   ];
 
   await Promise.all(
@@ -271,19 +399,34 @@ async function main() {
           isActive: true,
           sortOrder: s.sortOrder,
         },
-      })
-    )
+      }),
+    ),
   );
 
-  console.log('  ✅ Sponsors created');
+  logger.info('  ✅ Sponsors created');
 
   // ==========================================================
   // ANNOUNCEMENTS
   // ==========================================================
   const announcementData = [
-    { title: 'Welcome!', message: 'Welcome to the Radiant Lucky Draw event! We hope you have a fantastic experience.', type: 'success', priority: 1 },
-    { title: 'Schedule Update', message: 'The Grand Prize draw has been moved to 5:00 PM.', type: 'info', priority: 2 },
-    { title: 'Technical Issue', message: 'We are experiencing minor delays. Thank you for your patience.', type: 'warning', priority: 3 },
+    {
+      title: 'Welcome!',
+      message: 'Welcome to the Radiant Lucky Draw event! We hope you have a fantastic experience.',
+      type: 'success',
+      priority: 1,
+    },
+    {
+      title: 'Schedule Update',
+      message: 'The Grand Prize draw has been moved to 5:00 PM.',
+      type: 'info',
+      priority: 2,
+    },
+    {
+      title: 'Technical Issue',
+      message: 'We are experiencing minor delays. Thank you for your patience.',
+      type: 'warning',
+      priority: 3,
+    },
   ];
 
   await Promise.all(
@@ -297,11 +440,11 @@ async function main() {
           isActive: true,
           createdBy: admin.id,
         },
-      })
-    )
+      }),
+    ),
   );
 
-  console.log('  ✅ Announcements created');
+  logger.info('  ✅ Announcements created');
 
   // ==========================================================
   // SETTINGS
@@ -319,7 +462,7 @@ async function main() {
     },
   });
 
-  console.log('  ✅ Settings created');
+  logger.info('  ✅ Settings created');
 
   // ==========================================================
   // AUDIT LOGS
@@ -345,32 +488,29 @@ async function main() {
           ipAddress: '127.0.0.1',
           userAgent: 'Seed Script',
         },
-      })
-    )
+      }),
+    ),
   );
 
-  console.log('  ✅ Audit logs created');
+  logger.info('  ✅ Audit logs created');
 
-  console.log('');
-  console.log('🎉 Database seeding completed successfully!');
-  console.log('');
-  console.log('📋 Summary:');
-  console.log(`  Users:         3`);
-  console.log(`  Participants:  ${participants.length}`);
-  console.log(`  Prizes:        ${prizes.length}`);
-  console.log(`  Draws:         ${draws.length}`);
-  console.log(`  Sponsors:      ${sponsorData.length}`);
-  console.log(`  Announcements: ${announcementData.length}`);
-  console.log('');
-  console.log('🔑 Credentials:');
-  console.log('  Admin:    admin / admin123');
-  console.log('  Operator: operator1 / operator123');
-  console.log('  Operator: operator2 / operator123');
+  logger.info('🎉 Database seeding completed successfully!');
+  logger.info('📋 Summary:');
+  logger.info(`  Users:         3`);
+  logger.info(`  Participants:  ${participants.length}`);
+  logger.info(`  Prizes:        ${prizes.length}`);
+  logger.info(`  Draws:         ${draws.length}`);
+  logger.info(`  Sponsors:      ${sponsorData.length}`);
+  logger.info(`  Announcements: ${announcementData.length}`);
+  logger.info('🔑 Credentials:');
+  logger.info('  Admin:    admin / admin123');
+  logger.info('  Operator: operator1 / operator123');
+  logger.info('  Operator: operator2 / operator123');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e);
+    logger.error('❌ Seed failed:', { error: e });
     process.exit(1);
   })
   .finally(async () => {

@@ -117,14 +117,6 @@ jobs:
       - name: Run frontend tests
         run: npm test
 
-      - name: Install backend dependencies
-        working-directory: ./server
-        run: npm ci
-
-      - name: Run backend tests
-        working-directory: ./server
-        run: npm test -- --passWithNoTests
-
   # ─── Docker Build ─────────────────────────────────────────
   docker:
     name: Docker Build

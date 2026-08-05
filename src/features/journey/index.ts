@@ -33,6 +33,9 @@ export { RegistrationScreen } from './screens/RegistrationScreen';
 export { ValidationScreen } from './screens/ValidationScreen';
 export { QueueScreen } from './screens/QueueScreen';
 export { ReadyScreen } from './screens/ReadyScreen';
+export { DrawScreen } from './screens/DrawScreen';
+export { WinnerScreen } from './screens/WinnerScreen';
+export { ClaimScreen } from './screens/ClaimScreen';
 
 // Shared UI
 export { JourneyProgress } from './components/JourneyProgress';

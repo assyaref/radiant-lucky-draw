@@ -7,12 +7,16 @@ import { RegistrationScreen } from './screens/RegistrationScreen';
 import { ValidationScreen } from './screens/ValidationScreen';
 import { QueueScreen } from './screens/QueueScreen';
 import { ReadyScreen } from './screens/ReadyScreen';
+import { DrawScreen } from './screens/DrawScreen';
+import { WinnerScreen } from './screens/WinnerScreen';
+import { ClaimScreen } from './screens/ClaimScreen';
 
 /**
  * JourneyFlow
  *
  * Orchestrates the participant journey state machine:
  * Landing → Scan → Registration → Validation → Queue → Ready
+ * → Draw → Winner → Claim → Restart
  *
  * Uses JourneyContext to read the current step and render the
  * corresponding screen with a smooth animated transition.
@@ -36,6 +40,9 @@ export const JourneyFlow = memo(function JourneyFlow() {
         {step === 'validation' && <ValidationScreen />}
         {step === 'queue' && <QueueScreen />}
         {step === 'ready' && <ReadyScreen />}
+        {step === 'draw' && <DrawScreen />}
+        {step === 'winner' && <WinnerScreen />}
+        {step === 'claim' && <ClaimScreen />}
       </motion.div>
     </AnimatePresence>
   );

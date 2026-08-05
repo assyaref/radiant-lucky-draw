@@ -14,6 +14,9 @@ const STEPS: { key: JourneyStep; label: string }[] = [
   { key: 'validation', label: 'Validation' },
   { key: 'queue', label: 'Queue' },
   { key: 'ready', label: 'Ready' },
+  { key: 'draw', label: 'Draw' },
+  { key: 'winner', label: 'Winner' },
+  { key: 'claim', label: 'Claim' },
 ];
 
 const STEP_INDEX: Record<JourneyStep, number> = {
@@ -23,14 +26,14 @@ const STEP_INDEX: Record<JourneyStep, number> = {
   validation: 3,
   queue: 4,
   ready: 5,
-  draw: 5,
-  winner: 5,
-  claim: 5,
+  draw: 6,
+  winner: 7,
+  claim: 8,
   restart: 0,
 };
 
 /**
- * Animated 6-step progress indicator for the participant journey.
+ * Animated 9-step progress indicator for the participant journey.
  * Highlights the active step with a gold glow and animated fill.
  * Connectors animate from left to right as the participant advances.
  */

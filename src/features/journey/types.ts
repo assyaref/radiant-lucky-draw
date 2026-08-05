@@ -75,4 +75,6 @@ export interface JourneyState {
   validationResult: ValidationResult;
   queueInfo: QueueInfo | null;
   readyState: ReadyState;
+  // M2.2C extended state (aliases for clarity)
+  winnerInfo: DrawResult | null;
 }

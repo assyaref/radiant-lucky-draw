@@ -37,9 +37,13 @@ interface JourneyContextValue {
   queueInfo: QueueInfo | null;
   readyState: ReadyState;
 
+  // M2.2C extended state (aliases for clarity)
+  winnerInfo: DrawResult | null;
+
   // Navigation
   goTo: (step: JourneyStep) => void;
   restart: () => void;
+  resetJourney: () => void;
 
   // Registration
   setParticipant: (data: ParticipantData) => void;
@@ -87,6 +91,21 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const restart = useCallback(() => {
+    setStep('landing');
+    setParticipantState(null);
+    setValidation(INITIAL_VALIDATION);
+    setQueueState(null);
+    setDrawState(null);
+    setClaimState(null);
+    setSubmitError(null);
+    setReadyStateState('idle');
+  }, []);
+
+  /**
+   * Reset the journey back to the landing step without refreshing the browser.
+   * Clears all participant, draw, and claim state so a new participant can start.
+   */
+  const resetJourney = useCallback(() => {
     setStep('landing');
     setParticipantState(null);
     setValidation(INITIAL_VALIDATION);
@@ -238,8 +257,11 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
         validationResult: validation,
         queueInfo: queue,
         readyState,
+        // M2.2C extended state
+        winnerInfo: draw,
         goTo,
         restart,
+        resetJourney,
         setParticipant,
         submitRegistration,
         validateParticipant,

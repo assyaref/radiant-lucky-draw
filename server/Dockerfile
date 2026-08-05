@@ -13,13 +13,13 @@ RUN apk add --no-cache python3 make g++ openssl
 # Copy dependency manifests
 COPY package.json package-lock.json ./
 
+# Copy Prisma schema and migrations (needed for postinstall prisma generate)
+COPY prisma ./prisma
+
 # Install all dependencies (including devDependencies for build)
 RUN npm ci
 
-# Copy Prisma schema (needed for prisma generate)
-COPY prisma ./prisma
-
-# Generate Prisma client
+# Generate Prisma client (idempotent; postinstall already ran it)
 RUN npx prisma generate
 
 # Copy source code
@@ -43,13 +43,13 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 # Copy production dependencies
 COPY package.json package-lock.json ./
 
+# Copy Prisma schema and migrations (needed for postinstall prisma generate)
+COPY prisma ./prisma
+
 # Install only production dependencies
 RUN npm ci --omit=dev && npm cache clean --force
 
-# Copy Prisma schema and migrations
-COPY prisma ./prisma
-
-# Generate Prisma client for production
+# Generate Prisma client for production (idempotent; postinstall already ran it)
 RUN npx prisma generate
 
 # Copy built application

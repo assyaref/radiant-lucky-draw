@@ -17,20 +17,20 @@ export interface SelectionResult {
 /**
  * Weighted Prize Selector.
  * Implements cumulative weight algorithm for statistically fair selection.
- * 
+ *
  * SOLID: Single Responsibility — selects prizes based on weighted probability.
  *         Open/Closed — extendable with new selection strategies.
  */
 export class PrizeSelector {
   /**
    * Select a prize from the pool using weighted probability.
-   * 
+   *
    * Algorithm:
    * 1. Calculate cumulative weights from all prizes
    * 2. Generate a random value in [0, totalWeight)
    * 3. Binary search to find which prize the value falls into
    * 4. Return the selected prize with its probability
-   * 
+   *
    * This ensures prizes with higher weights are proportionally more likely.
    */
   select(prizePool: PrizePool, random: SeededRandom): SelectionResult {

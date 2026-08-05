@@ -253,7 +253,7 @@ class RecoveryService {
 
     const allActions = await offlineManager.getPendingActions();
     const oldCompleted = allActions.filter(
-      (a) => a.status === 'completed' && Date.now() - a.createdAt > 86400000
+      (a) => a.status === 'completed' && Date.now() - a.createdAt > 86400000,
     );
 
     for (const item of oldCompleted) {

@@ -13,10 +13,7 @@ import type { PrizeCreateParams } from '@/engine/types/prize';
  * Simple drag & drop reordering hook.
  * Uses native HTML5 drag & drop API — no external dependencies.
  */
-function useDragReorder(
-  items: { id: string }[],
-  onReorder: (orderedIds: string[]) => void,
-) {
+function useDragReorder(items: { id: string }[], onReorder: (orderedIds: string[]) => void) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
@@ -169,7 +166,9 @@ export default function PrizeManagement() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white">Prize Management</h1>
-            <p className="text-white/50 mt-1">Manage your lucky draw prizes — CRUD, stock, tiers, and more</p>
+            <p className="text-white/50 mt-1">
+              Manage your lucky draw prizes — CRUD, stock, tiers, and more
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -208,13 +207,17 @@ export default function PrizeManagement() {
         {error && (
           <div className="p-4 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 flex items-center justify-between">
             <span>{error}</span>
-            <button onClick={clearMessages} className="text-red-400 hover:text-red-300">✕</button>
+            <button onClick={clearMessages} className="text-red-400 hover:text-red-300">
+              ✕
+            </button>
           </div>
         )}
         {success && (
           <div className="p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-between">
             <span>{success}</span>
-            <button onClick={clearMessages} className="text-emerald-400 hover:text-emerald-300">✕</button>
+            <button onClick={clearMessages} className="text-emerald-400 hover:text-emerald-300">
+              ✕
+            </button>
           </div>
         )}
 
@@ -222,7 +225,12 @@ export default function PrizeManagement() {
         {showImportResult && (
           <div className="p-4 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 flex items-center justify-between">
             <span>CSV import completed. Check the prize list for results.</span>
-            <button onClick={() => setShowImportResult(false)} className="text-indigo-300 hover:text-indigo-200">✕</button>
+            <button
+              onClick={() => setShowImportResult(false)}
+              className="text-indigo-300 hover:text-indigo-200"
+            >
+              ✕
+            </button>
           </div>
         )}
 
@@ -236,20 +244,12 @@ export default function PrizeManagement() {
             onChange={(search) => setFilters({ search })}
             onReset={() => setFilters({ search: '' })}
           />
-          <PrizeFilter
-            filters={filters}
-            onChange={setFilters}
-            onReset={resetFilters}
-          />
+          <PrizeFilter filters={filters} onChange={setFilters} onReset={resetFilters} />
         </div>
 
         {/* Bulk Update */}
         {selectedIds.length > 0 && (
-          <BulkUpdate
-            selectedIds={selectedIds}
-            onApply={bulkUpdate}
-            onCancel={deselectAll}
-          />
+          <BulkUpdate selectedIds={selectedIds} onApply={bulkUpdate} onCancel={deselectAll} />
         )}
 
         {/* Selection controls */}
@@ -346,7 +346,10 @@ export default function PrizeManagement() {
                 <h2 className="text-xl font-bold text-white">
                   {isEditing ? 'Edit Prize' : 'Add New Prize'}
                 </h2>
-                <button onClick={closeForm} className="text-white/40 hover:text-white transition-colors text-xl">
+                <button
+                  onClick={closeForm}
+                  className="text-white/40 hover:text-white transition-colors text-xl"
+                >
                   ✕
                 </button>
               </div>
@@ -376,5 +379,3 @@ export default function PrizeManagement() {
     </div>
   );
 }
-
-

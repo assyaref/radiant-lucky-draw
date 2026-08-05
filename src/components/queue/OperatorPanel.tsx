@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore, type QueueItem } from '../../store/queue/queueStore';
 import { useQueueSync } from '../../store/queue/useQueueSync';
 
-
 function ParticipantRow({ item }: { item: QueueItem }) {
   const { cancelQueue, skipQueue } = useQueueStore();
 
@@ -24,23 +23,27 @@ function ParticipantRow({ item }: { item: QueueItem }) {
       }`}
     >
       {/* Number */}
-      <span className={`w-16 text-lg font-black ${
-        item.status === 'current'
-          ? 'text-amber-300'
-          : item.status === 'finished'
-            ? 'text-emerald-400'
-            : item.status === 'cancelled' || item.status === 'skipped'
-              ? 'text-white/20 line-through'
-              : 'text-white/60'
-      }`}>
+      <span
+        className={`w-16 text-lg font-black ${
+          item.status === 'current'
+            ? 'text-amber-300'
+            : item.status === 'finished'
+              ? 'text-emerald-400'
+              : item.status === 'cancelled' || item.status === 'skipped'
+                ? 'text-white/20 line-through'
+                : 'text-white/60'
+        }`}
+      >
         {item.number}
       </span>
 
       {/* Name + Company */}
       <div className="flex-1 min-w-0">
-        <p className={`truncate text-sm font-bold ${
-          item.status === 'current' ? 'text-white' : 'text-white/70'
-        }`}>
+        <p
+          className={`truncate text-sm font-bold ${
+            item.status === 'current' ? 'text-white' : 'text-white/70'
+          }`}
+        >
           {item.fullName}
         </p>
         <p className="truncate text-xs text-white/30">{item.company}</p>
@@ -54,13 +57,19 @@ function ParticipantRow({ item }: { item: QueueItem }) {
       )}
 
       {/* Status */}
-      <span className={`w-20 text-center text-[10px] font-bold tracking-wider uppercase ${
-        item.status === 'current' ? 'text-amber-400' :
-        item.status === 'finished' ? 'text-emerald-400' :
-        item.status === 'cancelled' ? 'text-red-400' :
-        item.status === 'skipped' ? 'text-white/30' :
-        'text-white/30'
-      }`}>
+      <span
+        className={`w-20 text-center text-[10px] font-bold tracking-wider uppercase ${
+          item.status === 'current'
+            ? 'text-amber-400'
+            : item.status === 'finished'
+              ? 'text-emerald-400'
+              : item.status === 'cancelled'
+                ? 'text-red-400'
+                : item.status === 'skipped'
+                  ? 'text-white/30'
+                  : 'text-white/30'
+        }`}
+      >
         {item.status}
       </span>
 
@@ -140,7 +149,6 @@ export function OperatorPanel() {
     setIsPriority(false);
     setShowAddForm(false);
   };
-
 
   return (
     <div className="flex min-h-screen flex-col bg-[#020617] p-6">
@@ -225,18 +233,28 @@ export function OperatorPanel() {
                     onChange={(e) => setIsPriority(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className={`h-4 w-4 rounded border transition-all ${
-                    isPriority
-                      ? 'border-amber-400 bg-amber-400'
-                      : 'border-white/20 bg-white/[0.03]'
-                  }`}>
+                  <div
+                    className={`h-4 w-4 rounded border transition-all ${
+                      isPriority
+                        ? 'border-amber-400 bg-amber-400'
+                        : 'border-white/20 bg-white/[0.03]'
+                    }`}
+                  >
                     {isPriority && (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="#020617" strokeWidth="3" className="h-4 w-4">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#020617"
+                        strokeWidth="3"
+                        className="h-4 w-4"
+                      >
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}
                   </div>
-                  <span className="text-xs font-bold tracking-wider text-amber-300 uppercase">Priority</span>
+                  <span className="text-xs font-bold tracking-wider text-amber-300 uppercase">
+                    Priority
+                  </span>
                 </label>
                 <button
                   onClick={handleAdd}
@@ -262,7 +280,9 @@ export function OperatorPanel() {
           <p className="text-xl font-black text-white">{items.length}</p>
         </div>
         <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-center">
-          <p className="text-[10px] font-bold tracking-wider text-amber-400/60 uppercase">Current</p>
+          <p className="text-[10px] font-bold tracking-wider text-amber-400/60 uppercase">
+            Current
+          </p>
           <p className="text-xl font-black text-amber-300">{currentQueue ? 1 : 0}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center">
@@ -270,12 +290,16 @@ export function OperatorPanel() {
           <p className="text-xl font-black text-white">{waitingQueue.length}</p>
         </div>
         <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3 text-center">
-          <p className="text-[10px] font-bold tracking-wider text-emerald-400/60 uppercase">Finished</p>
+          <p className="text-[10px] font-bold tracking-wider text-emerald-400/60 uppercase">
+            Finished
+          </p>
           <p className="text-xl font-black text-emerald-400">{finishedQueue.length}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center">
           <p className="text-[10px] font-bold tracking-wider text-white/30 uppercase">Est. Wait</p>
-          <p className="text-xl font-black text-white">{waitingQueue.length * estimatedWaitPerItem}min</p>
+          <p className="text-xl font-black text-white">
+            {waitingQueue.length * estimatedWaitPerItem}min
+          </p>
         </div>
       </motion.div>
 
@@ -287,7 +311,9 @@ export function OperatorPanel() {
         transition={{ delay: 0.15 }}
       >
         <div className="flex items-center gap-2">
-          <label className="text-xs font-bold tracking-wider text-white/30 uppercase">Prefix:</label>
+          <label className="text-xs font-bold tracking-wider text-white/30 uppercase">
+            Prefix:
+          </label>
           <input
             type="text"
             value={prefix}
@@ -297,7 +323,9 @@ export function OperatorPanel() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs font-bold tracking-wider text-white/30 uppercase">Wait/Item:</label>
+          <label className="text-xs font-bold tracking-wider text-white/30 uppercase">
+            Wait/Item:
+          </label>
           <input
             type="number"
             value={estimatedWaitPerItem}
@@ -334,9 +362,7 @@ export function OperatorPanel() {
                 No participants yet. Add one to get started.
               </motion.p>
             ) : (
-              items.map((item) => (
-                <ParticipantRow key={item.id} item={item} />
-              ))
+              items.map((item) => <ParticipantRow key={item.id} item={item} />)
             )}
           </AnimatePresence>
         </div>

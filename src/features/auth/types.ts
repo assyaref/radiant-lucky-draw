@@ -57,7 +57,6 @@ export interface AuthUser {
   lastLoginAt?: string | null;
 }
 
-
 export interface LoginCredentials {
   email: string;
   password: string;

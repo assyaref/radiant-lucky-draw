@@ -36,7 +36,10 @@ export function SplashScreen() {
       >
         <svg width="72" height="72" viewBox="0 0 48 48" fill="none">
           <circle cx="24" cy="24" r="22" stroke="url(#splashGrad)" strokeWidth="3" />
-          <path d="M24 8 L28 18 L38 18 L30 24 L33 34 L24 28 L15 34 L18 24 L10 18 L20 18 Z" fill="url(#splashGrad)" />
+          <path
+            d="M24 8 L28 18 L38 18 L30 24 L33 34 L24 28 L15 34 L18 24 L10 18 L20 18 Z"
+            fill="url(#splashGrad)"
+          />
           <defs>
             <linearGradient id="splashGrad" x1="0" y1="0" x2="48" y2="48">
               <stop stopColor="#fbbf24" />
@@ -84,9 +87,10 @@ export function SplashScreen() {
             key={i}
             className="h-2 w-2 rounded-full"
             style={{
-              background: i === 1
-                ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
-                : 'linear-gradient(135deg, #60a5fa, #3b82f6)',
+              background:
+                i === 1
+                  ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
+                  : 'linear-gradient(135deg, #60a5fa, #3b82f6)',
             }}
             animate={{ scale: [0.5, 1, 0.5], opacity: [0.3, 1, 0.3] }}
             transition={{ repeat: Infinity, duration: 1, delay: i * 0.15 }}

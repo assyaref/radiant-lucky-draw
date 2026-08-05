@@ -44,7 +44,9 @@ export function AnimatedWinnerCard({
   if (!active) return null;
 
   return (
-    <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}>
+    <div
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}
+    >
       {/* Background glow */}
       <motion.div
         className="absolute inset-0"
@@ -60,9 +62,7 @@ export function AnimatedWinnerCard({
           className="mb-6 rounded-full border border-amber-400/40 bg-amber-400/15 px-8 py-2"
           initial={{ opacity: 0, y: -20 }}
           animate={
-            phase === 'enter' || phase === 'active'
-              ? { opacity: 1, y: 0 }
-              : { opacity: 0, y: -20 }
+            phase === 'enter' || phase === 'active' ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }
           }
           transition={{
             type: 'spring',
@@ -104,11 +104,7 @@ export function AnimatedWinnerCard({
         <motion.div
           className="mb-2 rounded-lg border border-white/10 bg-white/[0.03] px-4 py-1"
           initial={{ opacity: 0 }}
-          animate={
-            phase === 'enter' || phase === 'active'
-              ? { opacity: 1 }
-              : { opacity: 0 }
-          }
+          animate={phase === 'enter' || phase === 'active' ? { opacity: 1 } : { opacity: 0 }}
           transition={{ delay: 0.3 + delay / 1000 }}
         >
           <span className="text-sm font-bold text-white/40">#{number}</span>
@@ -119,9 +115,7 @@ export function AnimatedWinnerCard({
           className="mb-2 text-5xl font-black tracking-tight text-white"
           initial={{ opacity: 0, y: 20 }}
           animate={
-            phase === 'enter' || phase === 'active'
-              ? { opacity: 1, y: 0 }
-              : { opacity: 0, y: 20 }
+            phase === 'enter' || phase === 'active' ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
           }
           transition={{
             delay: 0.4 + delay / 1000,
@@ -137,11 +131,7 @@ export function AnimatedWinnerCard({
         <motion.p
           className="mb-8 text-xl font-light text-white/40"
           initial={{ opacity: 0 }}
-          animate={
-            phase === 'enter' || phase === 'active'
-              ? { opacity: 1 }
-              : { opacity: 0 }
-          }
+          animate={phase === 'enter' || phase === 'active' ? { opacity: 1 } : { opacity: 0 }}
           transition={{ delay: 0.6 + delay / 1000 }}
         >
           {company}

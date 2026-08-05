@@ -93,8 +93,6 @@ function mapTVPrizeToEnginePrize(tvPrize: TVPrize, index: number, stock: number)
   };
 }
 
-
-
 /** Resolve the engine tier from a TV prize name */
 function resolveTier(tvPrize: TVPrize): PrizeTier {
   const name = tvPrize.name.toLowerCase();
@@ -170,9 +168,10 @@ export class DrawEngineService {
    *              Used by simulations to run many draws against a single pool.
    */
   registerPrizes(tvPrizes: TVPrize[], stock = 1): void {
-    const enginePrizes = tvPrizes.map((prize, index) => mapTVPrizeToEnginePrize(prize, index, stock));
+    const enginePrizes = tvPrizes.map((prize, index) =>
+      mapTVPrizeToEnginePrize(prize, index, stock),
+    );
     this.engine.registerPrizes(enginePrizes);
-
 
     // Initialize statistics
     this.statistics.prizeRemaining = {};
@@ -201,7 +200,6 @@ export class DrawEngineService {
     this.engine.startSession(config);
     return true;
   }
-
 
   /**
    * Register a participant as eligible for the draw.
@@ -259,7 +257,6 @@ export class DrawEngineService {
         code: DrawErrorCode.DRAW_INACTIVE,
       };
     }
-
 
     // Step 3: Execute the draw via DrawEngine (handles prize availability & stock)
     const result = this.engine.draw();
@@ -340,7 +337,6 @@ export class DrawEngineService {
         code: 'PARTICIPANT_NOT_REGISTERED',
       };
     }
-
 
     if (this.winningParticipants.has(participant.id)) {
       return {

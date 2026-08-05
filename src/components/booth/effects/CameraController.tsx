@@ -6,7 +6,10 @@ interface CameraControllerProps {
   className?: string;
 }
 
-export const CameraController = memo(function CameraController({ children, className = '' }: CameraControllerProps) {
+export const CameraController = memo(function CameraController({
+  children,
+  className = '',
+}: CameraControllerProps) {
   return (
     <motion.div
       className={`pointer-events-none absolute inset-0 ${className}`}

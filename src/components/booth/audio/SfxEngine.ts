@@ -64,7 +64,7 @@ function tone(
   duration: number,
   peak = 0.3,
   type: OscillatorType = 'sine',
-  delay = 0
+  delay = 0,
 ) {
   const { ctx, master } = s;
   const now = ctx.currentTime + delay;
@@ -141,7 +141,15 @@ export function playSfx(name: SfxName, volume = 1) {
     case 'confetti':
       // Sparkly high-frequency pops
       for (let i = 0; i < 12; i++) {
-        tone(s, 1500 + Math.random() * 2000, 800 + Math.random() * 1000, 0.08, 0.12 * v, 'sine', i * 0.04);
+        tone(
+          s,
+          1500 + Math.random() * 2000,
+          800 + Math.random() * 1000,
+          0.08,
+          0.12 * v,
+          'sine',
+          i * 0.04,
+        );
       }
       noiseBurst(s, 0.4, 0.1 * v, 6000);
       break;
@@ -152,7 +160,15 @@ export function playSfx(name: SfxName, volume = 1) {
       noiseBurst(s, 0.6, 0.3 * v, 800, 0.4);
       noiseBurst(s, 0.8, 0.2 * v, 3000, 0.45);
       for (let i = 0; i < 8; i++) {
-        tone(s, 400 + Math.random() * 800, 200 + Math.random() * 400, 0.3, 0.1 * v, 'triangle', 0.45 + i * 0.05);
+        tone(
+          s,
+          400 + Math.random() * 800,
+          200 + Math.random() * 400,
+          0.3,
+          0.1 * v,
+          'triangle',
+          0.45 + i * 0.05,
+        );
       }
       break;
 

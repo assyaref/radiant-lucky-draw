@@ -23,7 +23,9 @@ export function PeriodSelector({ className = '' }: PeriodSelectorProps) {
   };
 
   return (
-    <div className={`flex items-center gap-1 p-1 rounded-lg bg-dark-surface-tertiary/50 ${className}`}>
+    <div
+      className={`flex items-center gap-1 p-1 rounded-lg bg-dark-surface-tertiary/50 ${className}`}
+    >
       {periods.map((p) => (
         <button
           key={p.value}

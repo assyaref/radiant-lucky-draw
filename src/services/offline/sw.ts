@@ -1,50 +1,74 @@
 // ============================================================
 // Service Worker for Offline Support
 // ============================================================
-// @ts-nocheck - This file runs in ServiceWorkerGlobalScope, not Window
 // It is compiled separately by Vite for the Service Worker context.
 
 const CACHE_NAME = 'radiant-lucky-draw-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg',
-  '/icons.svg',
-];
+const STATIC_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icons.svg'];
 
 const API_CACHE_NAME = 'radiant-api-v1';
 const API_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// ─── Service Worker Types ────────────────────────────────────
+// The DOM lib types `self` as `Window`, but at runtime this file runs in a
+// ServiceWorkerGlobalScope. These local types model the service worker APIs.
+
+interface ExtendableEvent extends Event {
+  waitUntil(fn: Promise<unknown>): void;
+}
+
+interface FetchEvent extends ExtendableEvent {
+  request: Request;
+  respondWith(response: Response | Promise<Response>): void;
+}
+
+interface ExtendableMessageEvent extends ExtendableEvent {
+  data: unknown;
+  ports: ReadonlyArray<MessagePort>;
+}
+
+interface ServiceWorkerGlobalScope {
+  skipWaiting(): void;
+  clients: {
+    claim(): Promise<void>;
+  };
+  addEventListener(type: 'install', listener: (event: ExtendableEvent) => void): void;
+  addEventListener(type: 'activate', listener: (event: ExtendableEvent) => void): void;
+  addEventListener(type: 'fetch', listener: (event: FetchEvent) => void): void;
+  addEventListener(type: 'message', listener: (event: ExtendableMessageEvent) => void): void;
+}
+
+const sw = self as unknown as ServiceWorkerGlobalScope;
+
 // ─── Install ─────────────────────────────────────────────────
 
-self.addEventListener('install', (event) => {
+sw.addEventListener('install', (event: ExtendableEvent) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS);
-    })
+    }),
   );
-  self.skipWaiting();
+  sw.skipWaiting();
 });
 
 // ─── Activate ────────────────────────────────────────────────
 
-self.addEventListener('activate', (event) => {
+sw.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME && name !== API_CACHE_NAME)
-          .map((name) => caches.delete(name))
+          .map((name) => caches.delete(name)),
       );
-    })
+    }),
   );
-  self.clients.claim();
+  sw.clients.claim();
 });
 
 // ─── Fetch ───────────────────────────────────────────────────
 
-self.addEventListener('fetch', (event) => {
+sw.addEventListener('fetch', (event: FetchEvent) => {
   const { request } = event;
   const url = new URL(request.url);
 
@@ -78,14 +102,18 @@ self.addEventListener('fetch', (event) => {
 
 // ─── Strategies ──────────────────────────────────────────────
 
-async function networkFirstWithCache(request, cacheName, ttl) {
+async function networkFirstWithCache(
+  request: Request,
+  cacheName: string,
+  ttl?: number,
+): Promise<Response> {
   try {
     const response = await fetch(request);
-    
+
     if (response.ok) {
       const cache = await caches.open(cacheName);
       const clonedResponse = response.clone();
-      
+
       if (ttl) {
         // Store with timestamp for TTL checking
         const headers = new Headers(clonedResponse.headers);
@@ -126,7 +154,7 @@ async function networkFirstWithCache(request, cacheName, ttl) {
   }
 }
 
-async function cacheFirstWithNetwork(request) {
+async function cacheFirstWithNetwork(request: Request): Promise<Response> {
   const cached = await caches.match(request);
   if (cached) return cached;
 
@@ -144,24 +172,39 @@ async function cacheFirstWithNetwork(request) {
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-function isStaticAsset(url) {
-  const extensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot'];
+function isStaticAsset(url: URL): boolean {
+  const extensions = [
+    '.js',
+    '.css',
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.svg',
+    '.ico',
+    '.woff',
+    '.woff2',
+    '.ttf',
+    '.eot',
+  ];
   return extensions.some((ext) => url.pathname.endsWith(ext));
 }
 
 // ─── Message Handling ────────────────────────────────────────
 
-self.addEventListener('message', (event) => {
+sw.addEventListener('message', (event: ExtendableMessageEvent) => {
   if (event.data === 'SKIP_WAITING') {
-    self.skipWaiting();
+    sw.skipWaiting();
   }
 
-  if (event.data?.type === 'CLEAR_CACHE') {
+  const data = event.data as { type?: string } | null;
+
+  if (data?.type === 'CLEAR_CACHE') {
     caches.delete(CACHE_NAME);
     caches.delete(API_CACHE_NAME);
   }
 
-  if (event.data?.type === 'CACHE_STATUS') {
+  if (data?.type === 'CACHE_STATUS') {
     event.ports[0]?.postMessage({
       cacheName: CACHE_NAME,
       apiCacheName: API_CACHE_NAME,

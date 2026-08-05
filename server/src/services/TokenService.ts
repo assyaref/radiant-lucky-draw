@@ -10,7 +10,6 @@ import { randomBytes, createHash } from 'crypto';
 import { env } from '../config';
 import type { Role } from '../auth';
 
-
 export interface AccessTokenPayload {
   userId: string;
   username: string;
@@ -59,7 +58,6 @@ export class TokenService {
   hashRefreshToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
   }
-
 
   /**
    * Sign a JWT refresh token (used for rotation validation).

@@ -14,7 +14,6 @@ import {
   HiOutlineArrowTrendingDown,
 } from 'react-icons/hi2';
 
-
 function StatCard({
   title,
   value,
@@ -57,7 +56,11 @@ function StatCard({
   );
 }
 
-function ActivityItem({ activity }: { activity: { type: string; message: string; timestamp: string; userName?: string } }) {
+function ActivityItem({
+  activity,
+}: {
+  activity: { type: string; message: string; timestamp: string; userName?: string };
+}) {
   const typeColors: Record<string, string> = {
     draw: 'bg-primary-500/20 text-primary-400',
     winner: 'bg-success-500/20 text-success-400',
@@ -69,7 +72,9 @@ function ActivityItem({ activity }: { activity: { type: string; message: string;
 
   return (
     <div className="flex items-start gap-3 px-4 py-3 border-b border-dark-border/50 last:border-0">
-      <span className={`mt-0.5 px-2 py-0.5 text-[10px] font-medium rounded-full ${typeColors[activity.type] || typeColors.system}`}>
+      <span
+        className={`mt-0.5 px-2 py-0.5 text-[10px] font-medium rounded-full ${typeColors[activity.type] || typeColors.system}`}
+      >
         {activity.type}
       </span>
       <div className="flex-1 min-w-0">
@@ -97,7 +102,9 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-sm text-dark-text-tertiary mt-1">Real-time overview of your lucky draw operations</p>
+          <p className="text-sm text-dark-text-tertiary mt-1">
+            Real-time overview of your lucky draw operations
+          </p>
         </div>
         <button
           onClick={refreshStats}
@@ -207,7 +214,9 @@ export default function DashboardPage() {
               className="flex items-center gap-3 px-4 py-3 rounded-lg bg-dark-surface-tertiary/50 hover:bg-dark-surface-tertiary transition-colors text-left"
             >
               <span className="text-xl">{action.icon}</span>
-              <span className="text-sm text-dark-text-secondary hover:text-white transition-colors">{action.label}</span>
+              <span className="text-sm text-dark-text-secondary hover:text-white transition-colors">
+                {action.label}
+              </span>
             </button>
           ))}
         </div>

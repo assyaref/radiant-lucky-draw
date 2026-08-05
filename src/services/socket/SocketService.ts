@@ -313,9 +313,7 @@ export class SocketService {
   onStatusChange(callback: (status: ConnectionStatus) => void): () => void {
     this.onStatusChangeCallbacks.push(callback);
     return () => {
-      this.onStatusChangeCallbacks = this.onStatusChangeCallbacks.filter(
-        (cb) => cb !== callback,
-      );
+      this.onStatusChangeCallbacks = this.onStatusChangeCallbacks.filter((cb) => cb !== callback);
     };
   }
 
@@ -425,7 +423,7 @@ export class SocketService {
         }
         // Small delay between flushes to avoid overwhelming the server
         await new Promise((resolve) => setTimeout(resolve, 50));
-      } catch (error) {
+      } catch {
         this.log(`[Socket] Failed to flush message: ${msg.event}`);
         this.messageQueue.push(msg);
       }

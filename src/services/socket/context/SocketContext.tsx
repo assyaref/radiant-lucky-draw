@@ -13,11 +13,7 @@
  */
 
 import { createContext, type ReactNode, useState, useEffect, useCallback, useRef } from 'react';
-import {
-  type SocketEventName,
-  type ConnectionStatus,
-  type ConnectionInfo,
-} from '../types';
+import { type SocketEventName, type ConnectionStatus, type ConnectionInfo } from '../types';
 import { SocketService, type SocketServiceConfig } from '../SocketService';
 
 // ─── Context Value ──────────────────────────────────────────────────────
@@ -142,11 +138,7 @@ export function SocketProvider({
   }, []);
 
   const emit = useCallback(
-    <T = unknown, R = unknown>(
-      event: SocketEventName,
-      payload: T,
-      ack?: (response: R) => void,
-    ) => {
+    <T = unknown, R = unknown>(event: SocketEventName, payload: T, ack?: (response: R) => void) => {
       serviceRef.current?.emit(event, payload, ack);
     },
     [],
@@ -164,7 +156,7 @@ export function SocketProvider({
   );
 
   const on = useCallback(
-    <T = unknown>(event: SocketEventName, callback: (payload: T) => void): (() => void) => {
+    <T = unknown,>(event: SocketEventName, callback: (payload: T) => void): (() => void) => {
       return serviceRef.current?.on(event, callback) ?? (() => {});
     },
     [],
@@ -189,9 +181,5 @@ export function SocketProvider({
     getService,
   };
 
-  return (
-    <SocketContext.Provider value={contextValue}>
-      {children}
-    </SocketContext.Provider>
-  );
+  return <SocketContext.Provider value={contextValue}>{children}</SocketContext.Provider>;
 }

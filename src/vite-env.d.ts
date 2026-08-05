@@ -11,7 +11,6 @@ interface ImportMetaEnv {
   readonly VITE_ENABLE_DEBUG: string;
 }
 
-
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }

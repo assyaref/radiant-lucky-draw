@@ -60,7 +60,14 @@ export class AuthService {
     if (!match) return 900;
     const value = parseInt(match[1], 10);
     const unit = match[2];
-    const seconds = unit === 's' ? value : unit === 'm' ? value * 60 : unit === 'h' ? value * 3600 : value * 86400;
+    const seconds =
+      unit === 's'
+        ? value
+        : unit === 'm'
+          ? value * 60
+          : unit === 'h'
+            ? value * 3600
+            : value * 86400;
     return seconds;
   }
 
@@ -128,7 +135,6 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string, ctx: RequestContext): Promise<RefreshResponse> {
-
     const session = await this.sessionService.validateRefreshToken(refreshToken);
     const user = await this.userRepository.findById(session.userId);
 

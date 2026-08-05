@@ -47,7 +47,6 @@ export class ParticipantController {
     }
   };
 
-
   update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await this.participantService.update(req.params.id, req.body);

@@ -21,16 +21,21 @@ export function OfflineBanner({
 
   const { pendingCount: pendingActions } = usePendingActions();
 
-  const isOffline = !isOnline || status === 'offline' || status === 'server-down' || status === 'socket-disconnected';
+  const isOffline =
+    !isOnline ||
+    status === 'offline' ||
+    status === 'server-down' ||
+    status === 'socket-disconnected';
 
   const getBannerInfo = () => {
     if (status === 'offline') {
       return {
         icon: '🔴',
         title: 'You are offline',
-        message: scenario === 'internet-lost'
-          ? 'Internet connection lost. Changes will be saved locally.'
-          : 'Connection lost. Working in offline mode.',
+        message:
+          scenario === 'internet-lost'
+            ? 'Internet connection lost. Changes will be saved locally.'
+            : 'Connection lost. Working in offline mode.',
         color: 'bg-red-500/10 border-red-500/30 text-red-400',
       };
     }
@@ -73,7 +78,9 @@ export function OfflineBanner({
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           className={`fixed top-0 left-0 right-0 z-[9999] ${className}`}
         >
-          <div className={`mx-auto max-w-7xl px-4 py-3 ${bannerInfo.color} border-b backdrop-blur-sm`}>
+          <div
+            className={`mx-auto max-w-7xl px-4 py-3 ${bannerInfo.color} border-b backdrop-blur-sm`}
+          >
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3 min-w-0">
                 <span className="text-lg flex-shrink-0">{bannerInfo.icon}</span>
@@ -92,14 +99,28 @@ export function OfflineBanner({
 
                 {reconnecting && (
                   <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                   </svg>
                 )}
 
                 {showSyncButton && isOffline && (
                   <button
-                    onClick={() => {/* Manual sync trigger */}}
+                    onClick={() => {
+                      /* Manual sync trigger */
+                    }}
                     className="text-xs px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
                   >
                     Retry Connection

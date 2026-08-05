@@ -220,8 +220,9 @@ class OfflineManager {
     this.emit(OFFLINE_EVENTS.RECONNECTING, this.state.reconnectAttempts);
 
     const delay = Math.min(
-      OFFLINE_CONFIG.reconnectDelay * Math.pow(OFFLINE_CONFIG.retryBackoff, this.state.reconnectAttempts - 1),
-      30000
+      OFFLINE_CONFIG.reconnectDelay *
+        Math.pow(OFFLINE_CONFIG.retryBackoff, this.state.reconnectAttempts - 1),
+      30000,
     );
 
     this.reconnectTimer = setTimeout(async () => {
@@ -278,7 +279,7 @@ class OfflineManager {
     type: PendingActionType,
     payload: unknown,
     priority: 'high' | 'normal' | 'low' = 'normal',
-    idempotencyKey?: string
+    idempotencyKey?: string,
   ): Promise<string> {
     const action: PendingAction = {
       id: `action_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -502,7 +503,7 @@ class OfflineManager {
       'register-participant': API_ENDPOINTS.PARTICIPANTS,
       'update-prize': API_ENDPOINTS.PRIZES,
       'update-queue': API_ENDPOINTS.QUEUE,
-      'announcement': API_ENDPOINTS.ANNOUNCEMENTS,
+      announcement: API_ENDPOINTS.ANNOUNCEMENTS,
       'sync-request': API_ENDPOINTS.SYNC,
       'bulk-register': `${API_ENDPOINTS.PARTICIPANTS}/bulk`,
       'draw-cancel': `${API_ENDPOINTS.DRAWS}/cancel`,
@@ -544,7 +545,7 @@ class OfflineManager {
   async resolveConflict(
     conflictId: string,
     resolution: 'local' | 'server' | 'merged',
-    mergedPayload?: unknown
+    mergedPayload?: unknown,
   ): Promise<void> {
     const item = await storageService.get<SyncQueueItem>('pending_actions', conflictId);
     if (!item) throw new Error(`Conflict ${conflictId} not found`);

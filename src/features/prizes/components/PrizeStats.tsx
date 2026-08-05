@@ -18,9 +18,8 @@ export function PrizeStats({ stats, loading }: PrizeStatsProps) {
 
   if (!stats) return null;
 
-  const winningPercentage = stats.totalStock > 0
-    ? ((stats.totalDailyWinners / stats.totalStock) * 100).toFixed(2)
-    : '0.00';
+  const winningPercentage =
+    stats.totalStock > 0 ? ((stats.totalDailyWinners / stats.totalStock) * 100).toFixed(2) : '0.00';
 
   const cards = [
     {
@@ -75,5 +74,3 @@ export function PrizeStats({ stats, loading }: PrizeStatsProps) {
     </div>
   );
 }
-
-

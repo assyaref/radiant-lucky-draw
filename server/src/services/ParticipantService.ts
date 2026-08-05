@@ -4,7 +4,11 @@
 
 import { ParticipantRepository, SettingsRepository, QueueRepository } from '../repositories';
 import { NotFoundError, ConflictError, ValidationError } from '../utils';
-import type { CreateParticipantRequest, UpdateParticipantRequest, ParticipantResponse } from '../dto';
+import type {
+  CreateParticipantRequest,
+  UpdateParticipantRequest,
+  ParticipantResponse,
+} from '../dto';
 
 const MAX_QUEUE_NUMBER = 300;
 

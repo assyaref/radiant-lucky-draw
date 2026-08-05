@@ -2,8 +2,8 @@ import { motion } from 'framer-motion';
 import { useRegistration } from './RegistrationContext';
 
 export function ConfirmationScreen() {
-  const { queueNumber, estimatedWait, currentQueue, status, goToStep, formData } = useRegistration();
-
+  const { queueNumber, estimatedWait, currentQueue, status, goToStep, formData } =
+    useRegistration();
 
   return (
     <motion.div
@@ -118,7 +118,6 @@ export function ConfirmationScreen() {
             <p className="text-lg font-black capitalize text-emerald-400">{status || 'Waiting'}</p>
           </div>
         </motion.div>
-
 
         {/* View Queue Button */}
         <motion.button

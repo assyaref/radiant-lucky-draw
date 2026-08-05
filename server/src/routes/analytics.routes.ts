@@ -16,7 +16,6 @@ export function createAnalyticsRoutes(
 
   router.use(authenticate);
 
-
   router.get('/dashboard', analyticsController.getDashboardStats);
   router.get('/draws', analyticsController.getDrawAnalytics);
 

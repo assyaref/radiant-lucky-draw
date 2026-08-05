@@ -39,25 +39,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const refreshPromise = useRef<Promise<void> | null>(null);
 
-  const restoreSession = useCallback(async () => {
-    try {
-      // On a fresh page load the in-memory access token is gone, so we
-      // restore the session via the refresh token cookie first, then
-      // fetch the current user.
-      await authApi.refresh();
-      const me = await authApi.getMe();
-      setUser(me);
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-
   useEffect(() => {
-    void restoreSession();
-  }, [restoreSession]);
+    let cancelled = false;
+    (async () => {
+      try {
+        // On a fresh page load the in-memory access token is gone, so we
+        // restore the session via the refresh token cookie first, then
+        // fetch the current user.
+        await authApi.refresh();
+        const me = await authApi.getMe();
+        if (!cancelled) setUser(me);
+      } catch {
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     const res = await authApi.login(credentials);
@@ -98,8 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const hasAnyPermission = useCallback(
-    (permissions: Permission[]) =>
-      permissions.some((p) => user?.permissions?.includes(p) ?? false),
+    (permissions: Permission[]) => permissions.some((p) => user?.permissions?.includes(p) ?? false),
     [user],
   );
 

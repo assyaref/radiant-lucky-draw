@@ -7,16 +7,16 @@ import { clamp } from '../utils/math';
 /**
  * Probability Engine for the Lucky Draw system.
  * Manages weighted probability distribution across prize tiers.
- * 
+ *
  * SOLID: Single Responsibility — handles all probability calculations.
- * 
+ *
  * Weight Distribution:
  * - Grand Prize:    0.5  (extremely rare)
  * - Very Rare:      1    (very rare)
  * - Rare:           3    (rare)
  * - Normal:         15   (common)
  * - Common:         80   (very common)
- * 
+ *
  * Total: 99.5 — statistically fair distribution.
  */
 export class ProbabilityEngine {

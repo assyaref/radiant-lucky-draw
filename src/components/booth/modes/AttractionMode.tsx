@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBooth } from './BoothContext';
 
@@ -43,8 +44,9 @@ const ATTRACTIONS = [
 export function AttractionMode() {
   const { mode } = useBooth();
 
-  // Pick random attraction
-  const attraction = ATTRACTIONS[Math.floor(Math.random() * ATTRACTIONS.length)];
+  // Pick random attraction once per mount using lazy state initialization
+  // (React 19 recommended pattern for impure values like Math.random).
+  const [attraction] = useState(() => ATTRACTIONS[Math.floor(Math.random() * ATTRACTIONS.length)]);
 
   return (
     <AnimatePresence>

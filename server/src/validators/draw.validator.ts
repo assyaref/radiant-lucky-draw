@@ -19,5 +19,3 @@ export const updateDrawStatusSchema = z.object({
     // client. Winner selection is performed exclusively on the server side.
   }),
 });
-
-

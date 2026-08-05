@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ParticleEngine,
@@ -23,7 +23,6 @@ import {
   ScreenAttractMode,
   WinnerPreview,
   StatusBar,
-
   WinnerWall,
   SponsorCarousel,
   BoothProvider,
@@ -44,18 +43,21 @@ import {
 import { useBoothAudio } from '@components/booth/audio/useBoothAudio';
 
 function BoothContent() {
-  const [mounted, setMounted] = useState(false);
+  // Returns false during SSR and true on the client to avoid hydration mismatches.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const { recordInteraction, mode } = useBooth();
   // Connect audio system to booth lifecycle events (SFX + voice lines)
   useBoothAudio();
-
 
   const handleInteraction = useCallback(() => {
     recordInteraction();
   }, [recordInteraction]);
 
   useEffect(() => {
-    setMounted(true);
     // Record initial interaction
     const timer = setTimeout(() => recordInteraction(), 100);
     return () => clearTimeout(timer);
@@ -73,7 +75,12 @@ function BoothContent() {
     };
   }, [handleInteraction]);
 
-  const isOverlayMode = mode === 'welcome' || mode === 'attraction' || mode === 'celebration' || mode === 'digital' || mode === 'emergency';
+  const isOverlayMode =
+    mode === 'welcome' ||
+    mode === 'attraction' ||
+    mode === 'celebration' ||
+    mode === 'digital' ||
+    mode === 'emergency';
 
   return (
     <AnimatePresence>
@@ -101,7 +108,9 @@ function BoothContent() {
           {/* ---- Camera Controller wraps main content for cinematic parallax ---- */}
           <CameraController className="absolute inset-0 z-[5]">
             {/* ---- Main Content (wrapped in TV Safe Area to prevent edge clipping) ---- */}
-            <SafeArea className={`relative z-10 flex flex-1 flex-col transition-opacity duration-500 ${isOverlayMode ? 'opacity-30' : 'opacity-100'}`}>
+            <SafeArea
+              className={`relative z-10 flex flex-1 flex-col transition-opacity duration-500 ${isOverlayMode ? 'opacity-30' : 'opacity-100'}`}
+            >
               {/* Top Bar: Logo + Status Bar + Audio Controls + Clock */}
               <motion.header
                 className="flex items-center justify-between"
@@ -113,7 +122,10 @@ function BoothContent() {
                 <div className="flex items-center gap-3">
                   <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
                     <circle cx="24" cy="24" r="22" stroke="url(#logoGrad)" strokeWidth="3" />
-                    <path d="M24 8 L28 18 L38 18 L30 24 L33 34 L24 28 L15 34 L18 24 L10 18 L20 18 Z" fill="url(#logoGrad)" />
+                    <path
+                      d="M24 8 L28 18 L38 18 L30 24 L33 34 L24 28 L15 34 L18 24 L10 18 L20 18 Z"
+                      fill="url(#logoGrad)"
+                    />
                     <defs>
                       <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="48">
                         <stop stopColor="#fbbf24" />
@@ -182,8 +194,6 @@ function BoothContent() {
                   </div>
                 </motion.div>
 
-
-
                 {/* ===== RIGHT PANEL: Live Widgets ===== */}
                 <motion.div
                   className="flex flex-col justify-center gap-4 overflow-hidden"
@@ -197,7 +207,6 @@ function BoothContent() {
                   <LiveStatistics />
                   <LiveActivityFeed />
                 </motion.div>
-
               </div>
             </SafeArea>
           </CameraController>
@@ -211,7 +220,6 @@ function BoothContent() {
 
           {/* ---- Idle Winner Preview (demo winner every 30s) ---- */}
           <WinnerPreview />
-
 
           {/* Bottom: Sponsor Carousel */}
           <div className="relative z-10 border-t border-white/5 bg-dark-surface/60 backdrop-blur-sm">

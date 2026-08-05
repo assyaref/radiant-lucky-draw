@@ -17,9 +17,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 // from the correct values (APP_URL in production, localhost in development).
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const serverUrl =
-  process.env.APP_URL ??
-  `http://localhost:${process.env.PORT || 3001}`;
+const serverUrl = process.env.APP_URL ?? `http://localhost:${process.env.PORT || 3001}`;
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -36,9 +34,7 @@ const options: swaggerJsdoc.Options = {
       {
         url: serverUrl,
         description:
-          process.env.NODE_ENV === 'production'
-            ? 'Production Server'
-            : 'Development Server',
+          process.env.NODE_ENV === 'production' ? 'Production Server' : 'Development Server',
       },
     ],
 

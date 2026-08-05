@@ -23,7 +23,6 @@ export type {
   OfflineConfig,
 } from './types';
 
-
 // Config
 export { OFFLINE_CONFIG, DB_SCHEMA, CACHE_KEYS, OFFLINE_EVENTS } from './config';
 

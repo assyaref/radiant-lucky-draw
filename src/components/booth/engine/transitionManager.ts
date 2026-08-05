@@ -41,7 +41,6 @@ export const TRANSITION_VARIANTS: Record<TransitionType, TransitionVariants> = {
   },
 };
 
-
 /** Shared easing curve for cinematic transitions */
 export const CINEMATIC_EASE = [0.16, 1, 0.3, 1] as const;
 

@@ -43,7 +43,6 @@ async function main() {
   // Attach Socket.IO realtime layer to the HTTP server
   realtimeService.attach(server);
 
-
   // ─── Graceful Shutdown ─────────────────────────────────
 
   const shutdown = async (signal: string) => {

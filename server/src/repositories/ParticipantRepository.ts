@@ -66,9 +66,7 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
     const records = await this.model.findMany({
       where: { deletedAt: null },
     });
-    const match = records.find(
-      (r: any) => (r.phone ?? '').replace(/[\s()-]/g, '') === normalized,
-    );
+    const match = records.find((r: any) => (r.phone ?? '').replace(/[\s()-]/g, '') === normalized);
     return match ? this.toEntity(match) : null;
   }
 

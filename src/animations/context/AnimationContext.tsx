@@ -117,9 +117,5 @@ export function AnimationProvider({
     hasStatePassed: anim.hasStatePassed,
   };
 
-  return (
-    <AnimationContext.Provider value={contextValue}>
-      {children}
-    </AnimationContext.Provider>
-  );
+  return <AnimationContext.Provider value={contextValue}>{children}</AnimationContext.Provider>;
 }

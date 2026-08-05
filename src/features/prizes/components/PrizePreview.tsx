@@ -25,8 +25,18 @@ const TIER_GRADIENTS: Record<PrizeTier, string> = {
 
 export function PrizePreview({ prize, compact = false }: PrizePreviewProps) {
   const stockStatus = prize.stock === 0 ? 'out' : prize.stock <= 10 ? 'low' : 'in';
-  const stockColor = stockStatus === 'out' ? 'text-red-400' : stockStatus === 'low' ? 'text-amber-400' : 'text-emerald-400';
-  const stockBarColor = stockStatus === 'out' ? 'bg-red-500' : stockStatus === 'low' ? 'bg-amber-500' : 'bg-emerald-500';
+  const stockColor =
+    stockStatus === 'out'
+      ? 'text-red-400'
+      : stockStatus === 'low'
+        ? 'text-amber-400'
+        : 'text-emerald-400';
+  const stockBarColor =
+    stockStatus === 'out'
+      ? 'bg-red-500'
+      : stockStatus === 'low'
+        ? 'bg-amber-500'
+        : 'bg-emerald-500';
 
   if (compact) {
     return (
@@ -49,7 +59,9 @@ export function PrizePreview({ prize, compact = false }: PrizePreviewProps) {
             <span>Weight: {prize.weight}</span>
           </div>
         </div>
-        <div className={`w-2 h-2 rounded-full ${prize.enabled ? 'bg-emerald-400' : 'bg-red-400'}`} />
+        <div
+          className={`w-2 h-2 rounded-full ${prize.enabled ? 'bg-emerald-400' : 'bg-red-400'}`}
+        />
       </div>
     );
   }
@@ -57,11 +69,21 @@ export function PrizePreview({ prize, compact = false }: PrizePreviewProps) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0">
       {/* Header gradient */}
-      <div className={`h-24 relative bg-gradient-to-br ${TIER_GRADIENTS[prize.tier]}`} style={{ background: `linear-gradient(135deg, ${prize.color}40, ${prize.color}10)` }}>
+      <div
+        className={`h-24 relative bg-gradient-to-br ${TIER_GRADIENTS[prize.tier]}`}
+        style={{ background: `linear-gradient(135deg, ${prize.color}40, ${prize.color}10)` }}
+      >
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-2xl overflow-hidden" style={{ backgroundColor: prize.color, boxShadow: `0 0 40px ${prize.color}60` }}>
+          <div
+            className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-2xl overflow-hidden"
+            style={{ backgroundColor: prize.color, boxShadow: `0 0 40px ${prize.color}60` }}
+          >
             {prize.image ? (
-              <img src={prize.image} alt={prize.name} className="w-full h-full object-cover rounded-2xl" />
+              <img
+                src={prize.image}
+                alt={prize.name}
+                className="w-full h-full object-cover rounded-2xl"
+              />
             ) : (
               <span>🏆</span>
             )}
@@ -77,7 +99,10 @@ export function PrizePreview({ prize, compact = false }: PrizePreviewProps) {
         )}
 
         <div className="flex items-center justify-center gap-3 mb-4">
-          <span className="text-xs px-3 py-1 rounded-full font-medium" style={{ backgroundColor: `${prize.color}30`, color: prize.color }}>
+          <span
+            className="text-xs px-3 py-1 rounded-full font-medium"
+            style={{ backgroundColor: `${prize.color}30`, color: prize.color }}
+          >
             {TIER_LABELS[prize.tier]}
           </span>
           <span className="text-xs text-white/40">
@@ -111,7 +136,9 @@ export function PrizePreview({ prize, compact = false }: PrizePreviewProps) {
 
         {/* Status */}
         <div className="mt-3 flex items-center justify-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${prize.enabled ? 'bg-emerald-400' : 'bg-red-400'}`} />
+          <div
+            className={`w-2 h-2 rounded-full ${prize.enabled ? 'bg-emerald-400' : 'bg-red-400'}`}
+          />
           <span className="text-xs text-white/50">{prize.enabled ? 'Active' : 'Disabled'}</span>
           <span className="text-xs text-white/30 mx-1">|</span>
           <span className="text-xs text-white/50">Order #{prize.displayOrder}</span>
@@ -120,5 +147,3 @@ export function PrizePreview({ prize, compact = false }: PrizePreviewProps) {
     </div>
   );
 }
-
-

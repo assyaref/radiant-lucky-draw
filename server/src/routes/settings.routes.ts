@@ -17,7 +17,6 @@ export function createSettingsRoutes(
 
   router.use(authenticate);
 
-
   router.get('/', settingsController.get);
   router.put('/', validate({ body: updateSettingsSchema.shape.body }), settingsController.update);
 

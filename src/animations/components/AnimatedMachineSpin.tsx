@@ -26,7 +26,9 @@ export function AnimatedMachineSpin({
   const spinDuration = (duration / 1000) * config.speedMultiplier;
 
   return (
-    <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}>
+    <div
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}
+    >
       {/* Outer rotating ring */}
       <motion.div
         className="absolute h-80 w-80 rounded-full border-2 border-amber-400/20"
@@ -103,11 +105,7 @@ export function AnimatedMachineSpin({
           animate={
             phase === 'active'
               ? {
-                  filter: [
-                    'brightness(1)',
-                    'brightness(1.5)',
-                    'brightness(1)',
-                  ],
+                  filter: ['brightness(1)', 'brightness(1.5)', 'brightness(1)'],
                 }
               : undefined
           }
@@ -125,7 +123,11 @@ export function AnimatedMachineSpin({
       <motion.div
         className="absolute h-96 w-96 rounded-full"
         animate={{
-          opacity: [0.1 * config.glowIntensity, 0.3 * config.glowIntensity, 0.1 * config.glowIntensity],
+          opacity: [
+            0.1 * config.glowIntensity,
+            0.3 * config.glowIntensity,
+            0.1 * config.glowIntensity,
+          ],
           scale: [1, 1.1, 1],
         }}
         transition={{

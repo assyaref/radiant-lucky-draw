@@ -58,8 +58,18 @@ interface QueueStateShape {
   // Actions
   syncState: (state: QueueState) => void;
   fetchState: () => Promise<void>;
-  addParticipant: (data: { fullName: string; phone: string; company: string; email: string }) => Promise<string>;
-  addPriority: (data: { fullName: string; phone: string; company: string; email: string }) => Promise<string>;
+  addParticipant: (data: {
+    fullName: string;
+    phone: string;
+    company: string;
+    email: string;
+  }) => Promise<string>;
+  addPriority: (data: {
+    fullName: string;
+    phone: string;
+    company: string;
+    email: string;
+  }) => Promise<string>;
   nextQueue: () => Promise<void>;
   cancelQueue: (id: string) => Promise<void>;
   skipQueue: (id: string) => Promise<void>;
@@ -140,9 +150,7 @@ export const useQueueStore = create<QueueStateShape>((set, get) => ({
   },
 
   get cancelledQueue() {
-    return get().items.filter(
-      (item) => item.status === 'cancelled' || item.status === 'skipped',
-    );
+    return get().items.filter((item) => item.status === 'cancelled' || item.status === 'skipped');
   },
 
   /** Replace the cache with the authoritative backend state */
@@ -156,9 +164,8 @@ export const useQueueStore = create<QueueStateShape>((set, get) => ({
       estimatedWait: state.estimatedWait,
       totalWaiting: state.totalWaiting,
       totalFinished: items.filter((i) => i.status === 'finished').length,
-      totalCancelled: items.filter(
-        (i) => i.status === 'cancelled' || i.status === 'skipped',
-      ).length,
+      totalCancelled: items.filter((i) => i.status === 'cancelled' || i.status === 'skipped')
+        .length,
       lastCalled: state.lastCalled,
       isSynced: true,
       isSyncing: false,

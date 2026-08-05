@@ -66,7 +66,11 @@ export const IdleSceneOverlay = memo(function IdleSceneOverlay() {
                   ? 'w-6 bg-amber-400/60'
                   : 'w-1.5 bg-white/20'
               }`}
-              animate={i === IDLE_SCENES.findIndex((x) => x.id === idleScene) ? { opacity: [0.5, 1, 0.5] } : {}}
+              animate={
+                i === IDLE_SCENES.findIndex((x) => x.id === idleScene)
+                  ? { opacity: [0.5, 1, 0.5] }
+                  : {}
+              }
               transition={{ repeat: Infinity, duration: 2 }}
             />
           ))}

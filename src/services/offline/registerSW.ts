@@ -68,7 +68,6 @@ export async function getSWRegistration(): Promise<ServiceWorkerRegistration | n
   if (!('serviceWorker' in navigator)) return null;
   const registration = await navigator.serviceWorker.getRegistration();
   return registration ?? null;
-
 }
 
 export async function updateServiceWorker(): Promise<void> {

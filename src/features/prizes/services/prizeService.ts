@@ -1,13 +1,19 @@
 import type { Prize, PrizeCreateParams } from '@/engine/types/prize';
-import type { PrizeFilterOptions, PrizeStats, BulkUpdatePayload, CSVImportResult, CSVExportRow } from '../types';
+import type {
+  PrizeFilterOptions,
+  PrizeStats,
+  BulkUpdatePayload,
+  CSVImportResult,
+  CSVExportRow,
+} from '../types';
 import { mockPrizeRepository } from '../repository/mockPrizeRepository';
 
 /**
  * Prize Service Layer.
- * 
+ *
  * Abstraction over the repository. Currently uses mock data.
  * Ready for future API integration — swap the repository import.
- * 
+ *
  * Provides:
  * - Data transformation
  * - Error handling
@@ -22,7 +28,7 @@ class PrizeService {
       return await mockPrizeRepository.getAll(filters);
     } catch (error) {
       console.error('[PrizeService] Error fetching prizes:', error);
-      throw new Error('Failed to fetch prizes');
+      throw new Error('Failed to fetch prizes', { cause: error });
     }
   }
 
@@ -34,7 +40,7 @@ class PrizeService {
       return await mockPrizeRepository.getById(id);
     } catch (error) {
       console.error(`[PrizeService] Error fetching prize ${id}:`, error);
-      throw new Error('Failed to fetch prize');
+      throw new Error('Failed to fetch prize', { cause: error });
     }
   }
 
@@ -46,7 +52,7 @@ class PrizeService {
       return await mockPrizeRepository.create(params);
     } catch (error) {
       console.error('[PrizeService] Error creating prize:', error);
-      throw new Error('Failed to create prize');
+      throw new Error('Failed to create prize', { cause: error });
     }
   }
 
@@ -58,7 +64,7 @@ class PrizeService {
       return await mockPrizeRepository.update(id, updates);
     } catch (error) {
       console.error(`[PrizeService] Error updating prize ${id}:`, error);
-      throw new Error('Failed to update prize');
+      throw new Error('Failed to update prize', { cause: error });
     }
   }
 
@@ -70,7 +76,7 @@ class PrizeService {
       return await mockPrizeRepository.delete(id);
     } catch (error) {
       console.error(`[PrizeService] Error deleting prize ${id}:`, error);
-      throw new Error('Failed to delete prize');
+      throw new Error('Failed to delete prize', { cause: error });
     }
   }
 
@@ -82,7 +88,7 @@ class PrizeService {
       return await mockPrizeRepository.duplicate(id);
     } catch (error) {
       console.error(`[PrizeService] Error duplicating prize ${id}:`, error);
-      throw new Error('Failed to duplicate prize');
+      throw new Error('Failed to duplicate prize', { cause: error });
     }
   }
 
@@ -94,7 +100,7 @@ class PrizeService {
       return await mockPrizeRepository.toggleEnabled(id);
     } catch (error) {
       console.error(`[PrizeService] Error toggling prize ${id}:`, error);
-      throw new Error('Failed to toggle prize status');
+      throw new Error('Failed to toggle prize status', { cause: error });
     }
   }
 
@@ -106,7 +112,7 @@ class PrizeService {
       return await mockPrizeRepository.bulkUpdate(payload);
     } catch (error) {
       console.error('[PrizeService] Error in bulk update:', error);
-      throw new Error('Failed to bulk update prizes');
+      throw new Error('Failed to bulk update prizes', { cause: error });
     }
   }
 
@@ -118,7 +124,7 @@ class PrizeService {
       return await mockPrizeRepository.reorder(orderedIds);
     } catch (error) {
       console.error('[PrizeService] Error reordering prizes:', error);
-      throw new Error('Failed to reorder prizes');
+      throw new Error('Failed to reorder prizes', { cause: error });
     }
   }
 
@@ -130,7 +136,7 @@ class PrizeService {
       return await mockPrizeRepository.getStats();
     } catch (error) {
       console.error('[PrizeService] Error fetching stats:', error);
-      throw new Error('Failed to fetch prize statistics');
+      throw new Error('Failed to fetch prize statistics', { cause: error });
     }
   }
 
@@ -143,7 +149,7 @@ class PrizeService {
       return this.convertToCSV(rows);
     } catch (error) {
       console.error('[PrizeService] Error exporting CSV:', error);
-      throw new Error('Failed to export CSV');
+      throw new Error('Failed to export CSV', { cause: error });
     }
   }
 
@@ -156,7 +162,7 @@ class PrizeService {
       return await mockPrizeRepository.importCSV(rows);
     } catch (error) {
       console.error('[PrizeService] Error importing CSV:', error);
-      throw new Error('Failed to import CSV');
+      throw new Error('Failed to import CSV', { cause: error });
     }
   }
 
@@ -164,7 +170,18 @@ class PrizeService {
    * Convert CSV export rows to CSV string.
    */
   private convertToCSV(rows: CSVExportRow[]): string {
-    const headers = ['id', 'name', 'description', 'tier', 'color', 'weight', 'stock', 'maxDailyWinner', 'enabled', 'displayOrder'];
+    const headers = [
+      'id',
+      'name',
+      'description',
+      'tier',
+      'color',
+      'weight',
+      'stock',
+      'maxDailyWinner',
+      'enabled',
+      'displayOrder',
+    ];
     const lines = [headers.join(',')];
 
     for (const row of rows) {

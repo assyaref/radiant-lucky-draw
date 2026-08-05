@@ -14,13 +14,7 @@ export type EngineState =
 
 /** Idle scene identifiers */
 export type IdleScene =
-  | 'hero'
-  | 'prizeShowcase'
-  | 'sponsors'
-  | 'companyProfile'
-  | 'csr'
-  | 'products'
-  | 'recruitment';
+  'hero' | 'prizeShowcase' | 'sponsors' | 'companyProfile' | 'csr' | 'products' | 'recruitment';
 
 /** Demo draw sub-steps */
 export type DemoStep = 'countdown' | 'machineSpin' | 'winner' | 'celebration';

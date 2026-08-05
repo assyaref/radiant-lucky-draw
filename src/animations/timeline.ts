@@ -389,7 +389,9 @@ export class TimelineEngine {
     // Fire events that fall within this tick
     if (entry.events) {
       for (const event of entry.events) {
-        const adjustedTimestamp = Math.round(event.timestamp * CELEBRATION_CONFIGS[this.celebrationLevel].speedMultiplier);
+        const adjustedTimestamp = Math.round(
+          event.timestamp * CELEBRATION_CONFIGS[this.celebrationLevel].speedMultiplier,
+        );
         if (previousElapsed < adjustedTimestamp && this.stateElapsed >= adjustedTimestamp) {
           this.onEvent?.(event);
         }

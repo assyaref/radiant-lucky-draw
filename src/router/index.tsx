@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, type RouteObject } from 'react-router-dom';
 import { ProtectedRoute } from '@features/auth';
 
-
 function LazyPage({ Component }: { Component: React.LazyExoticComponent<React.ComponentType> }) {
   return (
     <Suspense fallback={<div className="flex-center min-h-screen">Loading...</div>}>
@@ -46,13 +45,14 @@ const routes: RouteObject[] = [
     path: '/operator',
     element: (
       <ProtectedRoute>
-        <Suspense fallback={<div className="flex-center min-h-screen bg-dark-surface">Loading...</div>}>
+        <Suspense
+          fallback={<div className="flex-center min-h-screen bg-dark-surface">Loading...</div>}
+        >
           <AdminLayout />
         </Suspense>
       </ProtectedRoute>
     ),
     children: [
-
       { index: true, element: <LazyPage Component={OperatorDashboard} /> },
       { path: 'participants', element: <LazyPage Component={OperatorParticipants} /> },
       { path: 'queue', element: <LazyPage Component={OperatorQueue} /> },

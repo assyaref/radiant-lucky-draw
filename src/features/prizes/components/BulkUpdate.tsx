@@ -42,7 +42,10 @@ export function BulkUpdate({ selectedIds, onApply, onCancel }: BulkUpdateProps) 
         <h3 className="text-sm font-semibold text-white">
           Bulk Update — {selectedIds.length} prize{selectedIds.length !== 1 ? 's' : ''} selected
         </h3>
-        <button onClick={onCancel} className="text-xs text-white/40 hover:text-white transition-colors">
+        <button
+          onClick={onCancel}
+          className="text-xs text-white/40 hover:text-white transition-colors"
+        >
           Deselect All
         </button>
       </div>
@@ -56,12 +59,24 @@ export function BulkUpdate({ selectedIds, onApply, onCancel }: BulkUpdateProps) 
             onChange={(e) => setTier(e.target.value)}
             className="w-full px-2 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="" className="bg-gray-800">No change</option>
-            <option value={PrizeTier.GRAND} className="bg-gray-800">Grand</option>
-            <option value={PrizeTier.VERY_RARE} className="bg-gray-800">Very Rare</option>
-            <option value={PrizeTier.RARE} className="bg-gray-800">Rare</option>
-            <option value={PrizeTier.NORMAL} className="bg-gray-800">Normal</option>
-            <option value={PrizeTier.COMMON} className="bg-gray-800">Common</option>
+            <option value="" className="bg-gray-800">
+              No change
+            </option>
+            <option value={PrizeTier.GRAND} className="bg-gray-800">
+              Grand
+            </option>
+            <option value={PrizeTier.VERY_RARE} className="bg-gray-800">
+              Very Rare
+            </option>
+            <option value={PrizeTier.RARE} className="bg-gray-800">
+              Rare
+            </option>
+            <option value={PrizeTier.NORMAL} className="bg-gray-800">
+              Normal
+            </option>
+            <option value={PrizeTier.COMMON} className="bg-gray-800">
+              Common
+            </option>
           </select>
         </div>
 
@@ -87,9 +102,15 @@ export function BulkUpdate({ selectedIds, onApply, onCancel }: BulkUpdateProps) 
             onChange={(e) => setEnabled(e.target.value)}
             className="w-full px-2 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <option value="" className="bg-gray-800">No change</option>
-            <option value="true" className="bg-gray-800">Enable</option>
-            <option value="false" className="bg-gray-800">Disable</option>
+            <option value="" className="bg-gray-800">
+              No change
+            </option>
+            <option value="true" className="bg-gray-800">
+              Enable
+            </option>
+            <option value="false" className="bg-gray-800">
+              Disable
+            </option>
           </select>
         </div>
 
@@ -125,7 +146,9 @@ export function BulkUpdate({ selectedIds, onApply, onCancel }: BulkUpdateProps) 
           disabled={!hasChanges || applying}
           className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {applying ? 'Applying...' : `Apply to ${selectedIds.length} prize${selectedIds.length !== 1 ? 's' : ''}`}
+          {applying
+            ? 'Applying...'
+            : `Apply to ${selectedIds.length} prize${selectedIds.length !== 1 ? 's' : ''}`}
         </button>
       </div>
     </div>

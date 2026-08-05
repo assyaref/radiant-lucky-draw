@@ -48,8 +48,6 @@ export const DRAW_EVENTS = {
 
 export type DrawEventName = (typeof DRAW_EVENTS)[keyof typeof DRAW_EVENTS];
 
-
-
 // ─── Payload Types ──────────────────────────────────────────────────────
 
 export interface QueueEntryPayload {
@@ -118,7 +116,6 @@ export interface DrawCompletedPayload {
   drawCount: number;
   timestamp: string;
 }
-
 
 // ─── RealtimeService ────────────────────────────────────────────────────
 
@@ -209,5 +206,3 @@ export class RealtimeService {
     return this.io;
   }
 }
-
-

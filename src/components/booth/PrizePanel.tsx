@@ -2,8 +2,6 @@ import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { AnimatedCounter, glowLoop } from '@animations/index';
 
-
-
 interface PrizeCardProps {
   icon: string;
   name: string;
@@ -13,7 +11,14 @@ interface PrizeCardProps {
   index: number;
 }
 
-const PrizeCard = memo(function PrizeCard({ icon, name, stock, tier, isGrand, index }: PrizeCardProps) {
+const PrizeCard = memo(function PrizeCard({
+  icon,
+  name,
+  stock,
+  tier,
+  isGrand,
+  index,
+}: PrizeCardProps) {
   return (
     <motion.div
       className={`group relative overflow-hidden rounded-2xl border backdrop-blur-md transition-all duration-500 ${
@@ -54,7 +59,6 @@ const PrizeCard = memo(function PrizeCard({ icon, name, stock, tier, isGrand, in
         transition={isGrand ? { repeat: Infinity, duration: 2, ease: 'easeInOut' } : {}}
       />
 
-
       {/* Grand prize shining effect - every 8 seconds */}
       {isGrand && (
         <motion.div
@@ -86,7 +90,6 @@ const PrizeCard = memo(function PrizeCard({ icon, name, stock, tier, isGrand, in
           transition={{ repeat: Infinity, duration: 8, ease: 'easeInOut' }}
         />
       )}
-
 
       <div className="relative z-10 p-3.5">
         {/* Icon + Image showcase */}
@@ -135,27 +138,23 @@ const PrizeCard = memo(function PrizeCard({ icon, name, stock, tier, isGrand, in
           </div>
         </div>
 
-
         {/* Stock indicator */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <motion.div
-              className={`h-2 w-2 rounded-full ${
-                stock > 0 ? 'bg-green-400' : 'bg-red-400'
-              }`}
+              className={`h-2 w-2 rounded-full ${stock > 0 ? 'bg-green-400' : 'bg-red-400'}`}
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
             />
-            <span className={`font-mono text-sm ${isGrand ? 'text-amber-300/80' : 'text-white/50'}`}>
+            <span
+              className={`font-mono text-sm ${isGrand ? 'text-amber-300/80' : 'text-white/50'}`}
+            >
               <AnimatedCounter value={stock} duration={0.8} pulseOnChange /> remaining
             </span>
-
           </div>
           <motion.div
             className={`rounded-full px-3 py-1 text-xs font-bold tracking-wider ${
-              isGrand
-                ? 'bg-amber-400/20 text-amber-300'
-                : 'bg-blue-400/10 text-blue-300/70'
+              isGrand ? 'bg-amber-400/20 text-amber-300' : 'bg-blue-400/10 text-blue-300/70'
             }`}
             whileHover={{ scale: 1.05 }}
           >

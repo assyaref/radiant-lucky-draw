@@ -8,20 +8,18 @@
 // ─── Validation ────────────────────────────────────────────
 
 function validateEnv(): void {
-  const required: string[] = [
-    'VITE_API_BASE_URL',
-  ];
+  const required: string[] = ['VITE_API_BASE_URL'];
 
   const missing = required.filter((key) => !import.meta.env[key]);
 
   if (missing.length > 0) {
     if (import.meta.env.PROD) {
       console.error(
-        `[Env Validation] Missing required environment variables:\n  ${missing.join('\n  ')}`
+        `[Env Validation] Missing required environment variables:\n  ${missing.join('\n  ')}`,
       );
     } else {
       console.warn(
-        `[Env Validation] Missing environment variables (using defaults):\n  ${missing.join('\n  ')}`
+        `[Env Validation] Missing environment variables (using defaults):\n  ${missing.join('\n  ')}`,
       );
     }
   }
@@ -36,14 +34,12 @@ export const env = {
   // Public URL (used for QR registration link)
   PUBLIC_URL: import.meta.env.VITE_PUBLIC_URL || 'http://localhost:5173',
 
-
   // API
   API_BASE_URL: import.meta.env.VITE_API_BASE_URL || '/api',
   API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000', 10),
 
   // Realtime (Socket.IO)
   SOCKET_URL: import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001',
-
 
   // Features
   ENABLE_MOCK: import.meta.env.VITE_ENABLE_MOCK === 'true',

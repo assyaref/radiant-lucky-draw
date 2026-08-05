@@ -5,7 +5,6 @@
 import { DB_SCHEMA, OFFLINE_CONFIG } from '../config';
 import type { CacheEntry, StorageQuotaInfo, DataIntegrityReport, CacheStats } from '../types';
 
-
 class StorageService {
   private db: IDBDatabase | null = null;
   private ready: Promise<void>;
@@ -58,7 +57,12 @@ class StorageService {
         // Store migration metadata
         if (!db.objectStoreNames.contains('_metadata')) {
           const metaStore = db.createObjectStore('_metadata', { keyPath: 'key' });
-          metaStore.put({ key: 'migration', fromVersion: oldVersion, toVersion: DB_SCHEMA.version, timestamp: Date.now() });
+          metaStore.put({
+            key: 'migration',
+            fromVersion: oldVersion,
+            toVersion: DB_SCHEMA.version,
+            timestamp: Date.now(),
+          });
           metaStore.put({ key: 'schema_version', value: DB_SCHEMA.version });
         }
       };
@@ -79,7 +83,9 @@ class StorageService {
       const currentVersion = meta?.value ?? 0;
 
       if (currentVersion < DB_SCHEMA.version) {
-        console.log(`[StorageService] Running migrations from v${currentVersion} to v${DB_SCHEMA.version}`);
+        console.log(
+          `[StorageService] Running migrations from v${currentVersion} to v${DB_SCHEMA.version}`,
+        );
         await this.set('_metadata', { key: 'schema_version', value: DB_SCHEMA.version });
       }
     } catch {
@@ -99,7 +105,11 @@ class StorageService {
     return this.db;
   }
 
-  private getStore(db: IDBDatabase, storeName: string, mode: IDBTransactionMode = 'readonly'): IDBObjectStore {
+  private getStore(
+    db: IDBDatabase,
+    storeName: string,
+    mode: IDBTransactionMode = 'readonly',
+  ): IDBObjectStore {
     const transaction = db.transaction(storeName, mode);
     return transaction.objectStore(storeName);
   }
@@ -447,7 +457,7 @@ class StorageService {
       const items = await this.getAll<Record<string, unknown>>(store.name);
       let corrupted = 0;
       let expired = 0;
-      let orphaned = 0;
+      const orphaned = 0;
 
       for (const item of items) {
         // Check for corrupted entries (missing keyPath)
@@ -519,7 +529,11 @@ class StorageService {
 
   // ─── Database Info ─────────────────────────────────────────
 
-  async getDatabaseInfo(): Promise<{ name: string; version: number; stores: Record<string, number> }> {
+  async getDatabaseInfo(): Promise<{
+    name: string;
+    version: number;
+    stores: Record<string, number>;
+  }> {
     const info: Record<string, number> = {};
 
     for (const store of DB_SCHEMA.stores) {

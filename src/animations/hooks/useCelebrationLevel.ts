@@ -43,10 +43,7 @@ export function useCelebrationLevel(): UseCelebrationLevelReturn {
     );
   }
 
-  const config = useMemo(
-    () => CELEBRATION_CONFIGS[ctx.celebrationLevel],
-    [ctx.celebrationLevel],
-  );
+  const config = useMemo(() => CELEBRATION_CONFIGS[ctx.celebrationLevel], [ctx.celebrationLevel]);
 
   return {
     level: ctx.celebrationLevel,

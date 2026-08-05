@@ -12,14 +12,21 @@ interface UseSyncManagerReturn {
   isSyncing: boolean;
   lastSyncAt: number | null;
   syncErrors: string[];
-  syncNow: (triggeredBy?: 'auto' | 'manual' | 'reconnect' | 'background' | 'periodic') => Promise<SyncResult>;
+  syncNow: (
+    triggeredBy?: 'auto' | 'manual' | 'reconnect' | 'background' | 'periodic',
+  ) => Promise<SyncResult>;
   queueAction: (
     type: PendingActionType,
     payload: unknown,
     priority?: 'high' | 'normal' | 'low',
-    idempotencyKey?: string
+    idempotencyKey?: string,
   ) => Promise<string>;
-  getQueueStatus: () => Promise<{ pending: number; failed: number; completed: number; total: number }>;
+  getQueueStatus: () => Promise<{
+    pending: number;
+    failed: number;
+    completed: number;
+    total: number;
+  }>;
   syncData: <T>(key: string, fetchFn: () => Promise<T>) => Promise<T>;
   cacheData: <T>(key: string, data: T, ttl?: number) => Promise<void>;
   getCachedData: <T>(key: string) => Promise<T | null>;
@@ -59,18 +66,24 @@ export function useSyncManager(): UseSyncManagerReturn {
     };
   }, []);
 
-  const syncNow = useCallback(async (triggeredBy: 'auto' | 'manual' | 'reconnect' | 'background' | 'periodic' = 'manual') => {
-    return syncManager.syncNow(triggeredBy);
-  }, []);
+  const syncNow = useCallback(
+    async (triggeredBy: 'auto' | 'manual' | 'reconnect' | 'background' | 'periodic' = 'manual') => {
+      return syncManager.syncNow(triggeredBy);
+    },
+    [],
+  );
 
-  const queueAction = useCallback(async (
-    type: PendingActionType,
-    payload: unknown,
-    priority: 'high' | 'normal' | 'low' = 'normal',
-    idempotencyKey?: string
-  ) => {
-    return syncManager.queueAction(type, payload, priority, idempotencyKey);
-  }, []);
+  const queueAction = useCallback(
+    async (
+      type: PendingActionType,
+      payload: unknown,
+      priority: 'high' | 'normal' | 'low' = 'normal',
+      idempotencyKey?: string,
+    ) => {
+      return syncManager.queueAction(type, payload, priority, idempotencyKey);
+    },
+    [],
+  );
 
   const getQueueStatus = useCallback(async () => {
     return syncManager.getQueueStatus();

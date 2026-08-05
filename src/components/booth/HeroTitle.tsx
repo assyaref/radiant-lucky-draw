@@ -47,7 +47,8 @@ export const HeroTitle = memo(function HeroTitle() {
             backgroundClip: 'text',
             lineHeight: 1.05,
             textShadow: 'none',
-            filter: 'drop-shadow(0 0 50px rgba(251,191,36,0.4)) drop-shadow(0 4px 20px rgba(0,0,0,0.4))',
+            filter:
+              'drop-shadow(0 0 50px rgba(251,191,36,0.4)) drop-shadow(0 4px 20px rgba(0,0,0,0.4))',
           }}
         >
           LUCKY DRAW
@@ -60,12 +61,7 @@ export const HeroTitle = memo(function HeroTitle() {
           animate={{ opacity: [0, 0, 0.8, 0, 0, 0] }}
           transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut' }}
         >
-
-          <motion.div
-            className="absolute inset-0"
-            variants={lightSweep}
-            animate="sweep"
-          >
+          <motion.div className="absolute inset-0" variants={lightSweep} animate="sweep">
             <div className="h-full w-1/4 skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent" />
           </motion.div>
         </motion.div>

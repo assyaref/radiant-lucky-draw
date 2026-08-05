@@ -14,7 +14,6 @@ export interface QueueEntry {
   createdAt: string;
 }
 
-
 export interface QueueState {
   entries: QueueEntry[];
   currentNumber?: string;

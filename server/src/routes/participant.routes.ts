@@ -51,10 +51,13 @@ export function createParticipantRoutes(
    *       409:
    *         description: Phone number already registered
    */
-  router.post('/register', validate({ body: createParticipantSchema.shape.body }), participantController.register);
+  router.post(
+    '/register',
+    validate({ body: createParticipantSchema.shape.body }),
+    participantController.register,
+  );
 
   router.use(authenticate);
-
 
   /**
    * @openapi
@@ -106,7 +109,11 @@ export function createParticipantRoutes(
    *       201:
    *         description: Participant created
    */
-  router.post('/', validate({ body: createParticipantSchema.shape.body }), participantController.create);
+  router.post(
+    '/',
+    validate({ body: createParticipantSchema.shape.body }),
+    participantController.create,
+  );
 
   /**
    * @openapi
@@ -124,7 +131,11 @@ export function createParticipantRoutes(
    *       200:
    *         description: Participant updated
    */
-  router.put('/:id', validate({ body: updateParticipantSchema.shape.body }), participantController.update);
+  router.put(
+    '/:id',
+    validate({ body: updateParticipantSchema.shape.body }),
+    participantController.update,
+  );
 
   /**
    * @openapi

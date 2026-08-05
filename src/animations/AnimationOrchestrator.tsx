@@ -59,10 +59,7 @@ interface AnimationOrchestratorProps {
  * AnimationOrchestrator component.
  * Provides animation context and optionally renders children with controller access.
  */
-export function AnimationOrchestrator({
-  children,
-  ...providerProps
-}: AnimationOrchestratorProps) {
+export function AnimationOrchestrator({ children, ...providerProps }: AnimationOrchestratorProps) {
   // If children is a function, we need to render with the hook inside the provider
   if (typeof children === 'function') {
     return (

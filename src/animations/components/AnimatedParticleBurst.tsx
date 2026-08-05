@@ -7,10 +7,28 @@
  * No business logic - pure animation.
  */
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { type AnimationComponentProps, CELEBRATION_CONFIGS } from '../types';
 
-const PARTICLE_COLORS = ['#fbbf24', '#f59e0b', '#ef4444', '#34d399', '#60a5fa', '#a78bfa', '#f472b6'];
+const PARTICLE_COLORS = [
+  '#fbbf24',
+  '#f59e0b',
+  '#ef4444',
+  '#34d399',
+  '#60a5fa',
+  '#a78bfa',
+  '#f472b6',
+];
+
+interface Particle {
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  delay: number;
+  duration: number;
+}
 
 export function AnimatedParticleBurst({
   active,
@@ -23,34 +41,42 @@ export function AnimatedParticleBurst({
 }: AnimationComponentProps) {
   const config = CELEBRATION_CONFIGS[celebrationLevel];
 
-  if (!active) return null;
-
   const particleCount = Math.round(30 * config.particleMultiplier);
   const animDuration = (duration / 1000) * config.speedMultiplier;
 
-  // Generate particles
-  const particles = Array.from({ length: particleCount }, (_, i) => {
-    const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 0.5;
-    const distance = 100 + Math.random() * 200;
-    const x = Math.cos(angle) * distance;
-    const y = Math.sin(angle) * distance;
-    const size = 3 + Math.random() * 6;
-    const color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
+  // Generate particles once using lazy state initialization (React 19 recommended
+  // pattern for impure values like Math.random).
+  const [particles] = useState<Particle[]>(() =>
+    Array.from({ length: particleCount }, (_, i) => {
+      const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 0.5;
+      const distance = 100 + Math.random() * 200;
+      const x = Math.cos(angle) * distance;
+      const y = Math.sin(angle) * distance;
+      const size = 3 + Math.random() * 6;
+      const color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
 
-    return { x, y, size, color, delay: Math.random() * 0.3 };
-  });
+      return {
+        x,
+        y,
+        size,
+        color,
+        delay: Math.random() * 0.3,
+        duration: animDuration * (0.5 + Math.random() * 0.5),
+      };
+    }),
+  );
+
+  if (!active) return null;
 
   return (
-    <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}>
+    <div
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}
+    >
       {/* Burst origin glow */}
       <motion.div
         className="absolute h-32 w-32 rounded-full"
         initial={{ scale: 0, opacity: 1 }}
-        animate={
-          phase === 'enter'
-            ? { scale: 3, opacity: 0 }
-            : { opacity: 0 }
-        }
+        animate={phase === 'enter' ? { scale: 3, opacity: 0 } : { opacity: 0 }}
         transition={{
           duration: animDuration * 0.5,
           ease: 'easeOut',
@@ -89,7 +115,7 @@ export function AnimatedParticleBurst({
               : { opacity: 0, scale: 0 }
           }
           transition={{
-            duration: animDuration * (0.5 + Math.random() * 0.5),
+            duration: p.duration,
             ease: 'easeOut',
             delay: p.delay + delay / 1000,
           }}
@@ -100,11 +126,7 @@ export function AnimatedParticleBurst({
       <motion.div
         className="absolute h-4 w-4 rounded-full border-2 border-amber-400/40"
         initial={{ scale: 0, opacity: 1 }}
-        animate={
-          phase === 'enter'
-            ? { scale: 20, opacity: 0 }
-            : { opacity: 0 }
-        }
+        animate={phase === 'enter' ? { scale: 20, opacity: 0 } : { opacity: 0 }}
         transition={{
           duration: animDuration * 0.6,
           ease: 'easeOut',

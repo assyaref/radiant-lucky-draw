@@ -190,7 +190,6 @@ function createAmbientMusic(ctx: AudioContext) {
   };
 }
 
-
 // Text-to-Speech announcement
 function speakText(text: string, lang: 'en' | 'id', volume: number) {
   if (!('speechSynthesis' in window)) return;
@@ -202,7 +201,9 @@ function speakText(text: string, lang: 'en' | 'id', volume: number) {
   // Find a good voice
   const voices = window.speechSynthesis.getVoices();
   const preferredVoice = voices.find(
-    (v) => v.lang.startsWith(lang === 'id' ? 'id' : 'en') && v.name.includes('Google') || v.name.includes('Microsoft')
+    (v) =>
+      (v.lang.startsWith(lang === 'id' ? 'id' : 'en') && v.name.includes('Google')) ||
+      v.name.includes('Microsoft'),
   );
   if (preferredVoice) utterance.voice = preferredVoice;
   window.speechSynthesis.speak(utterance);
@@ -242,12 +243,15 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     });
   }, [volume]);
 
-  const setVolume = useCallback((v: number) => {
-    setVolumeState(v);
-    if (masterGainRef.current && !isMuted) {
-      masterGainRef.current.gain.value = v;
-    }
-  }, [isMuted]);
+  const setVolume = useCallback(
+    (v: number) => {
+      setVolumeState(v);
+      if (masterGainRef.current && !isMuted) {
+        masterGainRef.current.gain.value = v;
+      }
+    },
+    [isMuted],
+  );
 
   const toggleMusic = useCallback(() => {
     setMusicEnabled((prev) => {
@@ -272,33 +276,45 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setSfxEnabled((prev) => !prev);
   }, []);
 
-  const playAnnouncement = useCallback((text: string, lang: 'en' | 'id') => {
-    if (isMuted || !voiceEnabled) return;
-    const utterance = speakText(text, lang, volume * 0.8);
-    if (utterance) {
-      announceQueueRef.current.push(utterance);
-    }
-  }, [isMuted, voiceEnabled, volume]);
+  const playAnnouncement = useCallback(
+    (text: string, lang: 'en' | 'id') => {
+      if (isMuted || !voiceEnabled) return;
+      const utterance = speakText(text, lang, volume * 0.8);
+      if (utterance) {
+        announceQueueRef.current.push(utterance);
+      }
+    },
+    [isMuted, voiceEnabled, volume],
+  );
 
-  const playVoiceLine = useCallback((name: VoiceLineName, lang: 'en' | 'id' = 'en') => {
-    const line = VOICE_LINES[name];
-    if (!line) return;
-    playAnnouncement(line[lang], lang);
-  }, [playAnnouncement]);
+  const playVoiceLine = useCallback(
+    (name: VoiceLineName, lang: 'en' | 'id' = 'en') => {
+      const line = VOICE_LINES[name];
+      if (!line) return;
+      playAnnouncement(line[lang], lang);
+    },
+    [playAnnouncement],
+  );
 
-  const playSfxSound = useCallback((name: SfxName) => {
-    if (isMuted || !sfxEnabled) return;
-    playSfx(name, volume);
-  }, [isMuted, sfxEnabled, volume]);
+  const playSfxSound = useCallback(
+    (name: SfxName) => {
+      if (isMuted || !sfxEnabled) return;
+      playSfx(name, volume);
+    },
+    [isMuted, sfxEnabled, volume],
+  );
 
   // Auto-announcement timer (ambient voice prompts)
   useEffect(() => {
-    const interval = setInterval(() => {
-      const useId = Math.random() > 0.5;
-      const pool = AMBIENT_ANNOUNCEMENTS;
-      const line = pool[Math.floor(Math.random() * pool.length)];
-      playAnnouncement(useId ? line.id : line.en, useId ? 'id' : 'en');
-    }, 20000 + Math.random() * 10000);
+    const interval = setInterval(
+      () => {
+        const useId = Math.random() > 0.5;
+        const pool = AMBIENT_ANNOUNCEMENTS;
+        const line = pool[Math.floor(Math.random() * pool.length)];
+        playAnnouncement(useId ? line.id : line.en, useId ? 'id' : 'en');
+      },
+      20000 + Math.random() * 10000,
+    );
     return () => clearInterval(interval);
   }, [playAnnouncement]);
 
@@ -374,13 +390,27 @@ export function AudioControls() {
         title={isMuted ? 'Unmute' : 'Mute'}
       >
         {isMuted ? (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M11 5L6 9H2v6h4l5 4V5z" />
             <line x1="23" y1="9" x2="17" y2="15" />
             <line x1="17" y1="9" x2="23" y2="15" />
           </svg>
         ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M11 5L6 9H2v6h4l5 4V5z" />
             <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" />
           </svg>
@@ -396,7 +426,14 @@ export function AudioControls() {
         className="flex h-8 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 text-[10px] font-bold tracking-wider text-white/40 transition-all hover:border-white/20 hover:text-white/70"
         title="Audio settings"
       >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <circle cx="12" cy="12" r="3" />
           <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
         </svg>
@@ -434,7 +471,15 @@ export function AudioControls() {
   );
 }
 
-function ToggleRow({ label, enabled, onToggle }: { label: string; enabled: boolean; onToggle: () => void }) {
+function ToggleRow({
+  label,
+  enabled,
+  onToggle,
+}: {
+  label: string;
+  enabled: boolean;
+  onToggle: () => void;
+}) {
   return (
     <button
       onClick={onToggle}

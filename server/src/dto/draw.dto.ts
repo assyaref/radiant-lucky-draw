@@ -14,7 +14,6 @@ export interface UpdateDrawStatusRequest {
   // client. Winner selection is performed exclusively on the server side.
 }
 
-
 export interface DrawResponse {
   id: string;
   name: string;

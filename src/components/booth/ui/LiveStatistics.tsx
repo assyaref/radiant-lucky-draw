@@ -36,7 +36,9 @@ export function LiveStatistics() {
       display: grandPrizeAvailable ? 'Available' : 'Claimed',
       icon: '👑',
       color: grandPrizeAvailable ? 'text-amber-300' : 'text-red-300',
-      gradient: grandPrizeAvailable ? 'from-amber-400/20 to-amber-500/5' : 'from-red-400/20 to-red-500/5',
+      gradient: grandPrizeAvailable
+        ? 'from-amber-400/20 to-amber-500/5'
+        : 'from-red-400/20 to-red-500/5',
       glow: grandPrizeAvailable ? 'rgba(251,191,36,0.3)' : 'rgba(248,113,113,0.3)',
     },
   ];
@@ -88,7 +90,9 @@ export function LiveStatistics() {
                 )}
               </motion.span>
             </div>
-            <p className="text-[10px] font-semibold tracking-wider text-white/40 uppercase">{stat.label}</p>
+            <p className="text-[10px] font-semibold tracking-wider text-white/40 uppercase">
+              {stat.label}
+            </p>
           </div>
         </motion.div>
       ))}

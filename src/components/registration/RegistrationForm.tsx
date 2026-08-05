@@ -14,34 +14,73 @@ interface FieldProps {
 }
 
 const FIELDS: FieldProps[] = [
-  { label: 'Full Name', name: 'fullName', placeholder: 'Enter your full name', required: true, autoComplete: 'name' },
-  { label: 'Phone Number', name: 'phone', type: 'tel', placeholder: 'e.g. 08123456789', required: true, autoComplete: 'tel' },
-  { label: 'Company', name: 'company', placeholder: 'Enter your company name', required: true, autoComplete: 'organization' },
-  { label: 'Email (Optional)', name: 'email', type: 'email', placeholder: 'Enter your email', autoComplete: 'email' },
+  {
+    label: 'Full Name',
+    name: 'fullName',
+    placeholder: 'Enter your full name',
+    required: true,
+    autoComplete: 'name',
+  },
+  {
+    label: 'Phone Number',
+    name: 'phone',
+    type: 'tel',
+    placeholder: 'e.g. 08123456789',
+    required: true,
+    autoComplete: 'tel',
+  },
+  {
+    label: 'Company',
+    name: 'company',
+    placeholder: 'Enter your company name',
+    required: true,
+    autoComplete: 'organization',
+  },
+  {
+    label: 'Email (Optional)',
+    name: 'email',
+    type: 'email',
+    placeholder: 'Enter your email',
+    autoComplete: 'email',
+  },
 ];
 
 export function RegistrationForm() {
-  const { formData, errors, updateField, validateField, submitRegistration, isSubmitting, submitError, retryRegistration } = useRegistration();
+  const {
+    formData,
+    errors,
+    updateField,
+    validateField,
+    submitRegistration,
+    isSubmitting,
+    submitError,
+    retryRegistration,
+  } = useRegistration();
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
+  const handleBlur = useCallback(
+    (name: string) => {
+      setFocusedField(null);
+      setTouchedFields((prev) => {
+        const next = new Set(prev);
+        next.add(name);
+        return next;
+      });
+      validateField(name as keyof FormData);
+    },
+    [validateField],
+  );
 
-  const handleBlur = useCallback((name: string) => {
-    setFocusedField(null);
-    setTouchedFields((prev) => {
-      const next = new Set(prev);
-      next.add(name);
-      return next;
-    });
-    validateField(name as keyof FormData);
-  }, [validateField]);
-
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    // Mark all fields as touched
-    setTouchedFields(new Set<string>(FIELDS.map((f) => f.name)));
-    submitRegistration();
-  }, [submitRegistration]);
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      // Mark all fields as touched
+      setTouchedFields(new Set<string>(FIELDS.map((f) => f.name)));
+      submitRegistration();
+    },
+    [submitRegistration],
+  );
 
   return (
     <motion.div
@@ -139,7 +178,14 @@ export function RegistrationForm() {
                       exit={{ opacity: 0, y: -5, height: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <circle cx="12" cy="12" r="10" />
                         <line x1="12" y1="8" x2="12" y2="12" />
                         <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -177,15 +223,20 @@ export function RegistrationForm() {
                   }`}
                 >
                   {formData.agreeTerms && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#020617" strokeWidth="3" className="h-5 w-5">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#020617"
+                      strokeWidth="3"
+                      className="h-5 w-5"
+                    >
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   )}
                 </div>
               </div>
               <span className="text-sm font-medium text-white/40">
-                I agree with{' '}
-                <span className="text-amber-400/70">Terms & Conditions</span>
+                I agree with <span className="text-amber-400/70">Terms & Conditions</span>
               </span>
             </label>
 
@@ -197,7 +248,14 @@ export function RegistrationForm() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -5 }}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <circle cx="12" cy="12" r="10" />
                     <line x1="12" y1="8" x2="12" y2="12" />
                     <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -239,7 +297,13 @@ export function RegistrationForm() {
                     disabled={isSubmitting}
                     className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-red-400/40 px-3 py-1.5 text-xs font-bold text-red-200 transition-colors hover:bg-red-400/20 disabled:opacity-50"
                   >
-                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <polyline points="23 4 23 10 17 10" />
                       <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                     </svg>
@@ -262,7 +326,9 @@ export function RegistrationForm() {
             type="submit"
             disabled={isSubmitting}
             className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-4 text-lg font-bold text-slate-900 shadow-lg shadow-amber-400/25 disabled:opacity-60"
-            whileHover={!isSubmitting ? { scale: 1.02, boxShadow: '0 0 30px rgba(251,191,36,0.4)' } : {}}
+            whileHover={
+              !isSubmitting ? { scale: 1.02, boxShadow: '0 0 30px rgba(251,191,36,0.4)' } : {}
+            }
             whileTap={!isSubmitting ? { scale: 0.98 } : {}}
           >
             {isSubmitting ? (
@@ -279,7 +345,6 @@ export function RegistrationForm() {
             )}
           </motion.button>
         </motion.div>
-
       </form>
     </motion.div>
   );

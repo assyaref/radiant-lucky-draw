@@ -25,5 +25,3 @@ export type {
 } from './types';
 
 export { DEFAULT_FILTER_OPTIONS } from './types';
-
-

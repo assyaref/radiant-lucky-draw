@@ -26,7 +26,10 @@ export function EmergencyMode() {
             >
               <svg width="64" height="64" viewBox="0 0 48 48" fill="none" className="mx-auto">
                 <circle cx="24" cy="24" r="22" stroke="url(#emergencyGrad)" strokeWidth="3" />
-                <path d="M24 8 L28 18 L38 18 L30 24 L33 34 L24 28 L15 34 L18 24 L10 18 L20 18 Z" fill="url(#emergencyGrad)" />
+                <path
+                  d="M24 8 L28 18 L38 18 L30 24 L33 34 L24 28 L15 34 L18 24 L10 18 L20 18 Z"
+                  fill="url(#emergencyGrad)"
+                />
                 <defs>
                   <linearGradient id="emergencyGrad" x1="0" y1="0" x2="48" y2="48">
                     <stop stopColor="#fbbf24" />

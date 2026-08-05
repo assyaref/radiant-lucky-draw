@@ -17,7 +17,11 @@ interface KPICardProps {
 
 const colorMap = {
   primary: { bg: 'bg-primary-500/10', text: 'text-primary-400', border: 'border-primary-500/20' },
-  secondary: { bg: 'bg-secondary-500/10', text: 'text-secondary-400', border: 'border-secondary-500/20' },
+  secondary: {
+    bg: 'bg-secondary-500/10',
+    text: 'text-secondary-400',
+    border: 'border-secondary-500/20',
+  },
   success: { bg: 'bg-success-500/10', text: 'text-success-400', border: 'border-success-500/20' },
   warning: { bg: 'bg-warning-500/10', text: 'text-warning-400', border: 'border-warning-500/20' },
   danger: { bg: 'bg-danger-500/10', text: 'text-danger-400', border: 'border-danger-500/20' },
@@ -66,7 +70,9 @@ export function KPICard({
           </div>
           {trend && (
             <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-dark-border/50">
-              <span className={`text-xs font-medium ${trend.up ? 'text-success-400' : 'text-danger-400'}`}>
+              <span
+                className={`text-xs font-medium ${trend.up ? 'text-success-400' : 'text-danger-400'}`}
+              >
                 {trend.up ? '↑' : '↓'} {trend.value}
               </span>
               <span className="text-xs text-dark-text-tertiary">vs last period</span>

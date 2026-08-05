@@ -197,9 +197,7 @@ export class DrawService {
     const winnerIds = new Set(existingWinners.map((w: any) => w.participantId));
 
     // Filter to eligible participants (not already winners)
-    const eligible = drawRecord.participants.filter(
-      (dp: any) => !winnerIds.has(dp.participantId),
-    );
+    const eligible = drawRecord.participants.filter((dp: any) => !winnerIds.has(dp.participantId));
     if (eligible.length === 0) return null;
 
     // Random selection among eligible participants

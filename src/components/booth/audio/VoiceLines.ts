@@ -4,11 +4,7 @@
  */
 
 export type VoiceLineName =
-  | 'welcome'
-  | 'scanQr'
-  | 'winnerAnnouncement'
-  | 'nextDraw'
-  | 'systemReady';
+  'welcome' | 'scanQr' | 'winnerAnnouncement' | 'nextDraw' | 'systemReady';
 
 export interface VoiceLine {
   en: string;
@@ -42,7 +38,10 @@ export const VOICE_LINES: Record<VoiceLineName, VoiceLine> = {
 export const AMBIENT_ANNOUNCEMENTS: VoiceLine[] = [
   { en: 'Step right up and try your luck.', id: 'Silakan mencoba keberuntungan Anda.' },
   { en: 'Amazing prizes to be won today.', id: 'Hadiah luar biasa menanti Anda hari ini.' },
-  { en: "Don't miss your chance to win big.", id: 'Jangan lewatkan kesempatan memenangkan hadiah besar.' },
+  {
+    en: "Don't miss your chance to win big.",
+    id: 'Jangan lewatkan kesempatan memenangkan hadiah besar.',
+  },
   { en: 'Grand Prize is waiting for you.', id: 'Hadiah Utama menanti Anda.' },
   { en: 'Good luck.', id: 'Semoga beruntung.' },
 ];

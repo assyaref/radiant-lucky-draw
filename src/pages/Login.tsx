@@ -91,7 +91,10 @@ export default function Login() {
               </div>
 
               <div>
-                <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-300">
+                <label
+                  htmlFor="password"
+                  className="mb-1.5 block text-sm font-medium text-slate-300"
+                >
                   Password
                 </label>
                 <input

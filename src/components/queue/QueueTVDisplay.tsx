@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQueueStore, type QueueItem } from '../../store/queue/queueStore';
 import { useQueueSync } from '../../store/queue/useQueueSync';
-
 
 function QueueCard({ item }: { item: QueueItem }) {
   const statusColors: Record<string, string> = {
@@ -53,9 +52,11 @@ function QueueCard({ item }: { item: QueueItem }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className={`truncate text-sm font-bold ${
-          item.status === 'current' ? 'text-white' : 'text-white/70'
-        }`}>
+        <p
+          className={`truncate text-sm font-bold ${
+            item.status === 'current' ? 'text-white' : 'text-white/70'
+          }`}
+        >
           {item.fullName}
         </p>
         <p className="truncate text-xs text-white/30">{item.company}</p>
@@ -69,15 +70,17 @@ function QueueCard({ item }: { item: QueueItem }) {
       )}
 
       {/* Status */}
-      <span className={`text-[10px] font-bold tracking-wider uppercase ${
-        item.status === 'current'
-          ? 'text-amber-400'
-          : item.status === 'finished'
-            ? 'text-emerald-400'
-            : item.status === 'cancelled' || item.status === 'skipped'
-              ? 'text-white/20'
-              : 'text-white/30'
-      }`}>
+      <span
+        className={`text-[10px] font-bold tracking-wider uppercase ${
+          item.status === 'current'
+            ? 'text-amber-400'
+            : item.status === 'finished'
+              ? 'text-emerald-400'
+              : item.status === 'cancelled' || item.status === 'skipped'
+                ? 'text-white/20'
+                : 'text-white/30'
+        }`}
+      >
         {statusLabels[item.status]}
       </span>
     </motion.div>
@@ -136,15 +139,15 @@ function CurrentQueueDisplay({ item }: { item: QueueItem | null }) {
 
 export function QueueTVDisplay() {
   const { currentQueue, waitingQueue, finishedQueue, estimatedWaitPerItem } = useQueueStore();
-  const [mounted, setMounted] = useState(false);
+  // Returns false during SSR and true on the client to avoid hydration mismatches.
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   // Keep the queue cache in sync with the backend via REST + Socket.IO.
   useQueueSync();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
 
   if (!mounted) return null;
 
@@ -171,9 +174,7 @@ export function QueueTVDisplay() {
           </div>
           <div className="h-8 w-px bg-white/10" />
           <div className="text-right">
-            <p className="text-[10px] font-bold tracking-wider text-white/30 uppercase">
-              In Queue
-            </p>
+            <p className="text-[10px] font-bold tracking-wider text-white/30 uppercase">In Queue</p>
             <p className="text-lg font-black text-white">{waitingQueue.length}</p>
           </div>
         </div>
@@ -216,9 +217,7 @@ export function QueueTVDisplay() {
                   No participants in queue
                 </motion.p>
               ) : (
-                waitingQueue.map((item) => (
-                  <QueueCard key={item.id} item={item} />
-                ))
+                waitingQueue.map((item) => <QueueCard key={item.id} item={item} />)
               )}
             </AnimatePresence>
           </div>
@@ -247,9 +246,10 @@ export function QueueTVDisplay() {
                   No completed queues yet
                 </motion.p>
               ) : (
-                finishedQueue.slice(-10).reverse().map((item) => (
-                  <QueueCard key={item.id} item={item} />
-                ))
+                finishedQueue
+                  .slice(-10)
+                  .reverse()
+                  .map((item) => <QueueCard key={item.id} item={item} />)
               )}
             </AnimatePresence>
           </div>

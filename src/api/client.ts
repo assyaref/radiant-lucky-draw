@@ -85,11 +85,7 @@ async function performRefresh(): Promise<string | null> {
   return refreshPromise;
 }
 
-async function request<T>(
-  path: string,
-  options: RequestOptions = {},
-  isRetry = false,
-): Promise<T> {
+async function request<T>(path: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
   const { method = 'GET', body, headers, signal } = options;
 
   const controller = new AbortController();

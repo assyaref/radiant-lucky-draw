@@ -47,13 +47,17 @@ function extractState(payload: unknown): QueueState | null {
 }
 
 export function useQueueSync() {
-
   const fetchState = useQueueStore((s) => s.fetchState);
   const syncState = useQueueStore((s) => s.syncState);
 
-  // Initial fetch on mount
+  // Initial fetch on mount. Deferred so the store's synchronous loading state
+  // update does not run during the effect's synchronous execution
+  // (React 19 recommended pattern for set-state-in-effect).
   useEffect(() => {
-    void fetchState();
+    const id = setTimeout(() => {
+      void fetchState();
+    }, 0);
+    return () => clearTimeout(id);
   }, [fetchState]);
 
   // Re-sync whenever the backend broadcasts a queue change.
@@ -66,7 +70,6 @@ export function useQueueSync() {
       void fetchState();
     }
   });
-
 
   // Fallback: refresh on any queue lifecycle event to guarantee consistency.
   useSocketEvent(SOCKET_EVENTS.QUEUE_CREATED, () => void fetchState());

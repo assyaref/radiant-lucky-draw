@@ -26,10 +26,7 @@ export { SocketService, createSocketService } from './SocketService';
 export type { SocketServiceConfig } from './SocketService';
 
 // Types
-export {
-  SOCKET_EVENTS,
-  EVENT_VERSIONS,
-} from './types';
+export { SOCKET_EVENTS, EVENT_VERSIONS } from './types';
 export type {
   SocketEventName,
   ConnectionStatus,
@@ -63,7 +60,6 @@ export type {
   DrawWinnerAck,
   DrawCompletedPayload,
   DrawCompletedAck,
-
   WinnerAnnouncePayload,
   WinnerAnnounceAck,
   DashboardUpdatePayload,
@@ -72,22 +68,13 @@ export type {
   SystemStatusAck,
 } from './types';
 
-
 // Context
 export { SocketContext, SocketProvider } from './context';
 export type { SocketContextValue, SocketProviderProps } from './context';
 
 // Hooks
-export {
-  useSocket,
-  useSocketEvent,
-  useSocketConnection,
-  useSocketEmit,
-} from './hooks';
-export type {
-  UseSocketConnectionReturn,
-  UseSocketEmitReturn,
-} from './hooks';
+export { useSocket, useSocketEvent, useSocketConnection, useSocketEmit } from './hooks';
+export type { UseSocketConnectionReturn, UseSocketEmitReturn } from './hooks';
 
 // Mock
 export { MockSocketServer, createMockSocketServer } from './mock';

@@ -114,12 +114,7 @@ export interface TimelineConfig {
 /**
  * Status of the animation controller.
  */
-export type ControllerStatus =
-  | 'idle'
-  | 'running'
-  | 'paused'
-  | 'cancelled'
-  | 'completed';
+export type ControllerStatus = 'idle' | 'running' | 'paused' | 'cancelled' | 'completed';
 
 /**
  * Callback hooks for animation lifecycle events.

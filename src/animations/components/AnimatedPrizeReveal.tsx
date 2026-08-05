@@ -38,7 +38,9 @@ export function AnimatedPrizeReveal({
   if (!active) return null;
 
   return (
-    <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}>
+    <div
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}
+    >
       {/* Background glow */}
       <motion.div
         className="absolute inset-0"
@@ -81,11 +83,7 @@ export function AnimatedPrizeReveal({
         >
           <motion.span
             className="text-6xl"
-            animate={
-              phase === 'active'
-                ? { scale: [1, 1.1, 1] }
-                : undefined
-            }
+            animate={phase === 'active' ? { scale: [1, 1.1, 1] } : undefined}
             transition={{ repeat: Infinity, duration: 2 }}
           >
             {icon}
@@ -97,9 +95,7 @@ export function AnimatedPrizeReveal({
           className="mb-2 text-5xl font-black tracking-tight"
           initial={{ opacity: 0, y: 20 }}
           animate={
-            phase === 'enter' || phase === 'active'
-              ? { opacity: 1, y: 0 }
-              : { opacity: 0, y: -20 }
+            phase === 'enter' || phase === 'active' ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }
           }
           transition={{
             delay: 0.3 + delay / 1000,
@@ -152,9 +148,7 @@ export function AnimatedPrizeReveal({
                 transform: `rotate(${angle}deg) translateY(-140px)`,
               }}
               animate={
-                phase === 'active'
-                  ? { opacity: [0, 1, 0], scale: [0, 1.5, 0] }
-                  : { opacity: 0 }
+                phase === 'active' ? { opacity: [0, 1, 0], scale: [0, 1.5, 0] } : { opacity: 0 }
               }
               transition={{
                 repeat: phase === 'active' ? Infinity : 0,

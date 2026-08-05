@@ -30,7 +30,9 @@ export function AnimatedCountdown({
   if (!active) return null;
 
   return (
-    <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}>
+    <div
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}
+    >
       {/* Background glow */}
       <motion.div
         className="absolute inset-0"

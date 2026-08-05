@@ -75,20 +75,12 @@ export function AnimatedCameraZoom({
         {/* Crosshair lines */}
         <motion.div
           className="absolute h-full w-[1px] bg-amber-400/20"
-          animate={
-            phase === 'active'
-              ? { opacity: [0.1, 0.3, 0.1] }
-              : undefined
-          }
+          animate={phase === 'active' ? { opacity: [0.1, 0.3, 0.1] } : undefined}
           transition={{ repeat: Infinity, duration: 1.5 }}
         />
         <motion.div
           className="absolute h-[1px] w-full bg-amber-400/20"
-          animate={
-            phase === 'active'
-              ? { opacity: [0.1, 0.3, 0.1] }
-              : undefined
-          }
+          animate={phase === 'active' ? { opacity: [0.1, 0.3, 0.1] } : undefined}
           transition={{ repeat: Infinity, duration: 1.5, delay: 0.5 }}
         />
 
@@ -109,11 +101,7 @@ export function AnimatedCameraZoom({
               bottom: corner.bottom,
               transform: `rotate(${corner.rotate}deg)`,
             }}
-            animate={
-              phase === 'active'
-                ? { opacity: [0.3, 0.7, 0.3] }
-                : undefined
-            }
+            animate={phase === 'active' ? { opacity: [0.3, 0.7, 0.3] } : undefined}
             transition={{
               repeat: Infinity,
               duration: 2,

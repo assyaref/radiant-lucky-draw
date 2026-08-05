@@ -4,10 +4,7 @@
  * Barrel export for all socket event types.
  */
 
-export {
-  SOCKET_EVENTS,
-  EVENT_VERSIONS,
-} from './events';
+export { SOCKET_EVENTS, EVENT_VERSIONS } from './events';
 
 export type {
   SocketEventName,
@@ -52,7 +49,6 @@ export type {
   // Winner
   WinnerAnnouncePayload,
   WinnerAnnounceAck,
-
 
   // System
   DashboardUpdatePayload,

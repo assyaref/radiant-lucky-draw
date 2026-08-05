@@ -58,7 +58,6 @@ interface AnalyticsStore {
 }
 
 export const useAnalyticsStore = create<AnalyticsStore>((set) => ({
-
   // Initial Data
   summary: null,
   hourlyData: [],

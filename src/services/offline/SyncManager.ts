@@ -7,7 +7,6 @@ import { storageService } from './storage/StorageService';
 import { CACHE_KEYS } from './config';
 import type { SyncResult, PendingActionType, SyncHistoryEntry } from './types';
 
-
 class SyncManager {
   private syncing = false;
   private lastSyncAt: number | null = null;
@@ -37,7 +36,9 @@ class SyncManager {
 
   // ─── Manual Sync ───────────────────────────────────────────
 
-  async syncNow(_triggeredBy: 'auto' | 'manual' | 'reconnect' | 'background' | 'periodic' = 'manual'): Promise<SyncResult> {
+  async syncNow(
+    _triggeredBy: 'auto' | 'manual' | 'reconnect' | 'background' | 'periodic' = 'manual',
+  ): Promise<SyncResult> {
     if (this.syncing) {
       return { success: false, synced: 0, failed: 0, errors: ['Sync already in progress'] };
     }
@@ -96,12 +97,17 @@ class SyncManager {
     type: PendingActionType,
     payload: unknown,
     priority: 'high' | 'normal' | 'low' = 'normal',
-    idempotencyKey?: string
+    idempotencyKey?: string,
   ): Promise<string> {
     return offlineManager.queueAction(type, payload, priority, idempotencyKey);
   }
 
-  async getQueueStatus(): Promise<{ pending: number; failed: number; completed: number; total: number }> {
+  async getQueueStatus(): Promise<{
+    pending: number;
+    failed: number;
+    completed: number;
+    total: number;
+  }> {
     const all = await offlineManager.getPendingActions();
     return {
       pending: all.filter((a) => a.status === 'pending').length,
@@ -178,9 +184,7 @@ class SyncManager {
 
   async getSyncHistory(limit = 20): Promise<SyncHistoryEntry[]> {
     const all = await storageService.getAll<SyncHistoryEntry>('sync_history');
-    return all
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, limit);
+    return all.sort((a, b) => b.timestamp - a.timestamp).slice(0, limit);
   }
 
   async getLastSyncResult(): Promise<SyncHistoryEntry | null> {

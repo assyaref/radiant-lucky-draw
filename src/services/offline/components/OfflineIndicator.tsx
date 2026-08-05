@@ -19,7 +19,6 @@ const sizeMap = {
 export function OfflineIndicator({ className = '', size = 'md' }: OfflineIndicatorProps) {
   const { isOnline, reconnecting } = useOfflineStatus();
 
-
   const getColor = () => {
     if (reconnecting) return 'bg-blue-400';
     if (!isOnline) return 'bg-red-400';

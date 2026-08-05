@@ -33,7 +33,10 @@ export function WelcomeMode() {
             >
               <svg width="80" height="80" viewBox="0 0 48 48" fill="none">
                 <circle cx="24" cy="24" r="22" stroke="url(#welcomeGrad)" strokeWidth="3" />
-                <path d="M24 8 L28 18 L38 18 L30 24 L33 34 L24 28 L15 34 L18 24 L10 18 L20 18 Z" fill="url(#welcomeGrad)" />
+                <path
+                  d="M24 8 L28 18 L38 18 L30 24 L33 34 L24 28 L15 34 L18 24 L10 18 L20 18 Z"
+                  fill="url(#welcomeGrad)"
+                />
                 <defs>
                   <linearGradient id="welcomeGrad" x1="0" y1="0" x2="48" y2="48">
                     <stop stopColor="#fbbf24" />

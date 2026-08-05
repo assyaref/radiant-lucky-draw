@@ -1,5 +1,8 @@
 import { AnimatePresence } from 'framer-motion';
-import { RegistrationProvider, useRegistration } from '../../components/registration/RegistrationContext';
+import {
+  RegistrationProvider,
+  useRegistration,
+} from '../../components/registration/RegistrationContext';
 import { SplashScreen } from '../../components/registration/SplashScreen';
 import { WelcomeScreen } from '../../components/registration/WelcomeScreen';
 import { RegistrationForm } from '../../components/registration/RegistrationForm';

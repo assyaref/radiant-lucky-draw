@@ -2,9 +2,6 @@ import { useEffect, useState, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { countNumber, glowLoop, floatLoop } from '@animations/index';
 
-
-
-
 export const Clock = memo(function Clock() {
   const [now, setNow] = useState(() => new Date());
 
@@ -31,7 +28,6 @@ export const Clock = memo(function Clock() {
       transition={{ duration: 0.5 }}
       variants={floatLoop}
     >
-
       {/* Breathing glow */}
       <motion.div
         className="pointer-events-none absolute -inset-2 rounded-2xl"
@@ -43,7 +39,6 @@ export const Clock = memo(function Clock() {
 
       {/* Glass reflection */}
       <div className="pointer-events-none absolute -left-4 -top-4 h-12 w-12 rotate-12 rounded-full bg-gradient-to-b from-white/10 to-transparent blur-sm" />
-
 
       {/* Time */}
       <div className="flex items-baseline gap-1">
@@ -87,11 +82,8 @@ export const Clock = memo(function Clock() {
         </AnimatePresence>
       </div>
 
-
       {/* Date */}
-      <div className="mt-2 text-sm font-medium tracking-wide text-white/40">
-        {date}
-      </div>
+      <div className="mt-2 text-sm font-medium tracking-wide text-white/40">{date}</div>
 
       {/* LED blink indicator */}
       <motion.div

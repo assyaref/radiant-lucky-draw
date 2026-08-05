@@ -2,7 +2,15 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRegistration } from './RegistrationContext';
 
-function ProgressRing({ progress, size = 160, strokeWidth = 6 }: { progress: number; size?: number; strokeWidth?: number }) {
+function ProgressRing({
+  progress,
+  size = 160,
+  strokeWidth = 6,
+}: {
+  progress: number;
+  size?: number;
+  strokeWidth?: number;
+}) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (progress / 100) * circumference;

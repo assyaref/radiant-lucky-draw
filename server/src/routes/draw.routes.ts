@@ -17,12 +17,15 @@ export function createDrawRoutes(
 
   router.use(authenticate);
 
-
   router.get('/recent', drawController.findRecent);
   router.get('/', drawController.findAll);
   router.get('/:id', drawController.findById);
   router.post('/', validate({ body: createDrawSchema.shape.body }), drawController.create);
-  router.patch('/:id/status', validate({ body: updateDrawStatusSchema.shape.body }), drawController.updateStatus);
+  router.patch(
+    '/:id/status',
+    validate({ body: updateDrawStatusSchema.shape.body }),
+    drawController.updateStatus,
+  );
   router.delete('/:id', drawController.delete);
 
   return router;

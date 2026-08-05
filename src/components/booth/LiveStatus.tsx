@@ -2,16 +2,15 @@ import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { glowLoop, floatLoop } from '@animations/index';
 
-
-
-
-
 interface LiveStatusProps {
   isOnline?: boolean;
   drawStatus?: string;
 }
 
-export const LiveStatus = memo(function LiveStatus({ isOnline = true, drawStatus = 'READY' }: LiveStatusProps) {
+export const LiveStatus = memo(function LiveStatus({
+  isOnline = true,
+  drawStatus = 'READY',
+}: LiveStatusProps) {
   return (
     <motion.div
       className="relative overflow-hidden rounded-2xl border border-white/8 bg-white/5 p-4 backdrop-blur-md"
@@ -20,7 +19,6 @@ export const LiveStatus = memo(function LiveStatus({ isOnline = true, drawStatus
       transition={{ duration: 0.5, delay: 0.3 }}
       variants={floatLoop}
     >
-
       {/* Breathing glow */}
       <motion.div
         className="pointer-events-none absolute inset-0 rounded-2xl"
@@ -33,10 +31,7 @@ export const LiveStatus = memo(function LiveStatus({ isOnline = true, drawStatus
       {/* Glass reflection */}
       <div className="pointer-events-none absolute -left-4 -top-4 h-10 w-10 rotate-12 rounded-full bg-gradient-to-b from-white/10 to-transparent blur-sm" />
 
-
-      <div className="text-xs font-bold tracking-[0.15em] text-white/40">
-        SYSTEM STATUS
-      </div>
+      <div className="text-xs font-bold tracking-[0.15em] text-white/40">SYSTEM STATUS</div>
 
       <div className="mt-3 space-y-2">
         {/* Online status */}
@@ -109,5 +104,3 @@ export const LiveStatus = memo(function LiveStatus({ isOnline = true, drawStatus
     </motion.div>
   );
 });
-
-

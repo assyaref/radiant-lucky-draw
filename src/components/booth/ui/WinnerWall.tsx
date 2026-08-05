@@ -9,7 +9,10 @@ interface WinnerWallProps {
 
 const FIREWORK_COLORS = ['#fbbf24', '#60a5fa', '#f472b6', '#34d399', '#a78bfa'];
 
-export const WinnerWall = memo(function WinnerWall({ winnerName = '—', prize = '—' }: WinnerWallProps) {
+export const WinnerWall = memo(function WinnerWall({
+  winnerName = '—',
+  prize = '—',
+}: WinnerWallProps) {
   const hasWinner = winnerName !== '—' && winnerName !== '';
   return (
     <motion.div
@@ -24,7 +27,6 @@ export const WinnerWall = memo(function WinnerWall({ winnerName = '—', prize =
       variants={floatLoop}
       layout
     >
-
       {/* Firework particles */}
       {Array.from({ length: 8 }).map((_, i) => {
         const angle = (i / 8) * Math.PI * 2;
@@ -133,7 +135,13 @@ export const WinnerWall = memo(function WinnerWall({ winnerName = '—', prize =
         {/* Photo placeholder */}
         <motion.div
           className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-amber-400/40 bg-gradient-to-br from-amber-500/20 to-blue-500/10"
-          animate={{ boxShadow: ['0 0 15px rgba(251,191,36,0.2)', '0 0 30px rgba(251,191,36,0.4)', '0 0 15px rgba(251,191,36,0.2)'] }}
+          animate={{
+            boxShadow: [
+              '0 0 15px rgba(251,191,36,0.2)',
+              '0 0 30px rgba(251,191,36,0.4)',
+              '0 0 15px rgba(251,191,36,0.2)',
+            ],
+          }}
           transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
         >
           <span className="text-2xl">👤</span>
@@ -148,9 +156,7 @@ export const WinnerWall = memo(function WinnerWall({ winnerName = '—', prize =
           >
             {winnerName}
           </motion.div>
-          <div className="mt-0.5 truncate text-sm font-medium text-amber-400/60">
-            {prize}
-          </div>
+          <div className="mt-0.5 truncate text-sm font-medium text-amber-400/60">{prize}</div>
         </div>
       </div>
 

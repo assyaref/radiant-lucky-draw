@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { PrizeSchedule as PrizeScheduleType } from '../types';
 
 interface PrizeScheduleProps {
@@ -38,11 +38,14 @@ export function PrizeSchedule({ schedule, onChange }: PrizeScheduleProps) {
     () => schedule ?? createDefaultSchedule(''),
   );
 
-  useEffect(() => {
+  // Adjust local state when the `schedule` prop changes (React 19 recommended pattern).
+  const [prevSchedule, setPrevSchedule] = useState(schedule);
+  if (schedule !== prevSchedule) {
+    setPrevSchedule(schedule);
     if (schedule) {
       setLocalSchedule(schedule);
     }
-  }, [schedule]);
+  }
 
   const update = (updates: Partial<PrizeScheduleType>) => {
     const updated = { ...localSchedule, ...updates };
@@ -50,7 +53,12 @@ export function PrizeSchedule({ schedule, onChange }: PrizeScheduleProps) {
     onChange(updated);
   };
 
-  const toggleDay = (day: keyof Omit<PrizeScheduleType, 'prizeId' | 'startDate' | 'endDate' | 'startTime' | 'endTime'>) => {
+  const toggleDay = (
+    day: keyof Omit<
+      PrizeScheduleType,
+      'prizeId' | 'startDate' | 'endDate' | 'startTime' | 'endTime'
+    >,
+  ) => {
     update({ [day]: !localSchedule[day] });
   };
 

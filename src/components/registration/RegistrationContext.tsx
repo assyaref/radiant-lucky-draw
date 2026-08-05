@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import { registerParticipant, type RegisterParticipantResponse } from '../../features/registration/api';
+import {
+  registerParticipant,
+  type RegisterParticipantResponse,
+} from '../../features/registration/api';
 import { ApiClientError } from '../../api/client';
 
 export type RegistrationStep = 'splash' | 'welcome' | 'form' | 'confirmation' | 'waiting';
@@ -76,38 +79,46 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
     setStep(s);
   }, []);
 
-  const validateField = useCallback((field: keyof FormData): string | undefined => {
-    const value = formData[field];
+  const validateField = useCallback(
+    (field: keyof FormData): string | undefined => {
+      const value = formData[field];
 
-    switch (field) {
-      case 'fullName':
-        if (!value || (typeof value === 'string' && !value.trim())) return 'Full name is required';
-        if (typeof value === 'string' && value.trim().length < 2) return 'Name must be at least 2 characters';
-        return undefined;
+      switch (field) {
+        case 'fullName':
+          if (!value || (typeof value === 'string' && !value.trim()))
+            return 'Full name is required';
+          if (typeof value === 'string' && value.trim().length < 2)
+            return 'Name must be at least 2 characters';
+          return undefined;
 
-      case 'phone':
-        if (!value || (typeof value === 'string' && !value.trim())) return 'Phone number is required';
-        if (typeof value === 'string' && !/^[+]?[\d\s()-]{8,15}$/.test(value.trim())) return 'Invalid phone number format';
-        return undefined;
+        case 'phone':
+          if (!value || (typeof value === 'string' && !value.trim()))
+            return 'Phone number is required';
+          if (typeof value === 'string' && !/^[+]?[\d\s()-]{8,15}$/.test(value.trim()))
+            return 'Invalid phone number format';
+          return undefined;
 
-      case 'company':
-        if (!value || (typeof value === 'string' && !value.trim())) return 'Company name is required';
-        return undefined;
+        case 'company':
+          if (!value || (typeof value === 'string' && !value.trim()))
+            return 'Company name is required';
+          return undefined;
 
-      case 'email':
-        if (value && typeof value === 'string' && value.trim()) {
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Invalid email format';
-        }
-        return undefined;
+        case 'email':
+          if (value && typeof value === 'string' && value.trim()) {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return 'Invalid email format';
+          }
+          return undefined;
 
-      case 'agreeTerms':
-        if (!value) return 'You must agree to the terms';
-        return undefined;
+        case 'agreeTerms':
+          if (!value) return 'You must agree to the terms';
+          return undefined;
 
-      default:
-        return undefined;
-    }
-  }, [formData]);
+        default:
+          return undefined;
+      }
+    },
+    [formData],
+  );
 
   const validateAll = useCallback((): boolean => {
     const newErrors: FormErrors = {};

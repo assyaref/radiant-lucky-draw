@@ -31,7 +31,9 @@ interface UseOfflineStatusReturn {
 
 export function useOfflineStatus(): UseOfflineStatusReturn {
   const [state, setState] = useState<OfflineState>(() => offlineManager.getState());
-  const [networkInfo, setNetworkInfo] = useState<NetworkInfo>(() => offlineManager.getNetworkInfo() ?? DEFAULT_NETWORK_INFO);
+  const [networkInfo, setNetworkInfo] = useState<NetworkInfo>(
+    () => offlineManager.getNetworkInfo() ?? DEFAULT_NETWORK_INFO,
+  );
 
   useEffect(() => {
     const unsub1 = offlineManager.on(OFFLINE_EVENTS.STATUS_CHANGE, (newState) => {

@@ -67,7 +67,20 @@ function getWeekNumber(date: Date): number {
 }
 
 function generateMonthlyData(monthsCount = 6): MonthlyDataPoint[] {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return Array.from({ length: monthsCount }, (_, i) => {
     const date = new Date();
     date.setMonth(date.getMonth() - (monthsCount - 1 - i));
@@ -203,7 +216,9 @@ export const mockAnalyticsRepository = {
     return generateMostPopularPrizes();
   },
 
-  getFullReport: async (type: 'daily' | 'weekly' | 'monthly' = 'daily'): Promise<AnalyticsReport> => {
+  getFullReport: async (
+    type: 'daily' | 'weekly' | 'monthly' = 'daily',
+  ): Promise<AnalyticsReport> => {
     await delay(500);
     const now = new Date();
     return {

@@ -71,9 +71,8 @@ export class QueueService {
       estimatedWait,
       totalWaiting: waiting.length,
       totalFinished: entries.filter((e) => e.status === 'completed').length,
-      totalCancelled: entries.filter(
-        (e) => e.status === 'cancelled' || e.status === 'skipped',
-      ).length,
+      totalCancelled: entries.filter((e) => e.status === 'cancelled' || e.status === 'skipped')
+        .length,
       timestamp: new Date().toISOString(),
     };
   }
@@ -260,9 +259,7 @@ export class QueueService {
   }
 
   private async findEntryByParticipant(participantId: string) {
-    const entries = await this.queueRepository.findWhere(
-      (e) => e.participantId === participantId,
-    );
+    const entries = await this.queueRepository.findWhere((e) => e.participantId === participantId);
     return entries[entries.length - 1] ?? null;
   }
 }

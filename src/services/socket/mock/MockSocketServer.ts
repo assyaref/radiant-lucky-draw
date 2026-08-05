@@ -44,7 +44,6 @@ import {
   type DrawCompletedPayload,
   type DrawCompletedAck,
   type WinnerAnnouncePayload,
-
   type WinnerAnnounceAck,
   type DashboardUpdatePayload,
   type DashboardUpdateAck,
@@ -171,8 +170,11 @@ export class MockSocketServer {
    * Register a custom handler for an event.
    * Overrides the default handler.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  on(event: SocketEventName, handler: (payload: any, envelope: SocketEventEnvelope<any>) => any): void {
+
+  on(
+    event: SocketEventName,
+    handler: (payload: any, envelope: SocketEventEnvelope<any>) => any,
+  ): void {
     this.handlers.set(event, handler);
   }
 
@@ -180,10 +182,7 @@ export class MockSocketServer {
    * Simulate receiving an event (as if from a client).
    * Returns the acknowledgement response.
    */
-  async receive<T = unknown, R = unknown>(
-    event: SocketEventName,
-    payload: T,
-  ): Promise<R> {
+  async receive<T = unknown, R = unknown>(event: SocketEventName, payload: T): Promise<R> {
     if (!this.isRunning) {
       throw new Error('[MockServer] Server is not running');
     }
@@ -220,14 +219,17 @@ export class MockSocketServer {
   /** Register default handlers for all events */
   private registerDefaultHandlers(): void {
     // Participant events
-    this.handlers.set(SOCKET_EVENTS.PARTICIPANT_JOIN, (_payload: ParticipantJoinPayload): ParticipantJoinAck => {
-      this.queuePosition++;
-      return {
-        success: true,
-        position: this.queuePosition,
-        estimatedWait: this.queuePosition * 30,
-      };
-    });
+    this.handlers.set(
+      SOCKET_EVENTS.PARTICIPANT_JOIN,
+      (_payload: ParticipantJoinPayload): ParticipantJoinAck => {
+        this.queuePosition++;
+        return {
+          success: true,
+          position: this.queuePosition,
+          estimatedWait: this.queuePosition * 30,
+        };
+      },
+    );
 
     this.handlers.set(SOCKET_EVENTS.PARTICIPANT_UPDATE, (): ParticipantUpdateAck => ({
       success: true,
@@ -238,13 +240,19 @@ export class MockSocketServer {
       success: true,
     }));
 
-    this.handlers.set(SOCKET_EVENTS.QUEUE_CANCEL, (_payload: QueueCancelPayload): QueueCancelAck => ({
-      success: true,
-    }));
+    this.handlers.set(
+      SOCKET_EVENTS.QUEUE_CANCEL,
+      (_payload: QueueCancelPayload): QueueCancelAck => ({
+        success: true,
+      }),
+    );
 
-    this.handlers.set(SOCKET_EVENTS.QUEUE_UPDATE, (_payload: QueueUpdatePayload): QueueUpdateAck => ({
-      success: true,
-    }));
+    this.handlers.set(
+      SOCKET_EVENTS.QUEUE_UPDATE,
+      (_payload: QueueUpdatePayload): QueueUpdateAck => ({
+        success: true,
+      }),
+    );
 
     // Draw events
     this.handlers.set(SOCKET_EVENTS.DRAW_START, (_payload: DrawStartPayload): DrawStartAck => {
@@ -252,45 +260,69 @@ export class MockSocketServer {
       return { success: true };
     });
 
-    this.handlers.set(SOCKET_EVENTS.DRAW_COUNTDOWN, (_payload: DrawCountdownPayload): DrawCountdownAck => ({
-      success: true,
-    }));
+    this.handlers.set(
+      SOCKET_EVENTS.DRAW_COUNTDOWN,
+      (_payload: DrawCountdownPayload): DrawCountdownAck => ({
+        success: true,
+      }),
+    );
 
-    this.handlers.set(SOCKET_EVENTS.DRAW_SPINNING, (_payload: DrawSpinningPayload): DrawSpinningAck => ({
-      success: true,
-    }));
+    this.handlers.set(
+      SOCKET_EVENTS.DRAW_SPINNING,
+      (_payload: DrawSpinningPayload): DrawSpinningAck => ({
+        success: true,
+      }),
+    );
 
-    this.handlers.set(SOCKET_EVENTS.DRAW_REVEALED, (_payload: DrawRevealedPayload): DrawRevealedAck => ({
-      success: true,
-    }));
+    this.handlers.set(
+      SOCKET_EVENTS.DRAW_REVEALED,
+      (_payload: DrawRevealedPayload): DrawRevealedAck => ({
+        success: true,
+      }),
+    );
 
-    this.handlers.set(SOCKET_EVENTS.DRAW_FINISHED, (_payload: DrawFinishedPayload): DrawFinishedAck => ({
-      success: true,
-    }));
+    this.handlers.set(
+      SOCKET_EVENTS.DRAW_FINISHED,
+      (_payload: DrawFinishedPayload): DrawFinishedAck => ({
+        success: true,
+      }),
+    );
 
     // DrawEngine lifecycle events (RC2.4)
-    this.handlers.set(SOCKET_EVENTS.DRAW_STARTED, (_payload: DrawStartedPayload): DrawStartedAck => ({
-      success: true,
-    }));
+    this.handlers.set(
+      SOCKET_EVENTS.DRAW_STARTED,
+      (_payload: DrawStartedPayload): DrawStartedAck => ({
+        success: true,
+      }),
+    );
 
     this.handlers.set(SOCKET_EVENTS.DRAW_WINNER, (_payload: DrawWinnerPayload): DrawWinnerAck => ({
       success: true,
     }));
 
-    this.handlers.set(SOCKET_EVENTS.DRAW_COMPLETED, (_payload: DrawCompletedPayload): DrawCompletedAck => ({
-      success: true,
-    }));
+    this.handlers.set(
+      SOCKET_EVENTS.DRAW_COMPLETED,
+      (_payload: DrawCompletedPayload): DrawCompletedAck => ({
+        success: true,
+      }),
+    );
 
     // Winner events
 
-    this.handlers.set(SOCKET_EVENTS.WINNER_ANNOUNCE, (_payload: WinnerAnnouncePayload): WinnerAnnounceAck => ({
-      success: true,
-    }));
+    this.handlers.set(
+      SOCKET_EVENTS.WINNER_ANNOUNCE,
+      (_payload: WinnerAnnouncePayload): WinnerAnnounceAck => ({
+        success: true,
+      }),
+    );
 
     // System events
-    this.handlers.set(SOCKET_EVENTS.DASHBOARD_UPDATE, (_payload: DashboardUpdatePayload): DashboardUpdateAck => ({
-      success: true,
-    }));
+    this.handlers.set(
+      SOCKET_EVENTS.DASHBOARD_UPDATE,
+      (_payload: DashboardUpdatePayload): DashboardUpdateAck => ({
+        success: true,
+      }),
+    );
 
     this.handlers.set(SOCKET_EVENTS.SYSTEM_STATUS, (): SystemStatusPayload => ({
       status: 'online',
@@ -322,8 +354,6 @@ export class MockSocketServer {
 /**
  * Create a new MockSocketServer with sensible defaults.
  */
-export function createMockSocketServer(
-  config?: MockSocketServerConfig,
-): MockSocketServer {
+export function createMockSocketServer(config?: MockSocketServerConfig): MockSocketServer {
   return new MockSocketServer(config);
 }

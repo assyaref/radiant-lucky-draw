@@ -185,7 +185,8 @@
     line-height: var(--leading-normal);
     color: var(--color-text-primary);
     background-color: var(--color-surface);
-    transition: background-color var(--duration-200) var(--ease-in-out),
+    transition:
+      background-color var(--duration-200) var(--ease-in-out),
       color var(--duration-200) var(--ease-in-out);
   }
 

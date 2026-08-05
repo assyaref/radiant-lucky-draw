@@ -38,7 +38,16 @@ export function CelebrationMode() {
 
     const confetti: Particle[] = [];
     const fireworks: Firework[] = [];
-    const COLORS = ['#fbbf24', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#ffffff'];
+    const COLORS = [
+      '#fbbf24',
+      '#f59e0b',
+      '#ef4444',
+      '#3b82f6',
+      '#8b5cf6',
+      '#ec4899',
+      '#10b981',
+      '#ffffff',
+    ];
 
     // Spawn confetti
     for (let i = 0; i < 150; i++) {
@@ -135,7 +144,14 @@ export function CelebrationMode() {
       }
 
       // Spotlight effect
-      const spotGrad = ctx.createRadialGradient(canvas.width / 2, canvas.height * 0.3, 0, canvas.width / 2, canvas.height * 0.3, canvas.width * 0.6);
+      const spotGrad = ctx.createRadialGradient(
+        canvas.width / 2,
+        canvas.height * 0.3,
+        0,
+        canvas.width / 2,
+        canvas.height * 0.3,
+        canvas.width * 0.6,
+      );
       spotGrad.addColorStop(0, `rgba(251, 191, 36, ${0.08 + 0.04 * Math.sin(t * 0.05)})`);
       spotGrad.addColorStop(0.5, `rgba(59, 130, 246, ${0.04 * Math.sin(t * 0.03)})`);
       spotGrad.addColorStop(1, 'rgba(251, 191, 36, 0)');

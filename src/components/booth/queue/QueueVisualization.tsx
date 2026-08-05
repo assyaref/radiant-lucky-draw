@@ -22,7 +22,14 @@ export function QueueVisualization() {
       </motion.div>
 
       <h3 className="relative z-10 flex items-center gap-2 text-[10px] font-bold tracking-[0.25em] text-white/40 uppercase">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
           <circle cx="9" cy="7" r="4" />
           <path d="M23 21v-2a4 4 0 00-3-3.87" />
@@ -50,7 +57,9 @@ export function QueueVisualization() {
           >
             #{nowServing}
           </motion.p>
-          <p className="text-[9px] font-medium text-white/30 uppercase tracking-wider">Now Serving</p>
+          <p className="text-[9px] font-medium text-white/30 uppercase tracking-wider">
+            Now Serving
+          </p>
         </div>
 
         {/* In Queue */}
@@ -88,7 +97,10 @@ export function QueueVisualization() {
       <div className="relative z-10 h-1.5 overflow-hidden rounded-full bg-white/5">
         <motion.div
           className="h-full rounded-full bg-gradient-to-r from-amber-400 via-blue-500 to-amber-400"
-          animate={{ width: [`${(nowServing % 100)}%`, `${(nowServing % 100) + 10}%`], opacity: [0.6, 1, 0.6] }}
+          animate={{
+            width: [`${nowServing % 100}%`, `${(nowServing % 100) + 10}%`],
+            opacity: [0.6, 1, 0.6],
+          }}
           transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
         />
       </div>

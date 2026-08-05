@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Prize } from '@/engine/types/prize';
 import { PrizeTier } from '@/engine/types/prize';
 import type { PrizeCreateParams } from '@/engine/types/prize';
@@ -39,12 +39,19 @@ export function PrizeForm({ prize, isEditing, onSubmit, onCancel }: PrizeFormPro
   const [maxDailyWinner, setMaxDailyWinner] = useState(0);
   const [enabled, setEnabled] = useState(true);
   const [displayOrder, setDisplayOrder] = useState(1);
-  const [imageData, setImageData] = useState<ImageUploadData>({ file: null, previewUrl: '', uploadedAt: null });
+  const [imageData, setImageData] = useState<ImageUploadData>({
+    file: null,
+    previewUrl: '',
+    uploadedAt: null,
+  });
   const [schedule, setSchedule] = useState<PrizeScheduleType | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  // Adjust form state when the `prize` prop changes (React 19 recommended pattern).
+  const [prevPrize, setPrevPrize] = useState(prize);
+  if (prize !== prevPrize) {
+    setPrevPrize(prize);
     if (prize) {
       setName(prize.name);
       setDescription(prize.description);
@@ -55,7 +62,11 @@ export function PrizeForm({ prize, isEditing, onSubmit, onCancel }: PrizeFormPro
       setMaxDailyWinner(prize.maxDailyWinner);
       setEnabled(prize.enabled);
       setDisplayOrder(prize.displayOrder);
-      setImageData({ file: null, previewUrl: prize.image, uploadedAt: prize.image ? new Date().toISOString() : null });
+      setImageData({
+        file: null,
+        previewUrl: prize.image,
+        uploadedAt: prize.image ? new Date().toISOString() : null,
+      });
     } else {
       setName('');
       setDescription('');
@@ -69,7 +80,7 @@ export function PrizeForm({ prize, isEditing, onSubmit, onCancel }: PrizeFormPro
       setImageData({ file: null, previewUrl: '', uploadedAt: null });
       setSchedule(null);
     }
-  }, [prize]);
+  }
 
   const handleTierChange = (newTier: PrizeTier) => {
     setTier(newTier);
@@ -186,7 +197,9 @@ export function PrizeForm({ prize, isEditing, onSubmit, onCancel }: PrizeFormPro
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-white/70 mb-1">Daily Limit (0 = unlimited)</label>
+          <label className="block text-sm font-medium text-white/70 mb-1">
+            Daily Limit (0 = unlimited)
+          </label>
           <input
             type="number"
             value={maxDailyWinner}
@@ -232,10 +245,7 @@ export function PrizeForm({ prize, isEditing, onSubmit, onCancel }: PrizeFormPro
       <ImageUpload value={imageData} onChange={setImageData} prizeColor={color} />
 
       {/* Schedule */}
-      <PrizeSchedule
-        schedule={schedule}
-        onChange={setSchedule}
-      />
+      <PrizeSchedule schedule={schedule} onChange={setSchedule} />
 
       {/* Enabled toggle */}
       <div className="flex items-center gap-3">
@@ -275,5 +285,3 @@ export function PrizeForm({ prize, isEditing, onSubmit, onCancel }: PrizeFormPro
     </form>
   );
 }
-
-

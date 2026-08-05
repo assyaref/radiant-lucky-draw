@@ -64,11 +64,7 @@ export function OfflineProvider({ children, autoRecovery = true }: OfflineProvid
     pendingCount: state.pendingCount,
   };
 
-  return (
-    <OfflineContext.Provider value={value}>
-      {children}
-    </OfflineContext.Provider>
-  );
+  return <OfflineContext.Provider value={value}>{children}</OfflineContext.Provider>;
 }
 
 export function useOfflineContext(): OfflineContextValue {

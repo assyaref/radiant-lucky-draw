@@ -18,7 +18,6 @@ import type {
   ExportOptions,
 } from '../types';
 
-
 class AnalyticsService {
   private repository = mockAnalyticsRepository;
 
@@ -84,7 +83,7 @@ class AnalyticsService {
 
   private generateCSV(report: AnalyticsReport): Blob {
     const rows: string[] = ['Section,Label,Value'];
-    
+
     // Summary
     rows.push('Summary,Total Visitors,' + report.summary.totalVisitors);
     rows.push('Summary,Registered Participants,' + report.summary.registeredParticipants);
@@ -93,18 +92,20 @@ class AnalyticsService {
     rows.push('Summary,Conversion Rate,' + report.summary.conversionRate + '%');
     rows.push('Summary,Peak Hour,' + report.summary.peakHour);
     rows.push('Summary,System Uptime,' + report.summary.systemUptime + '%');
-    
+
     rows.push('');
     rows.push('Hourly Data,Hour,Participants,Draws');
     report.hourlyData.forEach((d) => rows.push(`Hourly,${d.hour},${d.participants},${d.draws}`));
-    
+
     rows.push('');
     rows.push('Prize Distribution,Prize,Count');
     report.prizeDistribution.forEach((p) => rows.push(`Prize,${p.name},${p.value}`));
-    
+
     rows.push('');
     rows.push('Queue Performance,Time,Wait Time (min),Queue Length');
-    report.queuePerformance.forEach((q) => rows.push(`Queue,${q.time},${q.waitTime},${q.queueLength}`));
+    report.queuePerformance.forEach((q) =>
+      rows.push(`Queue,${q.time},${q.waitTime},${q.queueLength}`),
+    );
 
     return new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
   }
@@ -157,7 +158,10 @@ class AnalyticsService {
       '',
       'HOURLY PARTICIPANTS',
       '-'.repeat(40),
-      ...report.hourlyData.map((d) => `${d.hour}  |  ${String(d.participants).padStart(4)} participants  |  ${d.draws} draws`),
+      ...report.hourlyData.map(
+        (d) =>
+          `${d.hour}  |  ${String(d.participants).padStart(4)} participants  |  ${d.draws} draws`,
+      ),
       '',
       'PRIZE DISTRIBUTION',
       '-'.repeat(40),

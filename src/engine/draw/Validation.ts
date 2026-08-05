@@ -8,7 +8,7 @@ import { isValidWeight } from '../utils/math';
 /**
  * Validation engine for the Lucky Draw system.
  * Ensures all prizes and draw configurations meet business rules before execution.
- * 
+ *
  * SOLID: Single Responsibility — validates data integrity.
  */
 export class Validation {

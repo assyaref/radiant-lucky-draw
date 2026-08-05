@@ -26,7 +26,7 @@ export interface DrawEngineCallbacks {
 
 /**
  * Enterprise Lucky Draw Engine.
- * 
+ *
  * Orchestrates the complete draw lifecycle:
  * 1. Validate prize stock
  * 2. Load prize pool
@@ -34,14 +34,14 @@ export interface DrawEngineCallbacks {
  * 4. Reserve prize
  * 5. Generate result
  * 6. Return DrawResult
- * 
+ *
  * SOLID Principles:
  * - Single Responsibility: Orchestrates the draw flow
  * - Open/Closed: Extensible via callbacks and strategies
  * - Liskov Substitution: All dependencies are interface-based
  * - Interface Segregation: Clean, focused interfaces
  * - Dependency Inversion: Depends on abstractions, not concretions
- * 
+ *
  * Framework Independent: Zero React/UI dependencies.
  * Fully testable with seeded random generator.
  */
@@ -65,7 +65,7 @@ export class DrawEngine {
   /**
    * Register prizes with the engine.
    * Validates all prizes before accepting them.
-   * 
+   *
    * @throws Error if validation fails
    */
   registerPrizes(prizes: Prize[]): void {
@@ -127,14 +127,14 @@ export class DrawEngine {
 
   /**
    * Execute a single draw operation.
-   * 
+   *
    * Flow:
    * 1. Validate prize stock
    * 2. Load eligible prize pool
    * 3. Perform weighted selection
    * 4. Reserve the prize (decrement stock)
    * 5. Generate and return DrawResult
-   * 
+   *
    * @param seed Optional seed for deterministic results
    */
   draw(seed?: number): DrawResult {

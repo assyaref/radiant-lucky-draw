@@ -69,9 +69,7 @@ export const ParticleEngine = memo(function ParticleEngine() {
               <span className="text-lg opacity-40">{ICONS[p.type]}</span>
             ) : (
               <div
-                className={`rounded-full ${color} ${
-                  p.type === 'sparkle' ? 'blur-[1px]' : ''
-                }`}
+                className={`rounded-full ${color} ${p.type === 'sparkle' ? 'blur-[1px]' : ''}`}
                 style={{ width: p.size, height: p.size }}
               />
             )}

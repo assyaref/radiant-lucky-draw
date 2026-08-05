@@ -91,8 +91,7 @@ export function AnimatedLighting({
         <div
           className="h-full w-full"
           style={{
-            background:
-              'linear-gradient(90deg, rgba(59,130,246,0.2) 0%, transparent 100%)',
+            background: 'linear-gradient(90deg, rgba(59,130,246,0.2) 0%, transparent 100%)',
             clipPath: 'polygon(0% 0%, 100% 20%, 100% 80%, 0% 100%)',
           }}
         />
@@ -123,8 +122,7 @@ export function AnimatedLighting({
         <div
           className="h-full w-full"
           style={{
-            background:
-              'linear-gradient(-90deg, rgba(239,68,68,0.2) 0%, transparent 100%)',
+            background: 'linear-gradient(-90deg, rgba(239,68,68,0.2) 0%, transparent 100%)',
             clipPath: 'polygon(0% 20%, 100% 0%, 100% 100%, 0% 80%)',
           }}
         />

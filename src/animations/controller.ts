@@ -313,8 +313,6 @@ export class AnimationController {
 /**
  * Create a new AnimationController with sensible defaults.
  */
-export function createAnimationController(
-  config?: AnimationControllerConfig,
-): AnimationController {
+export function createAnimationController(config?: AnimationControllerConfig): AnimationController {
   return new AnimationController(config);
 }

@@ -8,13 +8,7 @@
 
 import { api } from '@api/client';
 import { setAccessToken, clearAccessToken } from '@api/tokenStore';
-import type {
-  ApiEnvelope,
-  AuthSession,
-  AuthUser,
-  LoginCredentials,
-} from './types';
-
+import type { ApiEnvelope, AuthSession, AuthUser, LoginCredentials } from './types';
 
 export interface LoginResponse {
   user: AuthUser;
@@ -41,7 +35,6 @@ export async function logout(): Promise<void> {
     clearAccessToken();
   }
 }
-
 
 export async function getMe(): Promise<AuthUser> {
   const res = await api.get<ApiEnvelope<AuthUser>>('/auth/me');

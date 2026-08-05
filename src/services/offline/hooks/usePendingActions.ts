@@ -13,7 +13,11 @@ interface PendingActionsResult {
   pendingCount: number;
   failedCount: number;
   completedCount: number;
-  queueAction: (type: PendingActionType, payload: unknown, priority?: 'high' | 'normal' | 'low') => Promise<string>;
+  queueAction: (
+    type: PendingActionType,
+    payload: unknown,
+    priority?: 'high' | 'normal' | 'low',
+  ) => Promise<string>;
   removeAction: (id: string) => Promise<void>;
   clearAll: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -28,6 +32,7 @@ export function usePendingActions(): PendingActionsResult {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data load
     refresh();
 
     const unsubscribe1 = offlineManager.on(OFFLINE_EVENTS.ACTION_QUEUED, refresh);
@@ -44,18 +49,24 @@ export function usePendingActions(): PendingActionsResult {
     };
   }, [refresh]);
 
-  const queueAction = useCallback(async (
-    type: PendingActionType,
-    payload: unknown,
-    priority: 'high' | 'normal' | 'low' = 'normal'
-  ) => {
-    return offlineManager.queueAction(type, payload, priority);
-  }, []);
+  const queueAction = useCallback(
+    async (
+      type: PendingActionType,
+      payload: unknown,
+      priority: 'high' | 'normal' | 'low' = 'normal',
+    ) => {
+      return offlineManager.queueAction(type, payload, priority);
+    },
+    [],
+  );
 
-  const removeAction = useCallback(async (id: string) => {
-    await offlineManager.removePendingAction(id);
-    await refresh();
-  }, [refresh]);
+  const removeAction = useCallback(
+    async (id: string) => {
+      await offlineManager.removePendingAction(id);
+      await refresh();
+    },
+    [refresh],
+  );
 
   const clearAll = useCallback(async () => {
     await offlineManager.clearPendingActions();

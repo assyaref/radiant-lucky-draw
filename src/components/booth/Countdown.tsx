@@ -55,17 +55,9 @@ export const Countdown = memo(function Countdown({ targetDate }: CountdownProps)
       transition={{ duration: 0.5, delay: 0.2 }}
     >
       {/* Animated progress ring - enlarged diameter */}
-      <motion.div
-        className="relative h-52 w-52"
-        variants={floatLoop}
-        animate="float"
-      >
+      <motion.div className="relative h-52 w-52" variants={floatLoop} animate="float">
         {/* Glow behind ring */}
-        <motion.div
-          className="absolute -inset-4 rounded-full"
-          variants={glowLoop}
-          animate="glow"
-        >
+        <motion.div className="absolute -inset-4 rounded-full" variants={glowLoop} animate="glow">
           <div className="h-full w-full rounded-full bg-gradient-radial from-amber-400/25 via-blue-500/12 to-transparent blur-xl" />
         </motion.div>
 
@@ -130,9 +122,7 @@ export const Countdown = memo(function Countdown({ targetDate }: CountdownProps)
 
         {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-xs font-bold tracking-[0.25em] text-white/45">
-            NEXT DRAW
-          </div>
+          <div className="text-xs font-bold tracking-[0.25em] text-white/45">NEXT DRAW</div>
           <div className="mt-1 flex items-baseline gap-1">
             <AnimatePresence mode="popLayout">
               <motion.span
@@ -169,7 +159,6 @@ export const Countdown = memo(function Countdown({ targetDate }: CountdownProps)
             <span>SEC</span>
           </div>
         </div>
-
       </motion.div>
     </motion.div>
   );

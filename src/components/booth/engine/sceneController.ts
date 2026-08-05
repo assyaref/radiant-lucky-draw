@@ -84,13 +84,16 @@ export class SceneController {
           if (step === 'celebration') {
             this.timers.push(setTimeout(onComplete, STEP_DURATIONS.celebration));
           }
-        }, delay)
+        }, delay),
       );
     };
 
     schedule('machineSpin', STEP_DURATIONS.countdown);
     schedule('winner', STEP_DURATIONS.countdown + STEP_DURATIONS.machineSpin);
-    schedule('celebration', STEP_DURATIONS.countdown + STEP_DURATIONS.machineSpin + STEP_DURATIONS.winner);
+    schedule(
+      'celebration',
+      STEP_DURATIONS.countdown + STEP_DURATIONS.machineSpin + STEP_DURATIONS.winner,
+    );
   }
 
   /**
@@ -111,13 +114,16 @@ export class SceneController {
           if (step === 'celebration') {
             this.timers.push(setTimeout(onComplete, STEP_DURATIONS.celebration));
           }
-        }, delay)
+        }, delay),
       );
     };
 
     schedule('machineSpin', STEP_DURATIONS.countdown);
     schedule('winner', STEP_DURATIONS.countdown + STEP_DURATIONS.machineSpin);
-    schedule('celebration', STEP_DURATIONS.countdown + STEP_DURATIONS.machineSpin + STEP_DURATIONS.winner);
+    schedule(
+      'celebration',
+      STEP_DURATIONS.countdown + STEP_DURATIONS.machineSpin + STEP_DURATIONS.winner,
+    );
   }
 
   /** Get the current demo step */

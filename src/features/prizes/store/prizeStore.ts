@@ -6,7 +6,7 @@ import { prizeService } from '../services/prizeService';
 
 /**
  * Prize Management Store.
- * 
+ *
  * Zustand store that manages the prize management UI state.
  * Wraps the PrizeService for reactive state management.
  */
@@ -75,7 +75,10 @@ export const usePrizeStore = create<PrizeStoreState>((set, get) => ({
       const prizes = await prizeService.getAll(get().filters);
       set({ prizes, loading: false });
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to fetch prizes', loading: false });
+      set({
+        error: error instanceof Error ? error.message : 'Failed to fetch prizes',
+        loading: false,
+      });
     }
   },
 
@@ -102,12 +105,19 @@ export const usePrizeStore = create<PrizeStoreState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const prize = await prizeService.create(params);
-      set({ loading: false, success: `Prize "${prize.name}" created successfully`, formOpen: false });
+      set({
+        loading: false,
+        success: `Prize "${prize.name}" created successfully`,
+        formOpen: false,
+      });
       get().fetchPrizes();
       get().fetchStats();
       return prize;
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to create prize', loading: false });
+      set({
+        error: error instanceof Error ? error.message : 'Failed to create prize',
+        loading: false,
+      });
       throw error;
     }
   },
@@ -116,12 +126,20 @@ export const usePrizeStore = create<PrizeStoreState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const prize = await prizeService.update(id, updates);
-      set({ loading: false, success: `Prize "${prize.name}" updated successfully`, formOpen: false, selectedPrize: null });
+      set({
+        loading: false,
+        success: `Prize "${prize.name}" updated successfully`,
+        formOpen: false,
+        selectedPrize: null,
+      });
       get().fetchPrizes();
       get().fetchStats();
       return prize;
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to update prize', loading: false });
+      set({
+        error: error instanceof Error ? error.message : 'Failed to update prize',
+        loading: false,
+      });
       throw error;
     }
   },
@@ -135,7 +153,10 @@ export const usePrizeStore = create<PrizeStoreState>((set, get) => ({
       get().fetchStats();
       return result;
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to delete prize', loading: false });
+      set({
+        error: error instanceof Error ? error.message : 'Failed to delete prize',
+        loading: false,
+      });
       throw error;
     }
   },
@@ -149,7 +170,10 @@ export const usePrizeStore = create<PrizeStoreState>((set, get) => ({
       get().fetchStats();
       return prize;
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to duplicate prize', loading: false });
+      set({
+        error: error instanceof Error ? error.message : 'Failed to duplicate prize',
+        loading: false,
+      });
       throw error;
     }
   },
@@ -171,11 +195,18 @@ export const usePrizeStore = create<PrizeStoreState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       await prizeService.bulkUpdate(payload);
-      set({ loading: false, success: `${payload.prizeIds.length} prizes updated`, selectedIds: [] });
+      set({
+        loading: false,
+        success: `${payload.prizeIds.length} prizes updated`,
+        selectedIds: [],
+      });
       get().fetchPrizes();
       get().fetchStats();
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to bulk update', loading: false });
+      set({
+        error: error instanceof Error ? error.message : 'Failed to bulk update',
+        loading: false,
+      });
     }
   },
 
@@ -201,12 +232,19 @@ export const usePrizeStore = create<PrizeStoreState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const result = await prizeService.importCSV(csvString);
-      set({ loading: false, csvImportResult: result, success: `Imported ${result.imported} prizes` });
+      set({
+        loading: false,
+        csvImportResult: result,
+        success: `Imported ${result.imported} prizes`,
+      });
       get().fetchPrizes();
       get().fetchStats();
       return result;
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to import CSV', loading: false });
+      set({
+        error: error instanceof Error ? error.message : 'Failed to import CSV',
+        loading: false,
+      });
       throw error;
     }
   },

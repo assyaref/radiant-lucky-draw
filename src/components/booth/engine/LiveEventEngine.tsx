@@ -94,24 +94,15 @@ export function LiveEventEngineProvider({
 }: LiveEventEngineProviderProps) {
   const engineConfig = useMemo<EngineConfig>(
     () => ({ ...DEFAULT_ENGINE_CONFIG, ...config }),
-    [config]
+    [config],
   );
 
-  // Core controllers (stable refs)
-  const stateMachineRef = useRef<StateMachine | null>(null);
-  const idleControllerRef = useRef<IdleController | null>(null);
-  const sceneControllerRef = useRef<SceneController | null>(null);
-  const transitionManagerRef = useRef<TransitionManager | null>(null);
-
-  if (!stateMachineRef.current) stateMachineRef.current = new StateMachine('idle');
-  if (!idleControllerRef.current) idleControllerRef.current = new IdleController();
-  if (!sceneControllerRef.current) sceneControllerRef.current = new SceneController();
-  if (!transitionManagerRef.current) transitionManagerRef.current = new TransitionManager();
-
-  const stateMachine = stateMachineRef.current;
-  const idleController = idleControllerRef.current;
-  const sceneController = sceneControllerRef.current;
-  const transitionManager = transitionManagerRef.current;
+  // Core controllers (stable instances created once via lazy state init,
+  // the React 19 approved pattern for stable objects used in deps).
+  const [stateMachine] = useState(() => new StateMachine('idle'));
+  const [idleController] = useState(() => new IdleController());
+  const [sceneController] = useState(() => new SceneController());
+  const [transitionManager] = useState(() => new TransitionManager());
 
   // Reactive state
   const [state, setState] = useState<EngineState>(stateMachine.getState());
@@ -123,11 +114,14 @@ export function LiveEventEngineProvider({
   const [isDemoRunning, setIsDemoRunning] = useState(false);
   const [isEventRunning, setIsEventRunning] = useState(false);
 
-  // Refs for callbacks to avoid stale closures
+  // Refs for callbacks to avoid stale closures. Updated inside an effect so
+  // refs are never mutated during render (React 19 approved pattern).
   const onEventStartRef = useRef(onEventStart);
   const onEventCompleteRef = useRef(onEventComplete);
-  onEventStartRef.current = onEventStart;
-  onEventCompleteRef.current = onEventComplete;
+  useEffect(() => {
+    onEventStartRef.current = onEventStart;
+    onEventCompleteRef.current = onEventComplete;
+  }, [onEventStart, onEventComplete]);
 
   // Subscribe to controllers
   useEffect(() => {
@@ -187,7 +181,14 @@ export function LiveEventEngineProvider({
       });
     }, engineConfig.demoInterval);
     return () => clearInterval(interval);
-  }, [state, engineConfig.demoInterval, stateMachine, sceneController, transitionManager, idleController]);
+  }, [
+    state,
+    engineConfig.demoInterval,
+    stateMachine,
+    sceneController,
+    transitionManager,
+    idleController,
+  ]);
 
   // ---- EVENT MODE: interrupt idle when participant starts ----
   const triggerEvent = useCallback(
@@ -207,7 +208,7 @@ export function LiveEventEngineProvider({
         onEventCompleteRef.current?.();
       });
     },
-    [stateMachine, sceneController, transitionManager, idleController]
+    [stateMachine, sceneController, transitionManager, idleController],
   );
 
   // ---- Public API ----
@@ -244,13 +245,10 @@ export function LiveEventEngineProvider({
 
   const setTransition = useCallback(
     (type: TransitionType) => transitionManager.setTransition(type),
-    [transitionManager]
+    [transitionManager],
   );
 
-  const goToScene = useCallback(
-    (scene: IdleScene) => idleController.goTo(scene),
-    [idleController]
-  );
+  const goToScene = useCallback((scene: IdleScene) => idleController.goTo(scene), [idleController]);
 
   const api = useMemo<LiveEventEngineApi>(
     () => ({
@@ -284,10 +282,8 @@ export function LiveEventEngineProvider({
       returnToIdle,
       setTransition,
       goToScene,
-    ]
+    ],
   );
 
-  return (
-    <LiveEventEngineContext.Provider value={api}>{children}</LiveEventEngineContext.Provider>
-  );
+  return <LiveEventEngineContext.Provider value={api}>{children}</LiveEventEngineContext.Provider>;
 }

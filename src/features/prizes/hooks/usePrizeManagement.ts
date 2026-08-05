@@ -5,7 +5,7 @@ import type { PrizeFilterOptions, BulkUpdatePayload } from '../types';
 
 /**
  * Prize Management Hook.
- * 
+ *
  * Provides a clean API for components to interact with the prize store.
  * Handles initialization and cleanup.
  */

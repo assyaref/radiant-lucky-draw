@@ -47,7 +47,6 @@ export class StateMachine {
     const canInterrupt = INTERRUPTIBLE.includes(this.state) && next === 'event';
 
     if (!allowed.includes(next) && !canInterrupt) {
-      // eslint-disable-next-line no-console
       console.warn(`[LiveEventEngine] Invalid transition: ${this.state} -> ${next}`);
       return false;
     }

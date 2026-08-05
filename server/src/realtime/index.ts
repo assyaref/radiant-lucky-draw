@@ -14,5 +14,3 @@ export type {
   DrawWinnerPayload,
   DrawCompletedPayload,
 } from './RealtimeService';
-
-

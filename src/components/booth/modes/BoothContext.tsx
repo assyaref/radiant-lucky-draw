@@ -1,6 +1,15 @@
-import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  type ReactNode,
+} from 'react';
 
-export type BoothMode = 'welcome' | 'attraction' | 'celebration' | 'idle' | 'digital' | 'emergency' | 'normal';
+export type BoothMode =
+  'welcome' | 'attraction' | 'celebration' | 'idle' | 'digital' | 'emergency' | 'normal';
 
 interface CelebrationData {
   winnerName: string;
@@ -26,7 +35,12 @@ interface BoothState {
   recordInteraction: () => void;
   setOnline: (online: boolean) => void;
   updateQueue: (data: { queueCount: number; nowServing: number; estimatedWait: number }) => void;
-  updateStats: (data: { visitorsToday: number; drawsCompleted: number; remainingPrizes: number; grandPrizeAvailable: boolean }) => void;
+  updateStats: (data: {
+    visitorsToday: number;
+    drawsCompleted: number;
+    remainingPrizes: number;
+    grandPrizeAvailable: boolean;
+  }) => void;
 }
 
 const BoothContext = createContext<BoothState | null>(null);
@@ -40,7 +54,7 @@ export function useBooth() {
 export function BoothProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<BoothMode>('normal');
   const [isOnline, setOnline] = useState(true);
-  const [lastInteraction, setLastInteraction] = useState(Date.now());
+  const [lastInteraction, setLastInteraction] = useState(() => Date.now());
   const [celebrationData, setCelebrationData] = useState<CelebrationData | null>(null);
   const [queueCount, setQueueCount] = useState(0);
   const [nowServing, setNowServing] = useState(1);
@@ -52,6 +66,18 @@ export function BoothProvider({ children }: { children: ReactNode }) {
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const attractionTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const emergencyRetryRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Adjust mode in response to online/offline transitions during render
+  // (React 19 recommended pattern instead of calling setState in an effect).
+  const [prevOnline, setPrevOnline] = useState(isOnline);
+  if (isOnline !== prevOnline) {
+    setPrevOnline(isOnline);
+    if (!isOnline) {
+      setMode('emergency');
+    } else if (mode === 'emergency') {
+      setMode('normal');
+    }
+  }
 
   const recordInteraction = useCallback(() => {
     setLastInteraction(Date.now());
@@ -84,13 +110,16 @@ export function BoothProvider({ children }: { children: ReactNode }) {
 
   // Auto-attraction every 10-15s when idle
   useEffect(() => {
-    attractionTimerRef.current = setInterval(() => {
-      const idleTime = Date.now() - lastInteraction;
-      if (idleTime > 5000 && idleTime < 60000 && mode === 'normal') {
-        setMode('attraction');
-        setTimeout(() => setMode('normal'), 4000);
-      }
-    }, 10000 + Math.random() * 5000);
+    attractionTimerRef.current = setInterval(
+      () => {
+        const idleTime = Date.now() - lastInteraction;
+        if (idleTime > 5000 && idleTime < 60000 && mode === 'normal') {
+          setMode('attraction');
+          setTimeout(() => setMode('normal'), 4000);
+        }
+      },
+      10000 + Math.random() * 5000,
+    );
 
     return () => {
       if (attractionTimerRef.current) clearInterval(attractionTimerRef.current);
@@ -117,23 +146,20 @@ export function BoothProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Emergency auto-retry
+  // Emergency auto-retry: only manages the retry interval. Mode transitions
+  // (emergency/normal) are handled during render above.
   useEffect(() => {
     if (!isOnline) {
-      setMode('emergency');
       emergencyRetryRef.current = setInterval(() => {
         // Simulate connection check
         setOnline(Math.random() > 0.3);
       }, 5000);
-    } else if (mode === 'emergency') {
-      setMode('normal');
-      if (emergencyRetryRef.current) clearInterval(emergencyRetryRef.current);
     }
 
     return () => {
       if (emergencyRetryRef.current) clearInterval(emergencyRetryRef.current);
     };
-  }, [isOnline, mode]);
+  }, [isOnline]);
 
   // Simulate stats updates
   useEffect(() => {

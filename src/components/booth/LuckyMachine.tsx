@@ -82,9 +82,8 @@ export const LuckyMachine = memo(function LuckyMachine() {
                   left: `calc(50% + ${Math.cos(angle) * radius}px - 5px)`,
                   top: `calc(50% + ${Math.sin(angle) * radius}px - 5px)`,
                   background: i % 2 === 0 ? '#fbbf24' : '#60a5fa',
-                  boxShadow: i % 2 === 0
-                    ? '0 0 12px rgba(251,191,36,0.8)'
-                    : '0 0 12px rgba(59,130,246,0.8)',
+                  boxShadow:
+                    i % 2 === 0 ? '0 0 12px rgba(251,191,36,0.8)' : '0 0 12px rgba(59,130,246,0.8)',
                 }}
                 animate={{
                   scale: [1, 2.4, 1],
@@ -119,7 +118,6 @@ export const LuckyMachine = memo(function LuckyMachine() {
 
         {/* Glass dome - enlarged ~20% */}
         <div className="relative mx-auto h-[36rem] w-[36rem] overflow-hidden rounded-full border-[5px] border-blue-400/50 bg-gradient-to-b from-blue-500/20 via-blue-400/10 to-transparent shadow-[0_0_200px_rgba(59,130,246,0.25)] backdrop-blur-sm">
-
           {/* Glass reflection - top primary */}
           <div className="pointer-events-none absolute left-10 top-8 h-40 w-20 rotate-12 rounded-full bg-gradient-to-b from-white/30 to-transparent blur-sm" />
           {/* Glass reflection - secondary */}

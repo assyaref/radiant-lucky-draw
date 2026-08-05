@@ -29,9 +29,7 @@ const drawEmitter: DrawEventEmitter = {
     // The socket service is wired in the app bootstrap; this keeps the
     // store decoupled from the concrete socket implementation.
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('draw-engine:event', { detail: { event, payload } }),
-      );
+      window.dispatchEvent(new CustomEvent('draw-engine:event', { detail: { event, payload } }));
     }
   },
 };

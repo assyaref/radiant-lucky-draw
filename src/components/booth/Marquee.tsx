@@ -8,7 +8,7 @@ const TICKER_ITEMS = [
   { icon: '🤝', text: 'Proudly sponsored by TECHNOVA, AURUM GROUP & NEXUS LABS' },
   { icon: '🎉', text: 'Over 1,200 participants joined today!' },
   { icon: '💎', text: 'Grand Prize: Platinum Package worth $5,000' },
-  { icon: '⏰', text: 'Event closes at 6:00 PM — Don\'t miss your chance!' },
+  { icon: '⏰', text: "Event closes at 6:00 PM — Don't miss your chance!" },
 ];
 
 export const Marquee = memo(function Marquee() {
@@ -35,8 +35,7 @@ export const Marquee = memo(function Marquee() {
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.06]"
         style={{
-          backgroundImage:
-            'radial-gradient(circle, rgba(96,165,250,0.9) 1px, transparent 1px)',
+          backgroundImage: 'radial-gradient(circle, rgba(96,165,250,0.9) 1px, transparent 1px)',
           backgroundSize: '6px 6px',
         }}
       />
@@ -64,9 +63,7 @@ export const Marquee = memo(function Marquee() {
         {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
           <div key={i} className="flex items-center gap-2">
             <span className="text-sm">{item.icon}</span>
-            <span className="text-sm font-medium tracking-wide text-blue-200/70">
-              {item.text}
-            </span>
+            <span className="text-sm font-medium tracking-wide text-blue-200/70">{item.text}</span>
             <span className="ml-6 text-blue-400/30">•</span>
           </div>
         ))}

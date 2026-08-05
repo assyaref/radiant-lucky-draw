@@ -11,7 +11,6 @@ const REGISTRATION_URL = `${env.PUBLIC_URL}/register`;
 
 export const QRCode = memo(function QRCode() {
   return (
-
     <motion.div
       className="relative flex flex-col items-center"
       initial={{ opacity: 0, y: 20 }}
@@ -19,12 +18,7 @@ export const QRCode = memo(function QRCode() {
       transition={{ duration: 0.8, delay: 0.4 }}
     >
       {/* Premium QR Card */}
-      <motion.div
-        className="group relative"
-        variants={floatLoop}
-        animate="float"
-      >
-
+      <motion.div className="group relative" variants={floatLoop} animate="float">
         {/* Breathing glow behind card */}
         <motion.div
           className="pointer-events-none absolute -inset-5 rounded-2xl"
@@ -33,7 +27,6 @@ export const QRCode = memo(function QRCode() {
         >
           <div className="h-full w-full rounded-2xl bg-gradient-radial from-blue-400/25 via-amber-400/12 to-transparent blur-2xl" />
         </motion.div>
-
 
         {/* Animated border */}
         <motion.div
@@ -89,7 +82,6 @@ export const QRCode = memo(function QRCode() {
                 }}
               />
 
-
               {/* Center logo */}
               <div className="pointer-events-none absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-lg bg-gradient-to-br from-amber-400 to-blue-500 shadow-lg shadow-amber-400/30">
                 <div className="flex h-full items-center justify-center text-base font-black text-white">
@@ -98,7 +90,6 @@ export const QRCode = memo(function QRCode() {
               </div>
             </div>
           </div>
-
 
           {/* Blue neon edge glow */}
           <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_0_0_40px_rgba(59,130,246,0.2)]" />
@@ -147,9 +138,6 @@ export const QRCode = memo(function QRCode() {
       >
         {REGISTRATION_URL}
       </a>
-
     </motion.div>
   );
 });
-
-

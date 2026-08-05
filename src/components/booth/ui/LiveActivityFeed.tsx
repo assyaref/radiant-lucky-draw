@@ -107,9 +107,7 @@ export const LiveActivityFeed = memo(function LiveActivityFeed() {
                   {style.icon}
                 </motion.span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11px] font-medium text-white/70">
-                    {activity.text}
-                  </p>
+                  <p className="truncate text-[11px] font-medium text-white/70">{activity.text}</p>
                 </div>
                 <motion.span
                   className="shrink-0 text-[9px] font-mono tabular-nums"

@@ -11,7 +11,6 @@ import { createAuthenticate } from '../middlewares/auth.middleware';
 import { TokenService } from '../services';
 import { loginSchema, registerSchema, revokeSessionSchema } from '../validators';
 
-
 export function createAuthRoutes(
   authController: AuthController,
   tokenService: TokenService,
@@ -64,7 +63,6 @@ export function createAuthRoutes(
    */
   router.post('/refresh', authController.refresh);
 
-
   /**
    * @openapi
    * /api/auth/logout:
@@ -84,7 +82,6 @@ export function createAuthRoutes(
    *         description: Logged out
    */
   router.post('/logout', authController.logout);
-
 
   /**
    * @openapi

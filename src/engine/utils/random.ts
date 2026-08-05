@@ -1,14 +1,14 @@
 /**
  * Seeded Pseudo-Random Number Generator (PRNG).
  * Implements a Mulberry32 algorithm for deterministic randomness.
- * 
+ *
  * Features:
  * - Deterministic: same seed always produces same sequence
  * - next(): returns next random number [0, 1)
  * - nextFloat(min, max): returns float in range
  * - nextInt(min, max): returns integer in range
  * - shuffle(array): Fisher-Yates shuffle
- * 
+ *
  * This enables fully repeatable test scenarios.
  */
 export class SeededRandom {
@@ -90,7 +90,7 @@ export function seedFromString(input: string): number {
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
     const char = input.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash |= 0;
   }
   return Math.abs(hash);

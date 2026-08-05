@@ -28,8 +28,6 @@ const validations: EnvValidation[] = [
   { key: 'COOKIE_SECURE', required: false, production: false },
 ];
 
-
-
 function validateEnv(): void {
   const isProduction = process.env.NODE_ENV === 'production';
 
@@ -45,9 +43,7 @@ function validateEnv(): void {
     }
 
     if (isProduction && validation.production && !process.env[validation.key]) {
-      console.warn(
-        `[Env Validation] Missing production environment variable: ${validation.key}`
-      );
+      console.warn(`[Env Validation] Missing production environment variable: ${validation.key}`);
     }
   }
 }
@@ -68,7 +64,6 @@ export const env = {
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || '',
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
 
-
   // Cookies
   COOKIE_NAME: process.env.COOKIE_NAME || 'radiant_refresh',
   COOKIE_SECURE: process.env.COOKIE_SECURE === 'true',
@@ -77,7 +72,6 @@ export const env = {
 
   // CORS
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
-
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
@@ -91,10 +85,7 @@ export const env = {
     process.env.REGISTRATION_RATE_LIMIT_WINDOW_MS || '900000',
     10,
   ),
-  REGISTRATION_RATE_LIMIT_MAX: parseInt(
-    process.env.REGISTRATION_RATE_LIMIT_MAX || '600',
-    10,
-  ),
+  REGISTRATION_RATE_LIMIT_MAX: parseInt(process.env.REGISTRATION_RATE_LIMIT_MAX || '600', 10),
 
   // Logging
   LOG_LEVEL: process.env.LOG_LEVEL || 'dev',

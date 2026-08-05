@@ -51,14 +51,18 @@ export type {
   StandardVariants,
 } from './types';
 
-export {
-  ANIMATION_STATE_ORDER,
-  DEFAULT_STATE_DURATIONS,
-  CELEBRATION_CONFIGS,
-} from './types';
+export { ANIMATION_STATE_ORDER, DEFAULT_STATE_DURATIONS, CELEBRATION_CONFIGS } from './types';
 
 // ─── Timeline Engine ────────────────────────────────────────────────────
-export { TimelineEngine, createDefaultTimeline, calculateTotalDuration, getStateIndex, isStateBefore, getStatesUpTo, getStatesAfter } from './timeline';
+export {
+  TimelineEngine,
+  createDefaultTimeline,
+  calculateTotalDuration,
+  getStateIndex,
+  isStateBefore,
+  getStatesUpTo,
+  getStatesAfter,
+} from './timeline';
 
 // ─── Controller ─────────────────────────────────────────────────────────
 export { AnimationController, createAnimationController } from './controller';
@@ -68,7 +72,12 @@ export { AnimationContext, AnimationProvider } from './context';
 export type { AnimationProviderProps } from './context';
 
 // ─── Hooks ──────────────────────────────────────────────────────────────
-export { useAnimationController, useAnimationState, useCelebrationLevel, useAnimationTimeline } from './hooks';
+export {
+  useAnimationController,
+  useAnimationState,
+  useCelebrationLevel,
+  useAnimationTimeline,
+} from './hooks';
 
 // ─── Components ─────────────────────────────────────────────────────────
 export {
@@ -122,5 +131,3 @@ export {
 } from './variants';
 
 export { AnimatedCounter } from './components/AnimatedCounter';
-
-

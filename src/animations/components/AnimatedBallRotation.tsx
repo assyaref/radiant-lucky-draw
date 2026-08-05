@@ -11,7 +11,16 @@ import { motion } from 'framer-motion';
 import { type AnimationComponentProps, CELEBRATION_CONFIGS } from '../types';
 
 const BALL_COUNT = 8;
-const BALL_COLORS = ['#fbbf24', '#ef4444', '#34d399', '#60a5fa', '#a78bfa', '#f472b6', '#f59e0b', '#ffffff'];
+const BALL_COLORS = [
+  '#fbbf24',
+  '#ef4444',
+  '#34d399',
+  '#60a5fa',
+  '#a78bfa',
+  '#f472b6',
+  '#f59e0b',
+  '#ffffff',
+];
 
 export function AnimatedBallRotation({
   active,
@@ -29,7 +38,9 @@ export function AnimatedBallRotation({
   const animDuration = (duration / 1000) * config.speedMultiplier;
 
   return (
-    <div className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}>
+    <div
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center ${className}`}
+    >
       <motion.div
         className="relative h-64 w-64"
         initial={{ scale: 0, opacity: 0 }}
@@ -58,11 +69,7 @@ export function AnimatedBallRotation({
         {/* Orbital ring */}
         <motion.div
           className="absolute inset-0 rounded-full border border-amber-400/20"
-          animate={
-            phase === 'active'
-              ? { rotate: 360 }
-              : undefined
-          }
+          animate={phase === 'active' ? { rotate: 360 } : undefined}
           transition={{
             repeat: Infinity,
             duration: animDuration * 0.5,
@@ -98,7 +105,7 @@ export function AnimatedBallRotation({
               }
               transition={{
                 repeat: Infinity,
-                duration: 1 + (i * 0.2),
+                duration: 1 + i * 0.2,
                 ease: 'easeInOut',
                 delay: i * 0.1,
               }}
@@ -112,7 +119,11 @@ export function AnimatedBallRotation({
         <motion.div
           className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full"
           animate={{
-            opacity: [0.3 * config.glowIntensity, 0.7 * config.glowIntensity, 0.3 * config.glowIntensity],
+            opacity: [
+              0.3 * config.glowIntensity,
+              0.7 * config.glowIntensity,
+              0.3 * config.glowIntensity,
+            ],
             scale: [1, 1.2, 1],
           }}
           transition={{

@@ -61,7 +61,8 @@ export function LineChart({
     const processedDatasets = datasets.map((ds, i) => ({
       ...ds,
       borderColor: ds.borderColor || defaultColors[i % defaultColors.length].border,
-      backgroundColor: ds.backgroundColor || (area ? defaultColors[i % defaultColors.length].bg : 'transparent'),
+      backgroundColor:
+        ds.backgroundColor || (area ? defaultColors[i % defaultColors.length].bg : 'transparent'),
       fill: ds.fill ?? area,
       tension: ds.tension ?? 0.4,
       pointRadius: ds.pointRadius ?? 3,

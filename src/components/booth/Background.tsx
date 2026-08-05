@@ -184,11 +184,7 @@ export const Background = memo(function Background() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#020617] via-[#0b1426] to-[#0f172a]" />
 
       {/* Layer 2: Nebula canvas */}
-      <canvas
-        ref={nebulaRef}
-        className="absolute inset-0"
-        aria-hidden="true"
-      />
+      <canvas ref={nebulaRef} className="absolute inset-0" aria-hidden="true" />
 
       {/* Layer 7: Floating Energy Rings */}
       <motion.div
@@ -257,7 +253,10 @@ export const Background = memo(function Background() {
         }}
         transition={{ repeat: Infinity, duration: 18, ease: 'easeInOut' }}
       >
-        <div className="h-full w-full bg-gradient-to-b from-amber-400/20 via-blue-500/5 to-transparent blur-3xl" style={{ clipPath: 'polygon(40% 0, 60% 0, 100% 100%, 0 100%)' }} />
+        <div
+          className="h-full w-full bg-gradient-to-b from-amber-400/20 via-blue-500/5 to-transparent blur-3xl"
+          style={{ clipPath: 'polygon(40% 0, 60% 0, 100% 100%, 0 100%)' }}
+        />
       </motion.div>
 
       {/* Secondary spotlight */}
@@ -270,7 +269,10 @@ export const Background = memo(function Background() {
         }}
         transition={{ repeat: Infinity, duration: 22, ease: 'easeInOut' }}
       >
-        <div className="h-full w-full bg-gradient-to-b from-blue-400/20 via-amber-400/5 to-transparent blur-3xl" style={{ clipPath: 'polygon(40% 0, 60% 0, 100% 100%, 0 100%)' }} />
+        <div
+          className="h-full w-full bg-gradient-to-b from-blue-400/20 via-amber-400/5 to-transparent blur-3xl"
+          style={{ clipPath: 'polygon(40% 0, 60% 0, 100% 100%, 0 100%)' }}
+        />
       </motion.div>
     </div>
   );

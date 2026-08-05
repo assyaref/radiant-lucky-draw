@@ -184,12 +184,9 @@ export function useAnimationController(
     [currentState],
   );
 
-  const hasStatePassed = useCallback(
-    (state: AnimationState): boolean => {
-      return controllerRef.current?.hasStatePassed(state) ?? false;
-    },
-    [],
-  );
+  const hasStatePassed = useCallback((state: AnimationState): boolean => {
+    return controllerRef.current?.hasStatePassed(state) ?? false;
+  }, []);
 
   return {
     state: {

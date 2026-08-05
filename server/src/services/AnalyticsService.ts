@@ -19,11 +19,10 @@ export class AnalyticsService {
 
   async getDashboardStats(): Promise<DashboardStats> {
     // Real participant counts by status.
-    const [registered, called, completed, cancelled] = await Promise.all([
+    const [registered, called, completed] = await Promise.all([
       prisma.participant.count({ where: { status: 'registered', deletedAt: null } }),
       prisma.participant.count({ where: { status: 'called', deletedAt: null } }),
       prisma.participant.count({ where: { status: 'completed', deletedAt: null } }),
-      prisma.participant.count({ where: { status: 'cancelled', deletedAt: null } }),
     ]);
 
     // Real queue length = participants still waiting or currently called.
@@ -85,9 +84,7 @@ export class AnalyticsService {
         return Math.max(0, (end - start) / 1000);
       });
     const averageDrawTime =
-      drawTimes.length > 0
-        ? drawTimes.reduce((sum, t) => sum + t, 0) / drawTimes.length
-        : 0;
+      drawTimes.length > 0 ? drawTimes.reduce((sum, t) => sum + t, 0) / drawTimes.length : 0;
 
     // Real participation by hour (registrations grouped by hour of day).
     const registrations = await prisma.participant.findMany({
@@ -125,8 +122,6 @@ export class AnalyticsService {
    */
   private getActiveConnections(): number {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { RealtimeService } = require('../realtime');
       // The realtime service is a singleton attached to the HTTP server.
       // We read the underlying Socket.IO server's connected socket count.
       const io = (globalThis as any).__radiantRealtimeIO;

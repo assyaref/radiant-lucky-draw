@@ -22,12 +22,13 @@ const STATUS_OPTIONS: { value: 'all' | boolean; label: string }[] = [
   { value: false, label: 'Disabled' },
 ];
 
-const STOCK_OPTIONS: { value: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock'; label: string }[] = [
-  { value: 'all', label: 'All Stock' },
-  { value: 'in_stock', label: 'In Stock' },
-  { value: 'low_stock', label: 'Low Stock (≤10)' },
-  { value: 'out_of_stock', label: 'Out of Stock' },
-];
+const STOCK_OPTIONS: { value: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock'; label: string }[] =
+  [
+    { value: 'all', label: 'All Stock' },
+    { value: 'in_stock', label: 'In Stock' },
+    { value: 'low_stock', label: 'Low Stock (≤10)' },
+    { value: 'out_of_stock', label: 'Out of Stock' },
+  ];
 
 const SORT_OPTIONS: { value: PrizeFilterOptions['sortBy']; label: string }[] = [
   { value: 'displayOrder', label: 'Order' },
@@ -39,7 +40,8 @@ const SORT_OPTIONS: { value: PrizeFilterOptions['sortBy']; label: string }[] = [
 ];
 
 export function PrizeFilter({ filters, onChange, onReset }: PrizeFilterProps) {
-  const hasActiveFilters = filters.tier !== 'all' || filters.enabled !== 'all' || filters.stockStatus !== 'all';
+  const hasActiveFilters =
+    filters.tier !== 'all' || filters.enabled !== 'all' || filters.stockStatus !== 'all';
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -75,7 +77,9 @@ export function PrizeFilter({ filters, onChange, onReset }: PrizeFilterProps) {
       {/* Stock filter */}
       <select
         value={filters.stockStatus}
-        onChange={(e) => onChange({ stockStatus: e.target.value as PrizeFilterOptions['stockStatus'] })}
+        onChange={(e) =>
+          onChange({ stockStatus: e.target.value as PrizeFilterOptions['stockStatus'] })
+        }
         className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
         {STOCK_OPTIONS.map((opt) => (
@@ -100,7 +104,9 @@ export function PrizeFilter({ filters, onChange, onReset }: PrizeFilterProps) {
 
       {/* Sort direction */}
       <button
-        onClick={() => onChange({ sortDirection: filters.sortDirection === 'asc' ? 'desc' : 'asc' })}
+        onClick={() =>
+          onChange({ sortDirection: filters.sortDirection === 'asc' ? 'desc' : 'asc' })
+        }
         className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm hover:bg-white/20 transition-colors"
         title={`Sort ${filters.sortDirection === 'asc' ? 'descending' : 'ascending'}`}
       >

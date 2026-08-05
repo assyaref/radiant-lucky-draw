@@ -9,12 +9,7 @@ import { AppError } from '../utils';
 import { logger } from '../utils';
 import { env } from '../config';
 
-export function errorHandler(
-  err: Error,
-  req: Request,
-  res: Response,
-  _next: NextFunction,
-): void {
+export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction): void {
   const requestId = req.requestId || 'unknown';
 
   if (err instanceof AppError) {

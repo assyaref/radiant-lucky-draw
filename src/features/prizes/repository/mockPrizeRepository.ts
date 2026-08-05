@@ -1,14 +1,20 @@
 import type { Prize, PrizeCreateParams } from '@/engine/types/prize';
 import { PrizeTier } from '@/engine/types/prize';
-import type { PrizeFilterOptions, PrizeStats, BulkUpdatePayload, CSVImportResult, CSVExportRow } from '../types';
+import type {
+  PrizeFilterOptions,
+  PrizeStats,
+  BulkUpdatePayload,
+  CSVImportResult,
+  CSVExportRow,
+} from '../types';
 import { generateId } from '@/engine/utils/math';
 
 /**
  * Mock Prize Repository.
- * 
+ *
  * Simulates a backend API for CRUD operations on prizes.
  * Ready for future API integration — swap this with an API repository.
- * 
+ *
  * All operations are async to simulate network latency.
  */
 class MockPrizeRepository {
@@ -330,7 +336,9 @@ class MockPrizeRepository {
         result.prizes.push(prize);
       } catch (error) {
         result.skipped++;
-        result.errors.push(`Error importing row: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        result.errors.push(
+          `Error importing row: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
     }
 

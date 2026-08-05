@@ -41,16 +41,36 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/operator', icon: <HiOutlineChartBar className="w-5 h-5" /> },
-  { label: 'Participants', path: '/operator/participants', icon: <HiOutlineUsers className="w-5 h-5" /> },
+  {
+    label: 'Participants',
+    path: '/operator/participants',
+    icon: <HiOutlineUsers className="w-5 h-5" />,
+  },
   { label: 'Queue', path: '/operator/queue', icon: <HiOutlineQueueList className="w-5 h-5" /> },
   { label: 'Lucky Draw', path: '/operator/draws', icon: <HiOutlineGift className="w-5 h-5" /> },
   { label: 'Prizes', path: '/operator/prizes', icon: <HiOutlineTrophy className="w-5 h-5" /> },
   { label: 'Sponsors', path: '/operator/sponsors', icon: <HiOutlineStar className="w-5 h-5" /> },
-  { label: 'Announcements', path: '/operator/announcements', icon: <HiOutlineMegaphone className="w-5 h-5" /> },
-  { label: 'Reports', path: '/operator/reports', icon: <HiOutlineDocumentChartBar className="w-5 h-5" /> },
-  { label: 'Settings', path: '/operator/settings', icon: <HiOutlineCog6Tooth className="w-5 h-5" /> },
+  {
+    label: 'Announcements',
+    path: '/operator/announcements',
+    icon: <HiOutlineMegaphone className="w-5 h-5" />,
+  },
+  {
+    label: 'Reports',
+    path: '/operator/reports',
+    icon: <HiOutlineDocumentChartBar className="w-5 h-5" />,
+  },
+  {
+    label: 'Settings',
+    path: '/operator/settings',
+    icon: <HiOutlineCog6Tooth className="w-5 h-5" />,
+  },
   { label: 'Users', path: '/operator/users', icon: <HiOutlineShieldCheck className="w-5 h-5" /> },
-  { label: 'Audit Logs', path: '/operator/audit-logs', icon: <HiOutlineClipboardDocumentList className="w-5 h-5" /> },
+  {
+    label: 'Audit Logs',
+    path: '/operator/audit-logs',
+    icon: <HiOutlineClipboardDocumentList className="w-5 h-5" />,
+  },
 ];
 
 // ─── Sidebar ─────────────────────────────────────────────────────────
@@ -76,7 +96,11 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
           onClick={onToggle}
           className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary transition-colors"
         >
-          {collapsed ? <HiOutlineBars3 className="w-5 h-5" /> : <HiOutlineXMark className="w-5 h-5" />}
+          {collapsed ? (
+            <HiOutlineBars3 className="w-5 h-5" />
+          ) : (
+            <HiOutlineXMark className="w-5 h-5" />
+          )}
         </button>
       </div>
 
@@ -116,8 +140,8 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 // ─── Notification Panel ──────────────────────────────────────────────
 
 function NotificationPanel({ onClose: _onClose }: { onClose: () => void }) {
-
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications } = useDashboardStore();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications } =
+    useDashboardStore();
 
   return (
     <motion.div
@@ -138,11 +162,17 @@ function NotificationPanel({ onClose: _onClose }: { onClose: () => void }) {
         </h3>
         <div className="flex items-center gap-2">
           {unreadCount > 0 && (
-            <button onClick={markAllAsRead} className="text-xs text-primary-400 hover:text-primary-300 transition-colors">
+            <button
+              onClick={markAllAsRead}
+              className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+            >
               Mark all read
             </button>
           )}
-          <button onClick={clearNotifications} className="text-xs text-dark-text-tertiary hover:text-white transition-colors">
+          <button
+            onClick={clearNotifications}
+            className="text-xs text-dark-text-tertiary hover:text-white transition-colors"
+          >
             Clear
           </button>
         </div>
@@ -238,7 +268,9 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
             placeholder="Search pages, actions..."
             className="flex-1 bg-transparent text-white placeholder-dark-text-tertiary outline-none text-sm"
           />
-          <kbd className="px-1.5 py-0.5 text-xs rounded bg-dark-surface-tertiary text-dark-text-tertiary">ESC</kbd>
+          <kbd className="px-1.5 py-0.5 text-xs rounded bg-dark-surface-tertiary text-dark-text-tertiary">
+            ESC
+          </kbd>
         </div>
         <div className="max-h-64 overflow-y-auto p-2">
           {filteredItems.length === 0 ? (
@@ -313,14 +345,20 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
                       : 'bg-danger-500'
                 }`}
               />
-              <span className="text-xs text-dark-text-secondary capitalize">{stats.connectionStatus}</span>
+              <span className="text-xs text-dark-text-secondary capitalize">
+                {stats.connectionStatus}
+              </span>
             </div>
 
             {/* TV Status */}
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-surface-tertiary/50">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  stats.tvStatus === 'online' ? 'bg-success-500' : stats.tvStatus === 'standby' ? 'bg-warning-500' : 'bg-danger-500'
+                  stats.tvStatus === 'online'
+                    ? 'bg-success-500'
+                    : stats.tvStatus === 'standby'
+                      ? 'bg-warning-500'
+                      : 'bg-danger-500'
                 }`}
               />
               <span className="text-xs text-dark-text-secondary">TV: {stats.tvStatus}</span>
@@ -336,7 +374,9 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
             >
               <HiOutlineCommandLine className="w-4 h-4" />
               <span>Search</span>
-              <kbd className="px-1 py-0.5 rounded bg-dark-surface text-dark-text-tertiary text-[10px]">⌘K</kbd>
+              <kbd className="px-1 py-0.5 rounded bg-dark-surface text-dark-text-tertiary text-[10px]">
+                ⌘K
+              </kbd>
             </button>
 
             {/* Theme Toggle */}
@@ -345,7 +385,11 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
               className="p-2 rounded-lg text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary transition-colors"
               title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
-              {isDark ? <HiOutlineSun className="w-5 h-5" /> : <HiOutlineMoon className="w-5 h-5" />}
+              {isDark ? (
+                <HiOutlineSun className="w-5 h-5" />
+              ) : (
+                <HiOutlineMoon className="w-5 h-5" />
+              )}
             </button>
 
             {/* Notifications */}
@@ -362,7 +406,9 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
                 )}
               </button>
               <AnimatePresence>
-                {showNotifications && <NotificationPanel onClose={() => setShowNotifications(false)} />}
+                {showNotifications && (
+                  <NotificationPanel onClose={() => setShowNotifications(false)} />
+                )}
               </AnimatePresence>
             </div>
 
@@ -393,14 +439,20 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
                     </div>
                     <div className="p-1">
                       <button
-                        onClick={() => { navigate('/operator/settings'); setShowUserMenu(false); }}
+                        onClick={() => {
+                          navigate('/operator/settings');
+                          setShowUserMenu(false);
+                        }}
                         className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-dark-text-secondary hover:text-white hover:bg-dark-surface-tertiary transition-colors"
                       >
                         <HiOutlineCog6Tooth className="w-4 h-4" />
                         Settings
                       </button>
                       <button
-                        onClick={() => { navigate('/login'); setShowUserMenu(false); }}
+                        onClick={() => {
+                          navigate('/login');
+                          setShowUserMenu(false);
+                        }}
                         className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-danger-400 hover:text-danger-300 hover:bg-danger-500/10 transition-colors"
                       >
                         <HiOutlineArrowRightOnRectangle className="w-4 h-4" />
@@ -430,7 +482,10 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-dark-surface">
-      <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
         <Header onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} />
         <main className="p-4 lg:p-6">

@@ -11,11 +11,46 @@ interface Prize {
 }
 
 const PRIZES: Prize[] = [
-  { id: 1, name: 'Platinum Package', value: '$5,000', emoji: '👑', color: 'from-amber-400 to-amber-600', isGrand: true },
-  { id: 2, name: 'Luxury Smartphone', value: '$1,200', emoji: '📱', color: 'from-blue-400 to-blue-600', isGrand: false },
-  { id: 3, name: 'Premium Smartwatch', value: '$800', emoji: '⌚', color: 'from-purple-400 to-purple-600', isGrand: false },
-  { id: 4, name: 'Designer Bag', value: '$500', emoji: '👜', color: 'from-pink-400 to-pink-600', isGrand: false },
-  { id: 5, name: 'Gift Voucher', value: '$300', emoji: '🎫', color: 'from-emerald-400 to-emerald-600', isGrand: false },
+  {
+    id: 1,
+    name: 'Platinum Package',
+    value: '$5,000',
+    emoji: '👑',
+    color: 'from-amber-400 to-amber-600',
+    isGrand: true,
+  },
+  {
+    id: 2,
+    name: 'Luxury Smartphone',
+    value: '$1,200',
+    emoji: '📱',
+    color: 'from-blue-400 to-blue-600',
+    isGrand: false,
+  },
+  {
+    id: 3,
+    name: 'Premium Smartwatch',
+    value: '$800',
+    emoji: '⌚',
+    color: 'from-purple-400 to-purple-600',
+    isGrand: false,
+  },
+  {
+    id: 4,
+    name: 'Designer Bag',
+    value: '$500',
+    emoji: '👜',
+    color: 'from-pink-400 to-pink-600',
+    isGrand: false,
+  },
+  {
+    id: 5,
+    name: 'Gift Voucher',
+    value: '$300',
+    emoji: '🎫',
+    color: 'from-emerald-400 to-emerald-600',
+    isGrand: false,
+  },
 ];
 
 export function PrizeShowcase() {
@@ -24,7 +59,14 @@ export function PrizeShowcase() {
   return (
     <div className="flex flex-col gap-4">
       <h3 className="flex items-center gap-2 text-[10px] font-bold tracking-[0.25em] text-white/40 uppercase">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
         Prize Showcase
@@ -66,8 +108,12 @@ export function PrizeShowcase() {
               {prize.emoji}
             </motion.div>
 
-            <p className="text-xs font-bold text-white/70 text-center whitespace-nowrap">{prize.name}</p>
-            <p className={`text-sm font-black ${prize.isGrand ? 'text-amber-300' : 'text-white/50'}`}>
+            <p className="text-xs font-bold text-white/70 text-center whitespace-nowrap">
+              {prize.name}
+            </p>
+            <p
+              className={`text-sm font-black ${prize.isGrand ? 'text-amber-300' : 'text-white/50'}`}
+            >
               {prize.value}
             </p>
 
@@ -75,7 +121,9 @@ export function PrizeShowcase() {
             {prize.isGrand && (
               <motion.div
                 className={`mt-1 rounded-full px-2 py-0.5 text-[7px] font-bold uppercase tracking-wider ${
-                  grandPrizeAvailable ? 'bg-emerald-400/20 text-emerald-300' : 'bg-red-400/20 text-red-300'
+                  grandPrizeAvailable
+                    ? 'bg-emerald-400/20 text-emerald-300'
+                    : 'bg-red-400/20 text-red-300'
                 }`}
                 animate={{ opacity: [0.7, 1, 0.7] }}
                 transition={{ repeat: Infinity, duration: 1.5 }}

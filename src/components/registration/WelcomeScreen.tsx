@@ -88,7 +88,9 @@ export function WelcomeScreen() {
               whileHover={{ scale: 1.05, borderColor: 'rgba(251,191,36,0.3)' }}
             >
               <span className="text-2xl">{prize.emoji}</span>
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{prize.label}</p>
+              <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">
+                {prize.label}
+              </p>
               <p className="text-xs font-black text-amber-300">{prize.value}</p>
             </motion.div>
           ))}

@@ -2,11 +2,13 @@
 // Offline Mode Types - Enterprise Edition
 // ============================================================
 
-export type ConnectionStatus = 'online' | 'offline' | 'reconnecting' | 'server-down' | 'socket-disconnected';
+export type ConnectionStatus =
+  'online' | 'offline' | 'reconnecting' | 'server-down' | 'socket-disconnected';
 
-export type OfflineScenario = 'internet-lost' | 'server-down' | 'socket-disconnect' | 'tv-restart' | 'browser-refresh';
+export type OfflineScenario =
+  'internet-lost' | 'server-down' | 'socket-disconnect' | 'tv-restart' | 'browser-refresh';
 
-export type PendingActionType = 
+export type PendingActionType =
   | 'draw-start'
   | 'draw-complete'
   | 'register-participant'
@@ -163,13 +165,16 @@ export interface ConflictInfo {
 
 export interface DataIntegrityReport {
   valid: boolean;
-  stores: Record<string, {
-    totalEntries: number;
-    corrupted: number;
-    expired: number;
-    orphaned: number;
-    valid: boolean;
-  }>;
+  stores: Record<
+    string,
+    {
+      totalEntries: number;
+      corrupted: number;
+      expired: number;
+      orphaned: number;
+      valid: boolean;
+    }
+  >;
   totalCorrupted: number;
   totalExpired: number;
   totalOrphaned: number;

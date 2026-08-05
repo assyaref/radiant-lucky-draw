@@ -18,11 +18,9 @@ export interface AuthUser {
   role: Role;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthUser;
-    }
+declare module 'express' {
+  interface Request {
+    user?: AuthUser;
   }
 }
 

@@ -88,7 +88,7 @@ export function AnimatedReturnIdle({
           transition={{
             duration: animDuration,
             ease: 'easeIn',
-            delay: (i * 0.05) + delay / 1000,
+            delay: i * 0.05 + delay / 1000,
           }}
         />
       ))}

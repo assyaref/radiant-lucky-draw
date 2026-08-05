@@ -26,7 +26,6 @@ export const SOCKET_EVENTS = {
   QUEUE_SKIPPED: 'queue:skipped',
   QUEUE_CANCELLED: 'queue:cancelled',
 
-
   // Draw events
   DRAW_START: 'draw:start',
   DRAW_COUNTDOWN: 'draw:countdown',
@@ -41,7 +40,6 @@ export const SOCKET_EVENTS = {
 
   // Winner events
   WINNER_ANNOUNCE: 'winner:announce',
-
 
   // System events
   DASHBOARD_UPDATE: 'dashboard:update',
@@ -284,7 +282,6 @@ export interface DrawCompletedAck {
 
 // ─── Winner Events ──────────────────────────────────────────────────────
 
-
 export interface WinnerAnnouncePayload {
   drawId: string;
   winner: {
@@ -346,7 +343,8 @@ export interface SocketEventEnvelope<T = unknown> {
 
 // ─── Connection Status ──────────────────────────────────────────────────
 
-export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'reconnecting' | 'error';
+export type ConnectionStatus =
+  'connected' | 'connecting' | 'disconnected' | 'reconnecting' | 'error';
 
 export interface ConnectionInfo {
   status: ConnectionStatus;

@@ -4,7 +4,12 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { HiOutlineMagnifyingGlass, HiOutlineArrowPath, HiOutlineChevronLeft, HiOutlineChevronRight } from 'react-icons/hi2';
+import {
+  HiOutlineMagnifyingGlass,
+  HiOutlineArrowPath,
+  HiOutlineChevronLeft,
+  HiOutlineChevronRight,
+} from 'react-icons/hi2';
 
 const mockQueue = Array.from({ length: 20 }, (_, i) => ({
   id: `Q${String(i + 1).padStart(3, '0')}`,
@@ -27,7 +32,9 @@ export default function QueuePage() {
   const pageSize = 10;
 
   const filtered = mockQueue.filter(
-    (q) => q.participantName.toLowerCase().includes(search.toLowerCase()) || q.ticketNumber.toLowerCase().includes(search.toLowerCase()),
+    (q) =>
+      q.participantName.toLowerCase().includes(search.toLowerCase()) ||
+      q.ticketNumber.toLowerCase().includes(search.toLowerCase()),
   );
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -50,7 +57,10 @@ export default function QueuePage() {
         <input
           type="text"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           placeholder="Search queue..."
           className="w-full pl-10 pr-4 py-2 rounded-lg bg-dark-surface-secondary border border-dark-border text-white placeholder-dark-text-tertiary outline-none focus:border-primary-500/50 transition-colors text-sm"
         />
@@ -61,12 +71,24 @@ export default function QueuePage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-dark-border">
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Queue #</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Participant</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Ticket</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Est. Wait</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Joined</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Queue #
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Participant
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Ticket
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Est. Wait
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Joined
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-border/50">
@@ -80,9 +102,13 @@ export default function QueuePage() {
                 >
                   <td className="px-4 py-3 text-sm text-dark-text-secondary font-mono">{q.id}</td>
                   <td className="px-4 py-3 text-sm text-white font-medium">{q.participantName}</td>
-                  <td className="px-4 py-3 text-sm text-dark-text-secondary font-mono">{q.ticketNumber}</td>
+                  <td className="px-4 py-3 text-sm text-dark-text-secondary font-mono">
+                    {q.ticketNumber}
+                  </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[q.status]}`}>
+                    <span
+                      className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[q.status]}`}
+                    >
                       {q.status}
                     </span>
                   </td>
@@ -97,20 +123,31 @@ export default function QueuePage() {
         </div>
 
         <div className="flex items-center justify-between px-4 py-3 border-t border-dark-border">
-          <p className="text-sm text-dark-text-tertiary">Page {page} of {totalPages}</p>
+          <p className="text-sm text-dark-text-tertiary">
+            Page {page} of {totalPages}
+          </p>
           <div className="flex items-center gap-2">
-            <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}
-              className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
+              className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
               <HiOutlineChevronLeft className="w-4 h-4" />
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)}
-                className={`w-8 h-8 rounded-lg text-sm transition-colors ${p === page ? 'bg-primary-500/20 text-primary-400' : 'text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary'}`}>
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`w-8 h-8 rounded-lg text-sm transition-colors ${p === page ? 'bg-primary-500/20 text-primary-400' : 'text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary'}`}
+              >
                 {p}
               </button>
             ))}
-            <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}
-              className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+            <button
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page === totalPages}
+              className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
               <HiOutlineChevronRight className="w-4 h-4" />
             </button>
           </div>

@@ -17,7 +17,6 @@ export function createPrizeRoutes(
 
   router.use(authenticate);
 
-
   router.get('/active', prizeController.findActive);
   router.get('/', prizeController.findAll);
   router.get('/:id', prizeController.findById);

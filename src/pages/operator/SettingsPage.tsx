@@ -3,7 +3,14 @@
 // ============================================================
 
 import { useState } from 'react';
-import { HiOutlineCog6Tooth, HiOutlineBell, HiOutlinePaintBrush, HiOutlineShieldCheck, HiOutlineGlobeAlt, HiOutlineServer } from 'react-icons/hi2';
+import {
+  HiOutlineCog6Tooth,
+  HiOutlineBell,
+  HiOutlinePaintBrush,
+  HiOutlineShieldCheck,
+  HiOutlineGlobeAlt,
+  HiOutlineServer,
+} from 'react-icons/hi2';
 
 const settingsSections = [
   { id: 'general', label: 'General', icon: <HiOutlineCog6Tooth className="w-5 h-5" /> },
@@ -50,16 +57,34 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-white">General Settings</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">Application Name</label>
-                  <input type="text" defaultValue="Radiant Lucky Draw" className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm" />
+                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">
+                    Application Name
+                  </label>
+                  <input
+                    type="text"
+                    defaultValue="Radiant Lucky Draw"
+                    className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">Draw Interval (seconds)</label>
-                  <input type="number" defaultValue={30} className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm" />
+                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">
+                    Draw Interval (seconds)
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={30}
+                    className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">Max Participants Per Draw</label>
-                  <input type="number" defaultValue={100} className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm" />
+                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">
+                    Max Participants Per Draw
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={100}
+                    className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm"
+                  />
                 </div>
               </div>
               <button className="px-6 py-2 rounded-lg bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 transition-colors text-sm font-medium">
@@ -73,20 +98,31 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-white">Appearance</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">Theme</label>
+                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">
+                    Theme
+                  </label>
                   <div className="flex gap-3">
                     {['Light', 'Dark', 'System'].map((t) => (
-                      <button key={t} className="px-4 py-2 rounded-lg bg-dark-surface-tertiary text-dark-text-secondary hover:text-white hover:bg-dark-surface-tertiary/80 transition-colors text-sm">
+                      <button
+                        key={t}
+                        className="px-4 py-2 rounded-lg bg-dark-surface-tertiary text-dark-text-secondary hover:text-white hover:bg-dark-surface-tertiary/80 transition-colors text-sm"
+                      >
                         {t}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">Primary Color</label>
+                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">
+                    Primary Color
+                  </label>
                   <div className="flex gap-2">
                     {['#0ea5e9', '#a855f7', '#22c55e', '#f59e0b', '#ef4444'].map((color) => (
-                      <button key={color} className="w-8 h-8 rounded-full border-2 border-transparent hover:border-white transition-colors" style={{ backgroundColor: color }} />
+                      <button
+                        key={color}
+                        className="w-8 h-8 rounded-full border-2 border-transparent hover:border-white transition-colors"
+                        style={{ backgroundColor: color }}
+                      />
                     ))}
                   </div>
                 </div>
@@ -124,12 +160,24 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-white">Security Settings</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">Session Timeout (minutes)</label>
-                  <input type="number" defaultValue={60} className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm" />
+                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">
+                    Session Timeout (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={60}
+                    className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">Max Login Attempts</label>
-                  <input type="number" defaultValue={5} className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm" />
+                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">
+                    Max Login Attempts
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={5}
+                    className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm"
+                  />
                 </div>
               </div>
             </div>
@@ -140,7 +188,9 @@ export default function SettingsPage() {
               <h2 className="text-lg font-semibold text-white">Localization</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">Language</label>
+                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">
+                    Language
+                  </label>
                   <select className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm">
                     <option>English</option>
                     <option>Indonesian</option>
@@ -148,7 +198,9 @@ export default function SettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">Time Zone</label>
+                  <label className="block text-sm font-medium text-dark-text-secondary mb-1.5">
+                    Time Zone
+                  </label>
                   <select className="w-full max-w-md px-3 py-2 rounded-lg bg-dark-surface-tertiary border border-dark-border text-white outline-none focus:border-primary-500/50 transition-colors text-sm">
                     <option>Asia/Jakarta (UTC+7)</option>
                     <option>Asia/Singapore (UTC+8)</option>

@@ -47,7 +47,12 @@ export function PrizeCard({
   isDragging,
 }: PrizeCardProps) {
   const stockStatus = prize.stock === 0 ? 'out' : prize.stock <= 10 ? 'low' : 'in';
-  const stockColor = stockStatus === 'out' ? 'text-red-400' : stockStatus === 'low' ? 'text-amber-400' : 'text-emerald-400';
+  const stockColor =
+    stockStatus === 'out'
+      ? 'text-red-400'
+      : stockStatus === 'low'
+        ? 'text-amber-400'
+        : 'text-emerald-400';
 
   return (
     <div
@@ -59,9 +64,7 @@ export function PrizeCard({
       `}
     >
       {/* Drag handle */}
-      <div
-        className="absolute top-3 left-3 z-10 flex items-center gap-1"
-      >
+      <div className="absolute top-3 left-3 z-10 flex items-center gap-1">
         <button
           className="cursor-grab active:cursor-grabbing p-1 rounded text-white/20 hover:text-white/50 transition-colors -ml-1"
           title="Drag to reorder"
@@ -85,7 +88,10 @@ export function PrizeCard({
       </div>
 
       {/* Color indicator */}
-      <div className="absolute top-0 left-0 w-full h-1 rounded-t-xl" style={{ backgroundColor: prize.color }} />
+      <div
+        className="absolute top-0 left-0 w-full h-1 rounded-t-xl"
+        style={{ backgroundColor: prize.color }}
+      />
 
       <div className="flex items-start gap-4 mt-2">
         {/* Image placeholder */}
@@ -94,7 +100,11 @@ export function PrizeCard({
           style={{ backgroundColor: `${prize.color}20` }}
         >
           {prize.image ? (
-            <img src={prize.image} alt={prize.name} className="w-full h-full object-cover rounded-lg" />
+            <img
+              src={prize.image}
+              alt={prize.name}
+              className="w-full h-full object-cover rounded-lg"
+            />
           ) : (
             <span>🎁</span>
           )}
@@ -104,7 +114,9 @@ export function PrizeCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold text-white truncate">{prize.name}</h3>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TIER_BADGE_COLORS[prize.tier]}`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-medium ${TIER_BADGE_COLORS[prize.tier]}`}
+            >
               {TIER_LABELS[prize.tier]}
             </span>
           </div>
@@ -114,12 +126,17 @@ export function PrizeCard({
           )}
 
           <div className="flex items-center gap-4 text-xs text-white/40">
-            <span>Weight: <strong className="text-white/70">{prize.weight}</strong></span>
+            <span>
+              Weight: <strong className="text-white/70">{prize.weight}</strong>
+            </span>
             <span>
               Stock: <strong className={stockColor}>{prize.stock}</strong>
             </span>
             <span>
-              Daily: <strong className="text-white/70">{prize.dailyWinnerCount}/{prize.maxDailyWinner || '∞'}</strong>
+              Daily:{' '}
+              <strong className="text-white/70">
+                {prize.dailyWinnerCount}/{prize.maxDailyWinner || '∞'}
+              </strong>
             </span>
             <span>
               Order: <strong className="text-white/70">#{prize.displayOrder}</strong>
@@ -130,7 +147,11 @@ export function PrizeCard({
           <div className="mt-2 w-full h-1 rounded-full bg-white/10 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
-                stockStatus === 'out' ? 'bg-red-500' : stockStatus === 'low' ? 'bg-amber-500' : 'bg-emerald-500'
+                stockStatus === 'out'
+                  ? 'bg-red-500'
+                  : stockStatus === 'low'
+                    ? 'bg-amber-500'
+                    : 'bg-emerald-500'
               }`}
               style={{ width: `${Math.min(prize.stock / 10, 100)}%` }}
             />

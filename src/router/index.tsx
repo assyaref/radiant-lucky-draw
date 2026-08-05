@@ -13,7 +13,6 @@ function LazyPage({ Component }: { Component: React.LazyExoticComponent<React.Co
 const Home = lazy(() => import('@pages/Home'));
 const Login = lazy(() => import('@pages/Login'));
 const Register = lazy(() => import('@pages/Register'));
-const Dashboard = lazy(() => import('@pages/Dashboard'));
 const Draws = lazy(() => import('@pages/Draws'));
 const DrawDetail = lazy(() => import('@pages/DrawDetail'));
 const DrawCreate = lazy(() => import('@pages/DrawCreate'));
@@ -40,6 +39,27 @@ const OperatorUsers = lazy(() => import('@pages/operator/UsersPage'));
 const OperatorAuditLogs = lazy(() => import('@pages/operator/AuditLogsPage'));
 
 const routes: RouteObject[] = [
+  // ─── Dashboard Routes ─────────────────────────────────────────────
+  {
+    path: '/dashboard',
+    element: (
+      <ProtectedRoute>
+        <Suspense
+          fallback={<div className="flex-center min-h-screen bg-dark-surface">Loading...</div>}
+        >
+          <AdminLayout />
+        </Suspense>
+      </ProtectedRoute>
+    ),
+    children: [
+      { index: true, element: <LazyPage Component={OperatorDashboard} /> },
+      { path: 'participants', element: <LazyPage Component={OperatorParticipants} /> },
+      { path: 'prizes', element: <LazyPage Component={OperatorPrizes} /> },
+      { path: 'queue', element: <LazyPage Component={OperatorQueue} /> },
+      { path: 'winners', element: <LazyPage Component={OperatorDraws} /> },
+      { path: 'settings', element: <LazyPage Component={OperatorSettings} /> },
+    ],
+  },
   // ─── Operator Routes ──────────────────────────────────────────────
   {
     path: '/operator',
@@ -78,10 +98,6 @@ const routes: RouteObject[] = [
   {
     path: '/register',
     element: <LazyPage Component={Register} />,
-  },
-  {
-    path: '/dashboard',
-    element: <LazyPage Component={Dashboard} />,
   },
   {
     path: '/registration',

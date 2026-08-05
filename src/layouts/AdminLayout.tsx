@@ -11,14 +11,8 @@ import {
   HiOutlineChartBar,
   HiOutlineUsers,
   HiOutlineQueueList,
-  HiOutlineGift,
   HiOutlineTrophy,
-  HiOutlineStar,
-  HiOutlineMegaphone,
-  HiOutlineDocumentChartBar,
   HiOutlineCog6Tooth,
-  HiOutlineShieldCheck,
-  HiOutlineClipboardDocumentList,
   HiOutlineBars3,
   HiOutlineXMark,
   HiOutlineBell,
@@ -27,6 +21,7 @@ import {
   HiOutlineMagnifyingGlass,
   HiOutlineCommandLine,
   HiOutlineArrowRightOnRectangle,
+  HiOutlineArrowLeft,
   HiOutlineChevronDown,
 } from 'react-icons/hi2';
 
@@ -40,36 +35,19 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/operator', icon: <HiOutlineChartBar className="w-5 h-5" /> },
+  { label: 'Dashboard', path: '/dashboard', icon: <HiOutlineChartBar className="w-5 h-5" /> },
   {
     label: 'Participants',
-    path: '/operator/participants',
+    path: '/dashboard/participants',
     icon: <HiOutlineUsers className="w-5 h-5" />,
   },
-  { label: 'Queue', path: '/operator/queue', icon: <HiOutlineQueueList className="w-5 h-5" /> },
-  { label: 'Lucky Draw', path: '/operator/draws', icon: <HiOutlineGift className="w-5 h-5" /> },
-  { label: 'Prizes', path: '/operator/prizes', icon: <HiOutlineTrophy className="w-5 h-5" /> },
-  { label: 'Sponsors', path: '/operator/sponsors', icon: <HiOutlineStar className="w-5 h-5" /> },
-  {
-    label: 'Announcements',
-    path: '/operator/announcements',
-    icon: <HiOutlineMegaphone className="w-5 h-5" />,
-  },
-  {
-    label: 'Reports',
-    path: '/operator/reports',
-    icon: <HiOutlineDocumentChartBar className="w-5 h-5" />,
-  },
+  { label: 'Prizes', path: '/dashboard/prizes', icon: <HiOutlineTrophy className="w-5 h-5" /> },
+  { label: 'Queue', path: '/dashboard/queue', icon: <HiOutlineQueueList className="w-5 h-5" /> },
+  { label: 'Winners', path: '/dashboard/winners', icon: <HiOutlineTrophy className="w-5 h-5" /> },
   {
     label: 'Settings',
-    path: '/operator/settings',
+    path: '/dashboard/settings',
     icon: <HiOutlineCog6Tooth className="w-5 h-5" />,
-  },
-  { label: 'Users', path: '/operator/users', icon: <HiOutlineShieldCheck className="w-5 h-5" /> },
-  {
-    label: 'Audit Logs',
-    path: '/operator/audit-logs',
-    icon: <HiOutlineClipboardDocumentList className="w-5 h-5" />,
   },
 ];
 
@@ -110,7 +88,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
           <NavLink
             key={item.path}
             to={item.path}
-            end={item.path === '/operator'}
+            end={item.path === '/dashboard'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 group ${
                 isActive
@@ -367,6 +345,15 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
 
           {/* Right */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary transition-colors border border-dark-border"
+              title="Open lucky draw booth"
+            >
+              <HiOutlineArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:block">Booth</span>
+            </button>
+
             {/* Command Palette Trigger */}
             <button
               onClick={() => setShowCommandPalette(true)}
@@ -440,7 +427,7 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
                     <div className="p-1">
                       <button
                         onClick={() => {
-                          navigate('/operator/settings');
+                          navigate('/dashboard/settings');
                           setShowUserMenu(false);
                         }}
                         className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-dark-text-secondary hover:text-white hover:bg-dark-surface-tertiary transition-colors"

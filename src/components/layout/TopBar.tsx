@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { colors, zIndex } from '@design-system/index';
 import { StatusBar, AudioControls, AudioVisualizer, Clock } from '@components/booth';
 
@@ -42,6 +43,12 @@ export const TopBar = memo(function TopBar() {
 
       {/* Right side: Status + Audio + Visualizer + Clock */}
       <div className="flex items-center gap-4">
+        <Link
+          to="/dashboard"
+          className="rounded-md border border-white/15 px-3 py-1.5 text-[10px] font-semibold tracking-[0.16em] text-white/75 uppercase transition-colors hover:border-amber-400/50 hover:text-amber-300"
+        >
+          Dashboard
+        </Link>
         <StatusBar />
         <div className="h-4 w-px bg-white/10" />
         <AudioControls />

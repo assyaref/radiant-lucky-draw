@@ -146,19 +146,21 @@ export const OFFLINE_EVENTS = {
 // API endpoints resolved from the single configuration source (env.API_BASE_URL).
 // This guarantees the offline sync engine targets the same backend as the rest
 // of the app (Railway in production, localhost via the Vite proxy in development).
+// NOTE: env.API_BASE_URL already includes the `/api` prefix (see src/config/env.ts),
+// so it must NOT be appended again here.
 const API_BASE = env.API_BASE_URL;
 
 export const API_ENDPOINTS = {
-  HEALTH: `${API_BASE}/api/health`,
-  SYNC: `${API_BASE}/api/sync`,
-  PARTICIPANTS: `${API_BASE}/api/participants`,
-  PRIZES: `${API_BASE}/api/prizes`,
-  DRAWS: `${API_BASE}/api/draws`,
-  QUEUE: `${API_BASE}/api/queue`,
-  SETTINGS: `${API_BASE}/api/settings`,
-  ANALYTICS: `${API_BASE}/api/analytics`,
-  SPONSORS: `${API_BASE}/api/sponsors`,
-  ANNOUNCEMENTS: `${API_BASE}/api/announcements`,
+  HEALTH: `${API_BASE}/health`,
+  SYNC: `${API_BASE}/sync`,
+  PARTICIPANTS: `${API_BASE}/participants`,
+  PRIZES: `${API_BASE}/prizes`,
+  DRAWS: `${API_BASE}/draws`,
+  QUEUE: `${API_BASE}/queue`,
+  SETTINGS: `${API_BASE}/settings`,
+  ANALYTICS: `${API_BASE}/analytics`,
+  SPONSORS: `${API_BASE}/sponsors`,
+  ANNOUNCEMENTS: `${API_BASE}/announcements`,
 } as const;
 
 export const PRIORITY_ORDER: Record<string, number> = {

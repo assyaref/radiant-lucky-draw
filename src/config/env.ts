@@ -17,6 +17,16 @@ const PRODUCTION_API_URL = 'https://radiant-lucky-draw-production.up.railway.app
 const PRODUCTION_SOCKET_URL = 'wss://radiant-lucky-draw-production.up.railway.app';
 const PRODUCTION_PUBLIC_URL = 'https://radiant-lucky-draw-production.up.railway.app';
 
+// ─── API Base URL Normalization ─────────────────────────────────────────
+// The backend mounts every route under the `/api` prefix (e.g. `/api/auth/login`).
+// This helper guarantees `API_BASE_URL` always ends with `/api` regardless of
+// whether the VITE_ variable was provided with or without the prefix. It also
+// strips any trailing slash so concatenation with request paths is safe.
+function normalizeApiBaseUrl(url: string): string {
+  const trimmed = url.replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
 // ─── Validation ─────────────────────────────────────────────────────────
 
 function validateEnv(): void {
@@ -53,8 +63,9 @@ export const env = {
     (import.meta.env.PROD ? PRODUCTION_PUBLIC_URL : 'http://localhost:5173'),
 
   // API
-  API_BASE_URL:
+  API_BASE_URL: normalizeApiBaseUrl(
     import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? PRODUCTION_API_URL : '/api'),
+  ),
   API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000', 10),
 
   // Realtime (Socket.IO)

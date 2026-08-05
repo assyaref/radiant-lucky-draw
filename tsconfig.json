@@ -25,6 +25,7 @@
       "@components/*": ["src/components/*"],
       "@config/*": ["src/config/*"],
       "@contexts/*": ["src/contexts/*"],
+      "@design-system/*": ["src/design-system/*"],
       "@features/*": ["src/features/*"],
       "@hooks/*": ["src/hooks/*"],
 

@@ -18,6 +18,7 @@ export default defineConfig({
       '@components': path.resolve(__dirname, './src/components'),
       '@config': path.resolve(__dirname, './src/config'),
       '@contexts': path.resolve(__dirname, './src/contexts'),
+      '@design-system': path.resolve(__dirname, './src/design-system'),
       '@features': path.resolve(__dirname, './src/features'),
       '@hooks': path.resolve(__dirname, './src/hooks'),
 

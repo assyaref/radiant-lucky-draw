@@ -5,40 +5,34 @@ import {
   Background,
   LuxuryLighting,
   Floor,
-  LuckyMachine,
-  HeroTitle,
-  QRCode,
-  PrizePanel,
-  LiveStatus,
-  Clock,
-  Countdown,
-  Marquee,
   FloatingObjects,
-  AudioVisualizer,
-  FloatingHolographicUI,
   AudioProvider,
-  AudioControls,
   LightingEngine,
   CameraController,
   ScreenAttractMode,
   WinnerPreview,
-  StatusBar,
-  WinnerWall,
   SponsorCarousel,
+  Marquee,
   BoothProvider,
   useBooth,
   WelcomeMode,
   AttractionMode,
   CelebrationMode,
-  QueueVisualization,
-  PrizeShowcase,
-  LiveStatistics,
-  LiveActivityFeed,
   DigitalSignage,
   EmergencyMode,
   AccessibilityProvider,
   SafeArea,
+  FloatingHolographicUI,
 } from '@components/booth';
+
+import {
+  TopBar,
+  SidebarLeft,
+  SidebarRight,
+  CenterMachine,
+  AnimatedBackground,
+  FloatingParticles,
+} from '@components/layout';
 
 import { useBoothAudio } from '@components/booth/audio/useBoothAudio';
 
@@ -91,7 +85,9 @@ function BoothContent() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          {/* ---- Background Layers ---- */}
+          {/* ---- Premium Animated Background Layers ---- */}
+          <AnimatedBackground />
+          <FloatingParticles />
           <Background />
           <ParticleEngine />
           <LuxuryLighting />
@@ -111,102 +107,19 @@ function BoothContent() {
             <SafeArea
               className={`relative z-10 flex flex-1 flex-col transition-opacity duration-500 ${isOverlayMode ? 'opacity-30' : 'opacity-100'}`}
             >
-              {/* Top Bar: Logo + Status Bar + Audio Controls + Clock */}
-              <motion.header
-                className="flex items-center justify-between"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                {/* Logo */}
-                <div className="flex items-center gap-3">
-                  <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
-                    <circle cx="24" cy="24" r="22" stroke="url(#logoGrad)" strokeWidth="3" />
-                    <path
-                      d="M24 8 L28 18 L38 18 L30 24 L33 34 L24 28 L15 34 L18 24 L10 18 L20 18 Z"
-                      fill="url(#logoGrad)"
-                    />
-                    <defs>
-                      <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="48">
-                        <stop stopColor="#fbbf24" />
-                        <stop offset="1" stopColor="#60a5fa" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div>
-                    <h2 className="text-xs font-bold tracking-[0.2em] text-white/50 uppercase">
-                      Radiant Group
-                    </h2>
-                    <p className="text-[9px] tracking-[0.3em] text-amber-400/40 uppercase">
-                      Lucky Draw Digital Booth
-                    </p>
-                  </div>
-                </div>
-
-                {/* Right side: Status Bar + Audio + Visualizer + Clock */}
-                <div className="flex items-center gap-4">
-                  <StatusBar />
-                  <div className="h-4 w-px bg-white/10" />
-                  <AudioControls />
-                  <AudioVisualizer />
-                  <Clock />
-                </div>
-              </motion.header>
+              {/* Top Bar: Logo + Status + Audio + Visualizer + Clock */}
+              <TopBar />
 
               {/* ---- Balanced 3-Column Grid Layout ---- */}
               <div className="grid flex-1 grid-cols-[1fr_1.4fr_1fr] items-stretch gap-6 py-2">
                 {/* ===== LEFT PANEL: Prizes ===== */}
-                <motion.div
-                  className="flex flex-col justify-center gap-4 overflow-hidden"
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                >
-                  <PrizePanel />
-                  <PrizeShowcase />
-                </motion.div>
+                <SidebarLeft />
 
                 {/* ===== CENTER PANEL: Machine + Hero + QR + Countdown ===== */}
-                <motion.div
-                  className="flex flex-col items-center justify-center gap-2"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 0.2 }}
-                >
-                  {/* Lucky Machine + Countdown beside machine */}
-                  <div className="flex items-center justify-center gap-6">
-                    {/* Lucky Machine - center attraction */}
-                    <div className="scale-[0.7] md:scale-[0.85] lg:scale-100">
-                      <LuckyMachine />
-                    </div>
-                    {/* Countdown beside machine */}
-                    <Countdown />
-                  </div>
-
-                  {/* Hero Title - moved up ~60px for stronger visual balance */}
-                  <div className="-mt-16">
-                    <HeroTitle />
-                  </div>
-
-                  {/* QR Code - always visible during idle */}
-                  <div className="mt-2 flex items-center justify-center">
-                    <QRCode />
-                  </div>
-                </motion.div>
+                <CenterMachine />
 
                 {/* ===== RIGHT PANEL: Live Widgets ===== */}
-                <motion.div
-                  className="flex flex-col justify-center gap-4 overflow-hidden"
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                >
-                  <LiveStatus />
-                  <WinnerWall />
-                  <QueueVisualization />
-                  <LiveStatistics />
-                  <LiveActivityFeed />
-                </motion.div>
+                <SidebarRight />
               </div>
             </SafeArea>
           </CameraController>

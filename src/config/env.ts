@@ -3,43 +3,64 @@
  *
  * Centralized environment variable access with validation.
  * All VITE_ prefixed variables are exposed to the client.
+ *
+ * Production-safe defaults:
+ * - In production, if a VITE_ variable is not provided, the app falls back
+ *   to the deployed Railway backend so it never points at localhost.
+ * - In development, localhost fallbacks are used for local tooling.
  */
 
-// ─── Validation ────────────────────────────────────────────
+// ─── Production Defaults ────────────────────────────────────────────────
+// Single source of truth for the deployed backend. These are used ONLY as
+// a fallback when the corresponding VITE_ variable is not set at build time.
+const PRODUCTION_API_URL = 'https://radiant-lucky-draw-production.up.railway.app';
+const PRODUCTION_SOCKET_URL = 'wss://radiant-lucky-draw-production.up.railway.app';
+const PRODUCTION_PUBLIC_URL = 'https://radiant-lucky-draw-production.up.railway.app';
+
+// ─── Validation ─────────────────────────────────────────────────────────
 
 function validateEnv(): void {
-  const required: string[] = ['VITE_API_BASE_URL'];
+  const required: string[] = ['VITE_API_BASE_URL', 'VITE_SOCKET_URL'];
 
   const missing = required.filter((key) => !import.meta.env[key]);
 
   if (missing.length > 0) {
     if (import.meta.env.PROD) {
       console.error(
-        `[Env Validation] Missing required environment variables:\n  ${missing.join('\n  ')}`,
+        `[Env Validation] Missing required environment variables (using production defaults):\n  ${missing.join(
+          '\n  ',
+        )}`,
       );
     } else {
       console.warn(
-        `[Env Validation] Missing environment variables (using defaults):\n  ${missing.join('\n  ')}`,
+        `[Env Validation] Missing environment variables (using defaults):\n  ${missing.join(
+          '\n  ',
+        )}`,
       );
     }
   }
 }
 
-// ─── Environment Object ────────────────────────────────────
+// ─── Environment Object ─────────────────────────────────────────────────
 
 export const env = {
   // App
   APP_TITLE: import.meta.env.VITE_APP_TITLE || 'Radiant Lucky Draw',
 
   // Public URL (used for QR registration link)
-  PUBLIC_URL: import.meta.env.VITE_PUBLIC_URL || 'http://localhost:5173',
+  PUBLIC_URL:
+    import.meta.env.VITE_PUBLIC_URL ||
+    (import.meta.env.PROD ? PRODUCTION_PUBLIC_URL : 'http://localhost:5173'),
 
   // API
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || '/api',
+  API_BASE_URL:
+    import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? PRODUCTION_API_URL : '/api'),
   API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000', 10),
 
   // Realtime (Socket.IO)
-  SOCKET_URL: import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001',
+  SOCKET_URL:
+    import.meta.env.VITE_SOCKET_URL ||
+    (import.meta.env.PROD ? PRODUCTION_SOCKET_URL : 'http://localhost:3001'),
 
   // Features
   ENABLE_MOCK: import.meta.env.VITE_ENABLE_MOCK === 'true',

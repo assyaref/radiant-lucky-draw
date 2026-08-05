@@ -6,13 +6,14 @@
  *
  * Usage:
  * ```tsx
- * <SocketProvider url="http://localhost:3001" autoConnect debug>
+ * <SocketProvider url={env.SOCKET_URL} autoConnect debug>
  *   <YourApp />
  * </SocketProvider>
  * ```
  */
 
 import { createContext, type ReactNode, useState, useEffect, useCallback, useRef } from 'react';
+
 import { type SocketEventName, type ConnectionStatus, type ConnectionInfo } from '../types';
 import { SocketService, type SocketServiceConfig } from '../SocketService';
 

@@ -2,6 +2,7 @@
 // Offline Mode Configuration - Enterprise Edition
 // ============================================================
 
+import { env } from '@config/env';
 import type { OfflineConfig, StorageSchema } from './types';
 
 export const OFFLINE_CONFIG: OfflineConfig = {
@@ -142,17 +143,22 @@ export const OFFLINE_EVENTS = {
   DATA_INTEGRITY_CHECK: 'offline:data-integrity-check',
 } as const;
 
+// API endpoints resolved from the single configuration source (env.API_BASE_URL).
+// This guarantees the offline sync engine targets the same backend as the rest
+// of the app (Railway in production, localhost via the Vite proxy in development).
+const API_BASE = env.API_BASE_URL;
+
 export const API_ENDPOINTS = {
-  HEALTH: '/api/health',
-  SYNC: '/api/sync',
-  PARTICIPANTS: '/api/participants',
-  PRIZES: '/api/prizes',
-  DRAWS: '/api/draws',
-  QUEUE: '/api/queue',
-  SETTINGS: '/api/settings',
-  ANALYTICS: '/api/analytics',
-  SPONSORS: '/api/sponsors',
-  ANNOUNCEMENTS: '/api/announcements',
+  HEALTH: `${API_BASE}/api/health`,
+  SYNC: `${API_BASE}/api/sync`,
+  PARTICIPANTS: `${API_BASE}/api/participants`,
+  PRIZES: `${API_BASE}/api/prizes`,
+  DRAWS: `${API_BASE}/api/draws`,
+  QUEUE: `${API_BASE}/api/queue`,
+  SETTINGS: `${API_BASE}/api/settings`,
+  ANALYTICS: `${API_BASE}/api/analytics`,
+  SPONSORS: `${API_BASE}/api/sponsors`,
+  ANNOUNCEMENTS: `${API_BASE}/api/announcements`,
 } as const;
 
 export const PRIORITY_ORDER: Record<string, number> = {

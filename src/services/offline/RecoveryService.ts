@@ -5,7 +5,7 @@
 import { storageService } from './storage/StorageService';
 import { offlineManager } from './OfflineManager';
 import { syncManager } from './SyncManager';
-import { OFFLINE_CONFIG, CACHE_KEYS } from './config';
+import { OFFLINE_CONFIG, CACHE_KEYS, API_ENDPOINTS } from './config';
 import type { SyncResult, OfflineScenario, TransactionLogEntry } from './types';
 
 function generateId(): string {
@@ -161,7 +161,7 @@ class RecoveryService {
 
     while (Date.now() - startTime < timeout) {
       try {
-        const response = await fetch('/api/health', {
+        const response = await fetch(API_ENDPOINTS.HEALTH, {
           method: 'HEAD',
           cache: 'no-cache',
           signal: AbortSignal.timeout(5000),

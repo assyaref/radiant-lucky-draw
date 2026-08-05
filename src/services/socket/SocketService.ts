@@ -15,7 +15,7 @@
  *
  * Usage:
  * ```ts
- * const socket = new SocketService('http://localhost:3001');
+ * const socket = new SocketService(env.SOCKET_URL);
  * socket.connect();
  *
  * socket.emit('participant:join', payload, (ack) => { ... });
@@ -24,6 +24,7 @@
  */
 
 import { io, Socket } from 'socket.io-client';
+
 import {
   type SocketEventName,
   type ConnectionStatus,

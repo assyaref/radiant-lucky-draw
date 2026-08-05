@@ -5,8 +5,7 @@ import { floatLoop, pulseLoop, glowLoop } from '@animations/index';
 import { env } from '@config/env';
 
 // Registration URL used to encode the QR code.
-// Development: http://localhost:5173/register
-// Production:  VITE_PUBLIC_URL + /register
+// Resolved from env.PUBLIC_URL (development or production).
 const REGISTRATION_URL = `${env.PUBLIC_URL}/register`;
 
 export const QRCode = memo(function QRCode() {

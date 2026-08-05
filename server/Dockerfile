@@ -1,0 +1,72 @@
+# ============================================================
+# RADIANT LUCKY DRAW - Backend Production Dockerfile
+# ============================================================
+
+# ─── Stage 1: Build ─────────────────────────────────────────
+FROM node:22-alpine AS build
+
+WORKDIR /app
+
+# Install build dependencies for Prisma
+RUN apk add --no-cache python3 make g++ openssl
+
+# Copy dependency manifests
+COPY package.json package-lock.json ./
+
+# Install all dependencies (including devDependencies for build)
+RUN npm ci
+
+# Copy Prisma schema (needed for prisma generate)
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Copy source code
+COPY tsconfig.json ./
+COPY src ./src
+
+# Build TypeScript
+RUN npm run build
+
+# ─── Stage 2: Production ────────────────────────────────────
+FROM node:22-alpine AS production
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apk add --no-cache openssl curl
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Copy production dependencies
+COPY package.json package-lock.json ./
+
+# Install only production dependencies
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Copy Prisma schema and migrations
+COPY prisma ./prisma
+
+# Generate Prisma client for production
+RUN npx prisma generate
+
+# Copy built application
+COPY --from=build /app/dist ./dist
+
+# Set permissions
+RUN chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:3001/api/health || exit 1
+
+# Start server
+CMD ["npm", "start"]

@@ -29,7 +29,7 @@ services:
   # ─── Backend API ──────────────────────────────────────────
   backend:
     build:
-      context: .
+      context: ./server
       dockerfile: Dockerfile
     container_name: radiant-backend
     restart: unless-stopped
@@ -62,7 +62,7 @@ services:
   # ─── Database Migration Job ───────────────────────────────
   migrate:
     build:
-      context: .
+      context: ./server
       dockerfile: Dockerfile
     container_name: radiant-migrate
     depends_on:

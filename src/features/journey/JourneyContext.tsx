@@ -19,6 +19,7 @@ import type {
   QueueInfo,
   DrawResult,
   ClaimInfo,
+  ReadyState,
 } from './types';
 
 interface JourneyContextValue {
@@ -30,6 +31,11 @@ interface JourneyContextValue {
   claim: ClaimInfo | null;
   isSubmitting: boolean;
   submitError: string | null;
+
+  // M2.2B extended state (aliases + ready state)
+  validationResult: ValidationResult;
+  queueInfo: QueueInfo | null;
+  readyState: ReadyState;
 
   // Navigation
   goTo: (step: JourneyStep) => void;
@@ -44,6 +50,9 @@ interface JourneyContextValue {
 
   // Queue
   setQueueInfo: (info: QueueInfo) => void;
+
+  // Ready
+  setReadyState: (state: ReadyState) => void;
 
   // Draw
   setDrawResult: (result: DrawResult) => void;
@@ -71,6 +80,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
   const [claim, setClaimState] = useState<ClaimInfo | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [readyState, setReadyStateState] = useState<ReadyState>('idle');
 
   const goTo = useCallback((s: JourneyStep) => {
     setStep(s);
@@ -84,6 +94,7 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
     setDrawState(null);
     setClaimState(null);
     setSubmitError(null);
+    setReadyStateState('idle');
   }, []);
 
   const setParticipant = useCallback((data: ParticipantData) => {
@@ -92,6 +103,10 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
 
   const setQueueInfo = useCallback((info: QueueInfo) => {
     setQueueState(info);
+  }, []);
+
+  const setReadyState = useCallback((state: ReadyState) => {
+    setReadyStateState(state);
   }, []);
 
   const setDrawResult = useCallback((result: DrawResult) => {
@@ -219,12 +234,17 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
         claim,
         isSubmitting,
         submitError,
+        // M2.2B extended state
+        validationResult: validation,
+        queueInfo: queue,
+        readyState,
         goTo,
         restart,
         setParticipant,
         submitRegistration,
         validateParticipant,
         setQueueInfo,
+        setReadyState,
         setDrawResult,
         setClaimInfo,
       }}

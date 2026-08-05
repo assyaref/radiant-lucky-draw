@@ -46,6 +46,8 @@ export interface QueueInfo {
   status: string;
 }
 
+export type ReadyState = 'idle' | 'counting' | 'ready';
+
 export interface DrawResult {
   winnerId: string;
   winnerName: string;
@@ -69,4 +71,8 @@ export interface JourneyState {
   queue: QueueInfo | null;
   draw: DrawResult | null;
   claim: ClaimInfo | null;
+  // M2.2B extended state (aliases for clarity + ready state)
+  validationResult: ValidationResult;
+  queueInfo: QueueInfo | null;
+  readyState: ReadyState;
 }

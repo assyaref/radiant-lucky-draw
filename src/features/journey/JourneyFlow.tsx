@@ -4,12 +4,15 @@ import { useJourney } from './JourneyContext';
 import { LandingScreen } from './screens/LandingScreen';
 import { ScanScreen } from './screens/ScanScreen';
 import { RegistrationScreen } from './screens/RegistrationScreen';
+import { ValidationScreen } from './screens/ValidationScreen';
+import { QueueScreen } from './screens/QueueScreen';
+import { ReadyScreen } from './screens/ReadyScreen';
 
 /**
  * JourneyFlow
  *
  * Orchestrates the participant journey state machine:
- * Landing → Scan → Registration
+ * Landing → Scan → Registration → Validation → Queue → Ready
  *
  * Uses JourneyContext to read the current step and render the
  * corresponding screen with a smooth animated transition.
@@ -30,6 +33,9 @@ export const JourneyFlow = memo(function JourneyFlow() {
         {step === 'landing' && <LandingScreen />}
         {step === 'scan' && <ScanScreen />}
         {step === 'registration' && <RegistrationScreen />}
+        {step === 'validation' && <ValidationScreen />}
+        {step === 'queue' && <QueueScreen />}
+        {step === 'ready' && <ReadyScreen />}
       </motion.div>
     </AnimatePresence>
   );

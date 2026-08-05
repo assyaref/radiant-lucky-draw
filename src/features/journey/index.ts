@@ -17,6 +17,7 @@ export type {
   ValidationResult,
   ParticipantData,
   QueueInfo,
+  ReadyState,
   DrawResult,
   ClaimInfo,
   JourneyState,
@@ -29,6 +30,9 @@ export { JourneyFlow } from './JourneyFlow';
 export { LandingScreen } from './screens/LandingScreen';
 export { ScanScreen } from './screens/ScanScreen';
 export { RegistrationScreen } from './screens/RegistrationScreen';
+export { ValidationScreen } from './screens/ValidationScreen';
+export { QueueScreen } from './screens/QueueScreen';
+export { ReadyScreen } from './screens/ReadyScreen';
 
 // Shared UI
 export { JourneyProgress } from './components/JourneyProgress';

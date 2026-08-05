@@ -55,7 +55,6 @@ async function main() {
     },
   });
 
-
   await prisma.user.create({
     data: {
       username: 'operator1',
@@ -522,7 +521,6 @@ async function main() {
   logger.info('  Admin:       admin / admin123');
   logger.info('  Operator:    operator1 / operator123');
   logger.info('  Operator:    operator2 / operator123');
-
 }
 
 main()

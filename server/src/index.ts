@@ -10,7 +10,6 @@ import { env } from './config';
 import { logger } from './utils';
 import { ensureAdminUser } from './bootstrap';
 
-
 // ─── Uncaught Error Handlers ───────────────────────────────
 
 process.on('uncaughtException', (error) => {
@@ -31,7 +30,7 @@ process.on('unhandledRejection', (reason) => {
 
 async function main() {
   // TEMP DEBUG: verify runtime DATABASE_URL (RC4.19)
-  console.log("DATABASE_URL =", process.env.DATABASE_URL);
+  console.log('DATABASE_URL =', process.env.DATABASE_URL);
 
   const { app, realtimeService } = createApp();
 
@@ -41,7 +40,6 @@ async function main() {
   await ensureAdminUser();
 
   const server = app.listen(env.PORT, () => {
-
     logger.info(`Server started on port ${env.PORT}`, {
       environment: env.NODE_ENV,
       apiDocs: `${baseUrl}/api/docs`,

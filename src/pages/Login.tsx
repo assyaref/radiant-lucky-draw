@@ -1,23 +1,26 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@features/auth';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { DEVELOPMENT_LOGIN_CREDENTIALS, useAuth } from '@features/auth';
 import { ApiClientError } from '@api/client';
-
-interface LocationState {
-  from?: { pathname?: string };
-}
+import { env } from '@config/env';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { isAuthenticated, isLoading, login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const state = location.state as LocationState | null;
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(env.IS_DEVELOPMENT ? DEVELOPMENT_LOGIN_CREDENTIALS.email : '');
+  const [password, setPassword] = useState(
+    env.IS_DEVELOPMENT ? DEVELOPMENT_LOGIN_CREDENTIALS.password : '',
+  );
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -26,8 +29,7 @@ export default function Login() {
 
     try {
       await login({ email, password, rememberMe });
-      const from = state?.from?.pathname ?? '/operator';
-      navigate(from, { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message);
@@ -70,6 +72,13 @@ export default function Login() {
             {error && (
               <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
                 {error}
+              </div>
+            )}
+
+            {env.IS_DEVELOPMENT && (
+              <div className="mb-4 rounded-lg border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-xs text-amber-100/85">
+                <p className="font-semibold tracking-wide text-amber-300">Development login</p>
+                <p className="mt-1">Mock authentication is used if the backend is unavailable.</p>
               </div>
             )}
 

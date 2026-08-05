@@ -17,6 +17,7 @@
 import { memo } from 'react';
 import { AnimatedBackground } from '@components/layout';
 import { colors, radius, shadows } from '@design-system/index';
+import { DevelopmentModeBanner } from '@features/auth';
 import { useDashboard } from './hooks/useDashboard';
 import { Sidebar } from './components/Sidebar';
 import { TopNavigation } from './components/TopNavigation';
@@ -158,6 +159,7 @@ export const DashboardPage = memo(function DashboardPage() {
           <TopNavigation />
 
           <main className="flex-1 space-y-6 overflow-y-auto p-5 lg:p-6">
+            <DevelopmentModeBanner />
             {status === 'loading' ? (
               <LoadingDashboard />
             ) : (

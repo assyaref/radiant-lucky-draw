@@ -5,21 +5,31 @@
  * Current Time.
  */
 
-import { memo, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   HiOutlineMagnifyingGlass,
   HiOutlineBell,
   HiOutlineMoon,
   HiOutlineSun,
   HiOutlineChevronDown,
+  HiOutlineArrowRightOnRectangle,
 } from 'react-icons/hi2';
 import { colors, radius, shadows, transitions } from '@design-system/index';
 import { useThemeContext } from '@contexts/ThemeContext';
+import { useAuth } from '@features/auth';
 
 export const TopNavigation = memo(function TopNavigation() {
   const { isDark, toggleTheme } = useThemeContext();
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
   const [now, setNow] = useState(new Date());
+
+  const handleLogout = useCallback(async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  }, [logout, navigate]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -145,9 +155,18 @@ export const TopNavigation = memo(function TopNavigation() {
             className="hidden text-sm font-medium sm:block"
             style={{ color: colors.text.primary }}
           >
-            Admin
+            {user?.username ?? 'Admin'}
           </span>
           <HiOutlineChevronDown className="h-4 w-4" style={{ color: colors.text.tertiary }} />
+        </button>
+        <button
+          onClick={() => void handleLogout()}
+          className="rounded-lg p-2 transition-colors"
+          style={{ color: colors.text.secondary }}
+          aria-label="Sign out"
+          title="Sign out"
+        >
+          <HiOutlineArrowRightOnRectangle className="h-5 w-5" />
         </button>
       </div>
     </motion.header>

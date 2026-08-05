@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, type RouteObject } from 'react-router-dom';
+import { createBrowserRouter, Outlet, type RouteObject } from 'react-router-dom';
 import { ProtectedRoute } from '@features/auth';
 
 function LazyPage({ Component }: { Component: React.LazyExoticComponent<React.ComponentType> }) {
@@ -23,6 +23,11 @@ const QueueTVPage = lazy(() => import('@pages/queue/QueueTVPage'));
 const OperatorPage = lazy(() => import('@pages/queue/OperatorPage'));
 const LiveTVPage = lazy(() => import('@pages/live-tv/LiveTVPage'));
 const PrizeManagement = lazy(() => import('@pages/PrizeManagement'));
+const EnterpriseDashboard = lazy(() =>
+  import('@features/dashboard/DashboardPage').then(({ DashboardPage }) => ({
+    default: DashboardPage,
+  })),
+);
 
 // ─── Operator Pages ──────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('@layouts/AdminLayout'));
@@ -44,20 +49,27 @@ const routes: RouteObject[] = [
     path: '/dashboard',
     element: (
       <ProtectedRoute>
-        <Suspense
-          fallback={<div className="flex-center min-h-screen bg-dark-surface">Loading...</div>}
-        >
-          <AdminLayout />
-        </Suspense>
+        <Outlet />
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <LazyPage Component={OperatorDashboard} /> },
-      { path: 'participants', element: <LazyPage Component={OperatorParticipants} /> },
-      { path: 'prizes', element: <LazyPage Component={OperatorPrizes} /> },
-      { path: 'queue', element: <LazyPage Component={OperatorQueue} /> },
-      { path: 'winners', element: <LazyPage Component={OperatorDraws} /> },
-      { path: 'settings', element: <LazyPage Component={OperatorSettings} /> },
+      { index: true, element: <LazyPage Component={EnterpriseDashboard} /> },
+      {
+        element: (
+          <Suspense
+            fallback={<div className="flex-center min-h-screen bg-dark-surface">Loading...</div>}
+          >
+            <AdminLayout />
+          </Suspense>
+        ),
+        children: [
+          { path: 'participants', element: <LazyPage Component={OperatorParticipants} /> },
+          { path: 'prizes', element: <LazyPage Component={OperatorPrizes} /> },
+          { path: 'queue', element: <LazyPage Component={OperatorQueue} /> },
+          { path: 'winners', element: <LazyPage Component={OperatorDraws} /> },
+          { path: 'settings', element: <LazyPage Component={OperatorSettings} /> },
+        ],
+      },
     ],
   },
   // ─── Operator Routes ──────────────────────────────────────────────

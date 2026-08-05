@@ -5,6 +5,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useThemeContext } from '@contexts/ThemeContext';
+import { DevelopmentModeBanner, useAuth } from '@features/auth';
 import { useDashboardStore } from '@store/operator/dashboardStore';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -276,11 +277,17 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
 
 function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const { isDark, toggleTheme } = useThemeContext();
+  const { logout, user } = useAuth();
   const { stats, unreadCount } = useDashboardStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const navigate = useNavigate();
+
+  const handleLogout = useCallback(async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  }, [logout, navigate]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -406,9 +413,11 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-dark-surface-tertiary transition-colors"
               >
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-xs font-bold text-white">
-                  A
+                  {user?.username.charAt(0).toUpperCase() ?? 'A'}
                 </div>
-                <span className="hidden sm:block text-sm text-white">Admin</span>
+                <span className="hidden sm:block text-sm text-white">
+                  {user?.username ?? 'Admin'}
+                </span>
                 <HiOutlineChevronDown className="w-4 h-4 text-dark-text-tertiary" />
               </button>
               <AnimatePresence>
@@ -421,8 +430,8 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
                     className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-dark-border bg-dark-surface-secondary shadow-2xl shadow-black/40 z-50 overflow-hidden"
                   >
                     <div className="px-4 py-3 border-b border-dark-border">
-                      <p className="text-sm font-medium text-white">Admin User</p>
-                      <p className="text-xs text-dark-text-tertiary">admin@radiant.com</p>
+                      <p className="text-sm font-medium text-white">{user?.username ?? 'Admin'}</p>
+                      <p className="text-xs text-dark-text-tertiary">{user?.email ?? ''}</p>
                     </div>
                     <div className="p-1">
                       <button
@@ -437,7 +446,7 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
                       </button>
                       <button
                         onClick={() => {
-                          navigate('/login');
+                          void handleLogout();
                           setShowUserMenu(false);
                         }}
                         className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-danger-400 hover:text-danger-300 hover:bg-danger-500/10 transition-colors"
@@ -476,6 +485,9 @@ export default function AdminLayout() {
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
         <Header onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} />
         <main className="p-4 lg:p-6">
+          <div className="mb-4">
+            <DevelopmentModeBanner />
+          </div>
           <Outlet />
         </main>
       </div>

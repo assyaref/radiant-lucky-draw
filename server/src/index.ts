@@ -8,6 +8,8 @@
 import { createApp } from './app';
 import { env } from './config';
 import { logger } from './utils';
+import { ensureAdminUser } from './bootstrap';
+
 
 // ─── Uncaught Error Handlers ───────────────────────────────
 
@@ -32,7 +34,11 @@ async function main() {
 
   const baseUrl = process.env.APP_URL ?? `http://localhost:${env.PORT}`;
 
+  // Ensure the production admin user exists (idempotent auto-seed).
+  await ensureAdminUser();
+
   const server = app.listen(env.PORT, () => {
+
     logger.info(`Server started on port ${env.PORT}`, {
       environment: env.NODE_ENV,
       apiDocs: `${baseUrl}/api/docs`,

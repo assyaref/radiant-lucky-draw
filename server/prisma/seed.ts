@@ -32,6 +32,9 @@ async function main() {
   const adminPassword = await bcrypt.hash('admin123', 12);
   const operatorPassword = await bcrypt.hash('operator123', 12);
 
+  // Production admin (RC4.18): admin@radiantgroup.com / Admin123! / super_admin
+  const productionAdminPassword = await bcrypt.hash('Admin123!', 12);
+
   const admin = await prisma.user.create({
     data: {
       username: 'admin',
@@ -41,6 +44,17 @@ async function main() {
       isActive: true,
     },
   });
+
+  await prisma.user.create({
+    data: {
+      username: 'superadmin',
+      email: 'admin@radiantgroup.com',
+      password: productionAdminPassword,
+      role: 'super_admin',
+      isActive: true,
+    },
+  });
+
 
   await prisma.user.create({
     data: {
@@ -496,16 +510,19 @@ async function main() {
 
   logger.info('🎉 Database seeding completed successfully!');
   logger.info('📋 Summary:');
-  logger.info(`  Users:         3`);
+  logger.info(`  Users:         4`);
+
   logger.info(`  Participants:  ${participants.length}`);
   logger.info(`  Prizes:        ${prizes.length}`);
   logger.info(`  Draws:         ${draws.length}`);
   logger.info(`  Sponsors:      ${sponsorData.length}`);
   logger.info(`  Announcements: ${announcementData.length}`);
   logger.info('🔑 Credentials:');
-  logger.info('  Admin:    admin / admin123');
-  logger.info('  Operator: operator1 / operator123');
-  logger.info('  Operator: operator2 / operator123');
+  logger.info('  Super Admin: admin@radiantgroup.com / Admin123!');
+  logger.info('  Admin:       admin / admin123');
+  logger.info('  Operator:    operator1 / operator123');
+  logger.info('  Operator:    operator2 / operator123');
+
 }
 
 main()

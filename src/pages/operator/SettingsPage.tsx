@@ -10,16 +10,20 @@ import {
   HiOutlineShieldCheck,
   HiOutlineGlobeAlt,
   HiOutlineServer,
+  HiOutlineQrCode,
 } from 'react-icons/hi2';
+import { BoothQRCode } from '@components/booth/BoothQRCode';
 
 const settingsSections = [
   { id: 'general', label: 'General', icon: <HiOutlineCog6Tooth className="w-5 h-5" /> },
+  { id: 'booth', label: 'Booth QR', icon: <HiOutlineQrCode className="w-5 h-5" /> },
   { id: 'appearance', label: 'Appearance', icon: <HiOutlinePaintBrush className="w-5 h-5" /> },
   { id: 'notifications', label: 'Notifications', icon: <HiOutlineBell className="w-5 h-5" /> },
   { id: 'security', label: 'Security', icon: <HiOutlineShieldCheck className="w-5 h-5" /> },
   { id: 'localization', label: 'Localization', icon: <HiOutlineGlobeAlt className="w-5 h-5" /> },
   { id: 'system', label: 'System', icon: <HiOutlineServer className="w-5 h-5" /> },
 ];
+
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('general');
@@ -93,7 +97,27 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {activeSection === 'booth' && (
+            <div className="space-y-6">
+              <h2 className="text-lg font-semibold text-white">Booth QR Code</h2>
+              <p className="text-sm text-dark-text-tertiary">
+                Scan QR code ini untuk membuka halaman Public Booth. Peserta dapat mendaftar,
+                mengambil foto, dan mengikuti undian langsung dari perangkat mereka.
+              </p>
+              <div className="flex flex-col items-center gap-4 py-4">
+                <BoothQRCode size={220} />
+                <button
+                  onClick={() => window.open('/booth', '_blank')}
+                  className="px-6 py-2 rounded-lg bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 transition-colors text-sm font-medium"
+                >
+                  Buka Public Booth
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeSection === 'appearance' && (
+
             <div className="space-y-6">
               <h2 className="text-lg font-semibold text-white">Appearance</h2>
               <div className="space-y-4">

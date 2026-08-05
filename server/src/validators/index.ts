@@ -8,3 +8,9 @@ export { createParticipantSchema, updateParticipantSchema } from './participant.
 export { createPrizeSchema, updatePrizeSchema } from './prize.validator';
 export { createDrawSchema, updateDrawStatusSchema } from './draw.validator';
 export { updateSettingsSchema } from './settings.validator';
+export {
+  createBoothParticipantSchema,
+  uploadPhotoSchema,
+  spinSchema,
+  updateClaimStatusSchema,
+} from './booth.validator';

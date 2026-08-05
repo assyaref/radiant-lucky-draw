@@ -10,3 +10,4 @@ export { createQueueRoutes } from './queue.routes';
 export { createSettingsRoutes } from './settings.routes';
 export { createAnalyticsRoutes } from './analytics.routes';
 export { createHealthRoutes } from './health.routes';
+export { createBoothRoutes } from './booth.routes';

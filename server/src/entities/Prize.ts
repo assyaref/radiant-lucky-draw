@@ -13,6 +13,7 @@ export interface Prize {
   imageUrl?: string;
   sponsor?: string;
   tier: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+  probability: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

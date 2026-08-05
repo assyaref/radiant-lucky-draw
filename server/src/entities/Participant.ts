@@ -13,5 +13,8 @@ export interface Participant {
   registeredAt: string;
   calledAt?: string;
   completedAt?: string;
+  photoUrl?: string;
+  prizeId?: string;
+  claimStatus: 'unclaimed' | 'claimed';
   drawId?: string;
 }

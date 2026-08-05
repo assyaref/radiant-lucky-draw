@@ -25,6 +25,9 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
       registeredAt: record.registeredAt.toISOString(),
       calledAt: record.calledAt ? record.calledAt.toISOString() : undefined,
       completedAt: record.completedAt ? record.completedAt.toISOString() : undefined,
+      photoUrl: record.photoUrl ?? undefined,
+      prizeId: record.prizeId ?? undefined,
+      claimStatus: record.claimStatus ?? 'unclaimed',
     };
   }
 
@@ -43,6 +46,9 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
     if (data.completedAt !== undefined) {
       prismaData.completedAt = data.completedAt ? new Date(data.completedAt) : null;
     }
+    if (data.photoUrl !== undefined) prismaData.photoUrl = data.photoUrl;
+    if (data.prizeId !== undefined) prismaData.prizeId = data.prizeId;
+    if (data.claimStatus !== undefined) prismaData.claimStatus = data.claimStatus;
     return prismaData;
   }
 

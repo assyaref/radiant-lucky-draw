@@ -43,6 +43,12 @@ const OperatorSettings = lazy(() => import('@pages/operator/SettingsPage'));
 const OperatorUsers = lazy(() => import('@pages/operator/UsersPage'));
 const OperatorAuditLogs = lazy(() => import('@pages/operator/AuditLogsPage'));
 
+// ─── Booth Enterprise Pages ───────────────────────────────────────────
+const PublicBoothPage = lazy(() => import('@pages/booth/PublicBoothPage'));
+const BoothParticipantsPage = lazy(() => import('@pages/booth/BoothParticipantsPage'));
+const BoothWinnersPage = lazy(() => import('@pages/booth/BoothWinnersPage'));
+
+
 const routes: RouteObject[] = [
   // ─── Dashboard Routes ─────────────────────────────────────────────
   {
@@ -63,12 +69,13 @@ const routes: RouteObject[] = [
           </Suspense>
         ),
         children: [
-          { path: 'participants', element: <LazyPage Component={OperatorParticipants} /> },
+          { path: 'participants', element: <LazyPage Component={BoothParticipantsPage} /> },
           { path: 'prizes', element: <LazyPage Component={OperatorPrizes} /> },
           { path: 'queue', element: <LazyPage Component={OperatorQueue} /> },
-          { path: 'winners', element: <LazyPage Component={OperatorDraws} /> },
+          { path: 'winners', element: <LazyPage Component={BoothWinnersPage} /> },
           { path: 'settings', element: <LazyPage Component={OperatorSettings} /> },
         ],
+
       },
     ],
   },
@@ -115,6 +122,11 @@ const routes: RouteObject[] = [
     path: '/registration',
     element: <LazyPage Component={RegistrationPage} />,
   },
+  {
+    path: '/booth',
+    element: <LazyPage Component={PublicBoothPage} />,
+  },
+
   {
     path: '/queue/tv',
     element: <LazyPage Component={QueueTVPage} />,

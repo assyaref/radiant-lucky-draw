@@ -51,6 +51,7 @@ export class ParticipantService {
       email: data.email ?? '',
       queueNumber,
       status: 'registered',
+      claimStatus: 'unclaimed',
       registeredAt: new Date().toISOString(),
     });
 
@@ -115,6 +116,9 @@ export class ParticipantService {
       queueNumber: p.queueNumber,
       status: p.status,
       registeredAt: p.registeredAt,
+      photoUrl: p.photoUrl,
+      prizeId: p.prizeId,
+      claimStatus: p.claimStatus ?? 'unclaimed',
       estimatedWait,
       currentQueue,
     };

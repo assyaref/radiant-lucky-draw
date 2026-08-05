@@ -10,3 +10,4 @@ export { QueueController } from './QueueController';
 export { SettingsController } from './SettingsController';
 export { AnalyticsController } from './AnalyticsController';
 export { HealthController } from './HealthController';
+export { BoothController } from './BoothController';

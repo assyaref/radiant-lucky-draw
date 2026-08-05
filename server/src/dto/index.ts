@@ -28,3 +28,16 @@ export type { CreateDrawRequest, UpdateDrawStatusRequest, DrawResponse } from '.
 export type { QueueEntryResponse, QueueStateResponse, CallNextResponse } from './queue.dto';
 
 export type { UpdateSettingsRequest, SettingsResponse } from './settings.dto';
+
+export type {
+  BoothConfigResponse,
+  PublicPrize,
+  CreateBoothParticipantRequest,
+  BoothParticipantResponse,
+  UploadPhotoRequest,
+  UploadPhotoResponse,
+  SpinRequest,
+  SpinResponse,
+  WinnerResponse,
+  UpdateClaimStatusRequest,
+} from './booth.dto';

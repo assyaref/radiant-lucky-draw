@@ -28,6 +28,7 @@ export class PrizeService {
       ...data,
       currency: data.currency || 'USD',
       remaining: data.quantity,
+      probability: data.probability ?? 0,
       isActive: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -59,6 +60,7 @@ export class PrizeService {
       imageUrl: p.imageUrl,
       sponsor: p.sponsor,
       tier: p.tier,
+      probability: p.probability ?? 0,
       isActive: p.isActive,
       createdAt: p.createdAt,
     };

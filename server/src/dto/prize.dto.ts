@@ -11,6 +11,7 @@ export interface CreatePrizeRequest {
   imageUrl?: string;
   sponsor?: string;
   tier: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+  probability?: number;
 }
 
 export interface UpdatePrizeRequest {
@@ -22,6 +23,7 @@ export interface UpdatePrizeRequest {
   imageUrl?: string;
   sponsor?: string;
   tier?: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+  probability?: number;
   isActive?: boolean;
 }
 
@@ -36,6 +38,7 @@ export interface PrizeResponse {
   imageUrl?: string;
   sponsor?: string;
   tier: string;
+  probability: number;
   isActive: boolean;
   createdAt: string;
 }

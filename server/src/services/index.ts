@@ -12,3 +12,4 @@ export { DrawService } from './DrawService';
 export { QueueService } from './QueueService';
 export { SettingsService } from './SettingsService';
 export { AnalyticsService } from './AnalyticsService';
+export { BoothService } from './BoothService';

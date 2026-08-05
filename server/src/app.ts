@@ -29,6 +29,7 @@ import {
   createSettingsRoutes,
   createAnalyticsRoutes,
   createHealthRoutes,
+  createBoothRoutes,
 } from './routes';
 import {
   AuthController,
@@ -39,6 +40,7 @@ import {
   SettingsController,
   AnalyticsController,
   HealthController,
+  BoothController,
 } from './controllers';
 import {
   AuthService,
@@ -51,6 +53,7 @@ import {
   QueueService,
   SettingsService,
   AnalyticsService,
+  BoothService,
 } from './services';
 import {
   UserRepository,
@@ -61,7 +64,9 @@ import {
   DrawRepository,
   QueueRepository,
   SettingsRepository,
+  WinnerRepository,
 } from './repositories';
+
 import { RealtimeService } from './realtime';
 
 export interface AppInstance {
@@ -83,6 +88,7 @@ export function createApp(): AppInstance {
   const drawRepository = new DrawRepository();
   const queueRepository = new QueueRepository();
   const settingsRepository = new SettingsRepository();
+  const winnerRepository = new WinnerRepository();
 
   // =========================================================
   // Services (DI)
@@ -113,6 +119,13 @@ export function createApp(): AppInstance {
     participantRepository,
     prizeRepository,
   );
+  const boothService = new BoothService(
+    participantRepository,
+    prizeRepository,
+    settingsRepository,
+    winnerRepository,
+    realtimeService,
+  );
 
   // =========================================================
   // Controllers (DI)
@@ -125,6 +138,7 @@ export function createApp(): AppInstance {
   const settingsController = new SettingsController(settingsService);
   const analyticsController = new AnalyticsController(analyticsService);
   const healthController = new HealthController();
+  const boothController = new BoothController(boothService);
 
   // =========================================================
   // Global Middleware
@@ -191,6 +205,7 @@ export function createApp(): AppInstance {
   app.use('/api/queue', createQueueRoutes(queueController, tokenService));
   app.use('/api/settings', createSettingsRoutes(settingsController, tokenService));
   app.use('/api/analytics', createAnalyticsRoutes(analyticsController, tokenService));
+  app.use('/api/booth', createBoothRoutes(boothController, tokenService));
 
   // =========================================================
   // Root Route

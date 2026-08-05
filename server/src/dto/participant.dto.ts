@@ -15,6 +15,9 @@ export interface UpdateParticipantRequest {
   phone?: string;
   company?: string;
   status?: 'registered' | 'called' | 'completed' | 'cancelled';
+  photoUrl?: string;
+  prizeId?: string;
+  claimStatus?: 'unclaimed' | 'claimed';
 }
 
 export interface ParticipantResponse {
@@ -26,6 +29,9 @@ export interface ParticipantResponse {
   queueNumber: string;
   status: string;
   registeredAt: string;
+  photoUrl?: string;
+  prizeId?: string;
+  claimStatus: string;
   estimatedWait: number;
   currentQueue: number;
 }

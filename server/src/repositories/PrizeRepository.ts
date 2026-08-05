@@ -25,6 +25,7 @@ export class PrizeRepository extends PrismaRepository<Prize> {
       imageUrl: record.imageUrl ?? undefined,
       sponsor: record.sponsor ?? undefined,
       tier: record.tier,
+      probability: record.probability ?? 0,
       isActive: record.isActive,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
@@ -42,6 +43,7 @@ export class PrizeRepository extends PrismaRepository<Prize> {
     if (data.imageUrl !== undefined) prismaData.imageUrl = data.imageUrl;
     if (data.sponsor !== undefined) prismaData.sponsor = data.sponsor;
     if (data.tier !== undefined) prismaData.tier = data.tier;
+    if (data.probability !== undefined) prismaData.probability = data.probability;
     if (data.isActive !== undefined) prismaData.isActive = data.isActive;
     return prismaData;
   }

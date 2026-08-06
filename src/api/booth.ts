@@ -56,6 +56,7 @@ export interface Winner {
   participantId: string;
   participantName: string;
   participantCompany: string;
+  participantPhone?: string;
   participantPhotoUrl?: string;
   prizeId: string;
   prizeName: string;
@@ -63,6 +64,8 @@ export interface Winner {
   prizeTier: string;
   prizeValue: number;
   claimStatus: 'unclaimed' | 'claimed';
+  claimedAt?: string;
+  claimedBy?: string;
   announcedAt: string;
 }
 

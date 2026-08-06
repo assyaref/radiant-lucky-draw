@@ -252,31 +252,69 @@ export class BoothService {
   async updateClaimStatus(
     id: string,
     claimStatus: 'unclaimed' | 'claimed',
+    userId?: string,
   ): Promise<WinnerResponse> {
-    const winner = await this.winnerRepository.updateClaimStatus(id, claimStatus);
+    const winner = await this.winnerRepository.updateClaimStatus(id, claimStatus, userId);
     if (!winner) throw new NotFoundError('Winner', id);
 
     // Also update the participant's claim status.
     await this.participantRepository.update(winner.participantId, { claimStatus });
 
-    const detail = await this.winnerRepository.findWithDetails(1, 1);
-    const found = detail.data.find((w: any) => w.id === id);
-    if (!found) throw new NotFoundError('Winner', id);
+    // Broadcast claim update via Socket.IO
+    if (this.realtimeService) {
+      const detail = await this.winnerRepository.findWithDetails(1, 1);
+      const found = detail.data.find((w: any) => w.id === id);
+      if (found) {
+        this.realtimeService.broadcastDrawEvent(DRAW_EVENTS.WINNER, {
+          drawId: found.drawId,
+          participantId: found.participantId,
+          participantName: found.participantName,
+          prizeId: found.prizeId,
+          prizeName: found.prizeName,
+          prizeTier: found.prizeTier,
+          claimStatus: found.claimStatus,
+          claimedAt: found.claimedAt,
+          claimedBy: found.claimedBy,
+          timestamp: new Date().toISOString(),
+        });
+
+        return {
+          id: found.id,
+          drawId: found.drawId,
+          participantId: found.participantId,
+          participantName: found.participantName,
+          participantCompany: found.participantCompany,
+          participantPhone: found.participantPhone,
+          participantPhotoUrl: found.participantPhotoUrl,
+          prizeId: found.prizeId,
+          prizeName: found.prizeName,
+          prizeImageUrl: found.prizeImageUrl,
+          prizeTier: found.prizeTier,
+          prizeValue: found.prizeValue,
+          claimStatus: found.claimStatus,
+          claimedAt: found.claimedAt,
+          claimedBy: found.claimedBy,
+          announcedAt: found.announcedAt,
+        };
+      }
+    }
 
     return {
-      id: found.id,
-      drawId: found.drawId,
-      participantId: found.participantId,
-      participantName: found.participantName,
-      participantCompany: found.participantCompany,
-      participantPhotoUrl: found.participantPhotoUrl,
-      prizeId: found.prizeId,
-      prizeName: found.prizeName,
-      prizeImageUrl: found.prizeImageUrl,
-      prizeTier: found.prizeTier,
-      prizeValue: found.prizeValue,
-      claimStatus: found.claimStatus,
-      announcedAt: found.announcedAt,
+      id: winner.id,
+      drawId: winner.drawId,
+      participantId: winner.participantId,
+      participantName: '',
+      participantCompany: '',
+      participantPhotoUrl: undefined,
+      prizeId: winner.prizeId,
+      prizeName: '',
+      prizeImageUrl: undefined,
+      prizeTier: winner.prizeTier,
+      prizeValue: winner.prizeValue,
+      claimStatus: winner.claimStatus,
+      claimedAt: winner.claimedAt,
+      claimedBy: winner.claimedBy,
+      announcedAt: winner.announcedAt,
     };
   }
 

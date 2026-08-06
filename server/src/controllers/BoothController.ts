@@ -61,7 +61,12 @@ export class BoothController {
 
   updateClaimStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await this.boothService.updateClaimStatus(req.params.id, req.body.claimStatus);
+      const userId = (req as any).user?.id;
+      const result = await this.boothService.updateClaimStatus(
+        req.params.id,
+        req.body.claimStatus,
+        userId,
+      );
       sendSuccess(res, result);
     } catch (error) {
       next(error);

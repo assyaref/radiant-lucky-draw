@@ -69,6 +69,7 @@ export interface WinnerResponse {
   participantId: string;
   participantName: string;
   participantCompany: string;
+  participantPhone?: string;
   participantPhotoUrl?: string;
   prizeId: string;
   prizeName: string;
@@ -76,6 +77,8 @@ export interface WinnerResponse {
   prizeTier: string;
   prizeValue: number;
   claimStatus: string;
+  claimedAt?: string;
+  claimedBy?: string;
   announcedAt: string;
 }
 

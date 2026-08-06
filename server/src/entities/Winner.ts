@@ -10,6 +10,8 @@ export interface Winner {
   prizeTier: string;
   prizeValue: number;
   claimStatus: 'unclaimed' | 'claimed';
+  claimedAt?: string;
+  claimedBy?: string;
   announcedAt: string;
   createdAt: string;
   updatedAt: string;

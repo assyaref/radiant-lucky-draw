@@ -22,6 +22,8 @@ export class WinnerRepository extends PrismaRepository<Winner> {
       prizeTier: record.prizeTier,
       prizeValue: record.prizeValue,
       claimStatus: record.claimStatus ?? 'unclaimed',
+      claimedAt: record.claimedAt?.toISOString() ?? undefined,
+      claimedBy: record.claimedBy ?? undefined,
       announcedAt: record.announcedAt.toISOString(),
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
@@ -36,6 +38,10 @@ export class WinnerRepository extends PrismaRepository<Winner> {
     if (data.prizeTier !== undefined) prismaData.prizeTier = data.prizeTier;
     if (data.prizeValue !== undefined) prismaData.prizeValue = data.prizeValue;
     if (data.claimStatus !== undefined) prismaData.claimStatus = data.claimStatus;
+    if (data.claimedAt !== undefined) {
+      prismaData.claimedAt = data.claimedAt ? new Date(data.claimedAt) : null;
+    }
+    if (data.claimedBy !== undefined) prismaData.claimedBy = data.claimedBy;
     if (data.announcedAt !== undefined) {
       prismaData.announcedAt = data.announcedAt ? new Date(data.announcedAt) : null;
     }
@@ -76,6 +82,7 @@ export class WinnerRepository extends PrismaRepository<Winner> {
         participantId: r.participantId,
         participantName: r.participant?.name ?? '',
         participantCompany: r.participant?.company ?? '',
+        participantPhone: r.participant?.phone ?? '',
         participantPhotoUrl: r.participant?.photoUrl ?? undefined,
         prizeId: r.prizeId,
         prizeName: r.prize?.name ?? '',
@@ -83,6 +90,8 @@ export class WinnerRepository extends PrismaRepository<Winner> {
         prizeTier: r.prizeTier,
         prizeValue: r.prizeValue,
         claimStatus: r.claimStatus ?? 'unclaimed',
+        claimedAt: r.claimedAt?.toISOString() ?? undefined,
+        claimedBy: r.claimedBy ?? undefined,
         announcedAt: r.announcedAt.toISOString(),
       })),
       total,
@@ -95,13 +104,23 @@ export class WinnerRepository extends PrismaRepository<Winner> {
   async updateClaimStatus(
     id: string,
     claimStatus: 'unclaimed' | 'claimed',
+    userId?: string,
   ): Promise<Winner | null> {
     const existing = await this.model.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) return null;
 
+    const updateData: any = { claimStatus };
+    if (claimStatus === 'claimed') {
+      updateData.claimedAt = new Date();
+      if (userId) updateData.claimedBy = userId;
+    } else {
+      updateData.claimedAt = null;
+      updateData.claimedBy = null;
+    }
+
     const record = await this.model.update({
       where: { id },
-      data: { claimStatus },
+      data: updateData,
     });
     return this.toEntity(record);
   }

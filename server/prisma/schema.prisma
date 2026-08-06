@@ -192,6 +192,8 @@ model Winner {
   prizeTier     String   @map("prize_tier") @db.VarChar(20)
   prizeValue    Float    @map("prize_value")
   claimStatus   String   @default("unclaimed") @map("claim_status") @db.VarChar(20) // unclaimed | claimed
+  claimedAt     DateTime? @map("claimed_at")
+  claimedBy     String?   @map("claimed_by") @db.Uuid
   announcedAt   DateTime @default(now()) @map("announced_at")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")

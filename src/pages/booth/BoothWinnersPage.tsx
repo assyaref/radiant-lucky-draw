@@ -76,13 +76,58 @@ export default function BoothWinnersPage() {
     };
   }, [page, claimFilter]);
 
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [updatingClaim, setUpdatingClaim] = useState(false);
+
   const handleToggleClaim = useCallback(async (winner: Winner) => {
     const next = winner.claimStatus === 'claimed' ? 'unclaimed' : 'claimed';
+    if (next === 'claimed') {
+      setConfirmingId(winner.id);
+      return;
+    }
+    // Unclaim — langsung
     try {
       await boothApi.updateClaimStatus(winner.id, next);
-      setWinners((prev) => prev.map((w) => (w.id === winner.id ? { ...w, claimStatus: next } : w)));
+      setWinners((prev) =>
+        prev.map((w) =>
+          w.id === winner.id
+            ? {
+                ...w,
+                claimStatus: next as 'unclaimed' | 'claimed',
+                claimedAt: undefined,
+                claimedBy: undefined,
+              }
+            : w,
+        ),
+      );
     } catch (err: any) {
       setError(err?.message ?? 'Gagal mengubah status klaim');
+    }
+  }, []);
+
+  const confirmClaim = useCallback(async (winnerId: string) => {
+    setUpdatingClaim(true);
+    setError('');
+    try {
+      const res = await boothApi.updateClaimStatus(winnerId, 'claimed');
+      const updated = res.data;
+      setWinners((prev) =>
+        prev.map((w) =>
+          w.id === winnerId
+            ? {
+                ...w,
+                claimStatus: 'claimed' as const,
+                claimedAt: updated.claimedAt,
+                claimedBy: updated.claimedBy,
+              }
+            : w,
+        ),
+      );
+      setConfirmingId(null);
+    } catch (err: any) {
+      setError(err?.message ?? 'Gagal klaim hadiah');
+    } finally {
+      setUpdatingClaim(false);
     }
   }, []);
 
@@ -256,6 +301,41 @@ export default function BoothWinnersPage() {
           </div>
         </div>
       </div>
+
+      {/* Claim Confirmation Modal */}
+      {confirmingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="rounded-2xl border border-dark-border bg-dark-surface-secondary p-6 shadow-2xl max-w-sm w-full mx-4"
+          >
+            <div className="text-center">
+              <div className="text-5xl mb-4">🎁</div>
+              <h3 className="text-lg font-bold text-white mb-2">Konfirmasi Klaim Hadiah</h3>
+              <p className="text-sm text-dark-text-tertiary mb-6">
+                Apakah Anda yakin ingin mengklaim hadiah ini? Tindakan ini tidak dapat dibatalkan.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setConfirmingId(null)}
+                  disabled={updatingClaim}
+                  className="px-5 py-2.5 rounded-xl bg-dark-surface-tertiary text-dark-text-secondary hover:text-white transition-colors text-sm disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => confirmClaim(confirmingId)}
+                  disabled={updatingClaim}
+                  className="px-5 py-2.5 rounded-xl bg-success-600 text-white font-semibold hover:bg-success-500 transition-colors text-sm disabled:opacity-50"
+                >
+                  {updatingClaim ? 'Memproses...' : 'Ya, Klaim'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

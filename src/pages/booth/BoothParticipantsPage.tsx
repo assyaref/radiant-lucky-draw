@@ -41,7 +41,11 @@ export default function BoothParticipantsPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await boothApi.listParticipants({ page, limit: pageSize, search: search || undefined });
+      const res = await boothApi.listParticipants({
+        page,
+        limit: pageSize,
+        search: search || undefined,
+      });
       setParticipants(res.data ?? []);
       setTotal(res.meta?.total ?? res.data?.length ?? 0);
     } catch (err: any) {
@@ -52,8 +56,33 @@ export default function BoothParticipantsPage() {
   }, [page, search]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+
+    boothApi
+      .listParticipants({
+        page,
+        limit: pageSize,
+        search: search || undefined,
+      })
+      .then((res) => {
+        if (!cancelled) {
+          setParticipants(res.data ?? []);
+          setTotal(res.meta?.total ?? res.data?.length ?? 0);
+          setError('');
+          setLoading(false);
+        }
+      })
+      .catch((err: any) => {
+        if (!cancelled) {
+          setError(err?.message ?? 'Gagal memuat data peserta');
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, search]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -70,7 +99,6 @@ export default function BoothParticipantsPage() {
         >
           <HiOutlineArrowPath className="w-4 h-4" />
           Refresh
-
         </button>
       </div>
 
@@ -124,13 +152,19 @@ export default function BoothParticipantsPage() {
             <tbody className="divide-y divide-dark-border/50">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-dark-text-tertiary text-sm">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-10 text-center text-dark-text-tertiary text-sm"
+                  >
                     Memuat data...
                   </td>
                 </tr>
               ) : participants.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-dark-text-tertiary text-sm">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-10 text-center text-dark-text-tertiary text-sm"
+                  >
                     Belum ada peserta
                   </td>
                 </tr>

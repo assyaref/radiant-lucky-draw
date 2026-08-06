@@ -24,7 +24,6 @@ const settingsSections = [
   { id: 'system', label: 'System', icon: <HiOutlineServer className="w-5 h-5" /> },
 ];
 
-
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('general');
 
@@ -117,7 +116,6 @@ export default function SettingsPage() {
           )}
 
           {activeSection === 'appearance' && (
-
             <div className="space-y-6">
               <h2 className="text-lg font-semibold text-white">Appearance</h2>
               <div className="space-y-4">

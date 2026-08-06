@@ -87,11 +87,8 @@ export const boothApi = {
   getConfig: () => api.get<ApiEnvelope<BoothConfig>>('/booth/config'),
 
   /** Register a new booth participant */
-  registerParticipant: (payload: {
-    name: string;
-    company: string;
-    whatsapp?: string;
-  }) => api.post<ApiEnvelope<BoothParticipant>>('/booth/participants', payload),
+  registerParticipant: (payload: { name: string; company: string; whatsapp?: string }) =>
+    api.post<ApiEnvelope<BoothParticipant>>('/booth/participants', payload),
 
   /** Upload participant face photo (base64 data URL) */
   uploadPhoto: (payload: { participantId: string; photo: string }) =>
@@ -120,8 +117,6 @@ export const boothApi = {
     const qs = query.toString();
     return api.get<Paginated<BoothParticipant>>(`/participants${qs ? `?${qs}` : ''}`);
   },
-
-
 
   /** Update winner claim status (admin) */
   updateClaimStatus: (id: string, claimStatus: 'unclaimed' | 'claimed') =>

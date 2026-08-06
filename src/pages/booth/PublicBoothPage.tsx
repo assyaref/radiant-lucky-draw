@@ -296,9 +296,7 @@ export default function PublicBoothPage() {
             >
               <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-2xl">
                 <h2 className="text-xl font-semibold text-white mb-1">Ambil Foto Wajah</h2>
-                <p className="text-white/50 text-sm mb-6">
-                  Arahkan kamera depan ke wajah Anda
-                </p>
+                <p className="text-white/50 text-sm mb-6">Arahkan kamera depan ke wajah Anda</p>
 
                 <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-black mb-4">
                   {photo ? (
@@ -417,9 +415,7 @@ export default function PublicBoothPage() {
                   🏆
                 </motion.div>
                 <h2 className="text-2xl font-bold text-white mb-1">Selamat!</h2>
-                <p className="text-white/50 mb-6">
-                  {result.participantName}, Anda memenangkan:
-                </p>
+                <p className="text-white/50 mb-6">{result.participantName}, Anda memenangkan:</p>
 
                 {result.prizeImageUrl ? (
                   <img

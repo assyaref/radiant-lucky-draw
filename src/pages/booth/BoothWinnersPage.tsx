@@ -12,11 +12,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  HiOutlineChevronLeft,
-  HiOutlineChevronRight,
-  HiOutlineArrowPath,
-} from 'react-icons/hi2';
+import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineArrowPath } from 'react-icons/hi2';
 import { boothApi, type Winner } from '@/api/booth';
 
 const claimStatusColors: Record<string, string> = {
@@ -52,23 +48,43 @@ export default function BoothWinnersPage() {
   }, [page, claimFilter]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
 
-  const handleToggleClaim = useCallback(
-    async (winner: Winner) => {
-      const next = winner.claimStatus === 'claimed' ? 'unclaimed' : 'claimed';
-      try {
-        await boothApi.updateClaimStatus(winner.id, next);
-        setWinners((prev) =>
-          prev.map((w) => (w.id === winner.id ? { ...w, claimStatus: next } : w)),
-        );
-      } catch (err: any) {
-        setError(err?.message ?? 'Gagal mengubah status klaim');
-      }
-    },
-    [],
-  );
+    boothApi
+      .listWinners({
+        page,
+        limit: pageSize,
+        claimStatus: claimFilter || undefined,
+      })
+      .then((res) => {
+        if (!cancelled) {
+          setWinners(res.data ?? []);
+          setTotal(res.meta?.total ?? res.data?.length ?? 0);
+          setError('');
+          setLoading(false);
+        }
+      })
+      .catch((err: any) => {
+        if (!cancelled) {
+          setError(err?.message ?? 'Gagal memuat data pemenang');
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, claimFilter]);
+
+  const handleToggleClaim = useCallback(async (winner: Winner) => {
+    const next = winner.claimStatus === 'claimed' ? 'unclaimed' : 'claimed';
+    try {
+      await boothApi.updateClaimStatus(winner.id, next);
+      setWinners((prev) => prev.map((w) => (w.id === winner.id ? { ...w, claimStatus: next } : w)));
+    } catch (err: any) {
+      setError(err?.message ?? 'Gagal mengubah status klaim');
+    }
+  }, []);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -143,13 +159,19 @@ export default function BoothWinnersPage() {
             <tbody className="divide-y divide-dark-border/50">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-dark-text-tertiary text-sm">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-10 text-center text-dark-text-tertiary text-sm"
+                  >
                     Memuat data...
                   </td>
                 </tr>
               ) : winners.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-dark-text-tertiary text-sm">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-10 text-center text-dark-text-tertiary text-sm"
+                  >
                     Belum ada pemenang
                   </td>
                 </tr>

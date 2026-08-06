@@ -48,7 +48,6 @@ const PublicBoothPage = lazy(() => import('@pages/booth/PublicBoothPage'));
 const BoothParticipantsPage = lazy(() => import('@pages/booth/BoothParticipantsPage'));
 const BoothWinnersPage = lazy(() => import('@pages/booth/BoothWinnersPage'));
 
-
 const routes: RouteObject[] = [
   // ─── Dashboard Routes ─────────────────────────────────────────────
   {
@@ -75,7 +74,6 @@ const routes: RouteObject[] = [
           { path: 'winners', element: <LazyPage Component={BoothWinnersPage} /> },
           { path: 'settings', element: <LazyPage Component={OperatorSettings} /> },
         ],
-
       },
     ],
   },

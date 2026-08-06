@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 15
     environment:
       name: ${{ github.event.inputs.environment || 'production' }}
-      url: ${{ steps.vercel-deploy.outputs.url }}
+      url: ${{ steps.vercel-deploy.outputs.preview-url }}
 
     steps:
       - name: Checkout code
@@ -55,7 +55,7 @@ jobs:
 
       - name: Deploy to Vercel
         id: vercel-deploy
-        uses: amondnet/vercel-action@v25
+        uses: amondnet/vercel-action@v42
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -93,9 +93,11 @@ jobs:
         working-directory: ./server
         run: npm run build
 
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
       - name: Deploy to Railway
-        uses: bervProject/railway-deploy@v1
-        with:
-          railway-token: ${{ secrets.RAILWAY_TOKEN }}
-          service: ${{ secrets.RAILWAY_SERVICE_ID }}
-          directory: ./server
+        working-directory: ./server
+        run: railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

@@ -31,7 +31,7 @@ jobs:
   deploy-backend:
     name: Deploy Backend to Railway
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     environment:
       name: ${{ github.event.inputs.environment || 'production' }}
     outputs:
@@ -72,16 +72,24 @@ jobs:
         # railway up reads railway.json (Dockerfile builder) and deploys.
         run: |
           railway up 2>&1 | tee /tmp/railway-deploy.log
+
+          # Try to extract the deployed URL from railway output.
           BACKEND_URL=$(grep -oP 'https://[^\s]*\.up\.railway\.app' /tmp/railway-deploy.log | head -1)
+
+          # Fallback 1: ask the Railway CLI for the service domain.
+          if [ -z "$BACKEND_URL" ]; then
+            BACKEND_URL=$(railway domain 2>/dev/null | grep -oP 'https://[^\s]+' | head -1) || true
+          fi
+
+          # Fallback 2: construct from service ID (may differ from actual domain).
           if [ -z "$BACKEND_URL" ]; then
             BACKEND_URL="https://${{ secrets.RAILWAY_SERVICE_ID }}.up.railway.app"
           fi
+
           echo "backend_url=${BACKEND_URL}" >> "$GITHUB_OUTPUT"
-          echo "Backend deployed at: ${BACKEND_URL}"
+          echo "Backend URL: ${BACKEND_URL}"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          # RAILWAY_SERVICE_ID is required when the local directory has
-          # not been linked to a Railway project (CI runners are ephemeral).
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
 
       - name: Run database migrations
@@ -101,23 +109,27 @@ jobs:
       - name: Health check
         id: health-check
         # Wait for the backend to become healthy before deploying the
-        # frontend.  30 attempts × 10 s = 5 min maximum wait.
+        # frontend.  60 attempts × 10 s = 10 min maximum wait.
+        # Railway Docker builds can take several minutes.
         run: |
           BACKEND_URL="${{ steps.railway-deploy.outputs.backend_url }}"
           echo "Checking health at ${BACKEND_URL}/api/health …"
           SUCCESS=0
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             if curl -fsS "${BACKEND_URL}/api/health" 2>/dev/null; then
               echo ""
               echo "✅ Backend healthy after $i attempt(s)"
               SUCCESS=1
               break
             fi
-            echo "⏳ Attempt $i/30 — backend not ready, waiting 10 s …"
+            if [ $((i % 6)) -eq 0 ]; then
+              echo "⏳ Attempt $i/60 — still waiting ($(($i * 10))s elapsed) …"
+            fi
             sleep 10
           done
           if [ "$SUCCESS" -ne 1 ]; then
-            echo "❌ Backend health check FAILED after 30 attempts (5 min)"
+            echo "❌ Backend health check FAILED after 60 attempts (10 min)"
+            echo "   URL checked: ${BACKEND_URL}/api/health"
             exit 1
           fi
           echo "backend_url=${BACKEND_URL}" >> "$GITHUB_OUTPUT"

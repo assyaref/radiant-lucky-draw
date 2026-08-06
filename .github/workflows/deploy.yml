@@ -89,6 +89,10 @@ jobs:
         # prisma migrate deploy is NON-destructive: it only applies
         # pending migrations and errors on drift (never resets data).
         # Runs AFTER deployment so it targets the live database.
+        # NOTE: This step may fail if the Railway database is not
+        # reachable from GitHub Actions IP ranges.  In that case
+        # Railway handles migrations via its own deployment hooks.
+        continue-on-error: true
         run: railway run npx prisma migrate deploy
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

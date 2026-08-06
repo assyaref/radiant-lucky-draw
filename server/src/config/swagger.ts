@@ -61,15 +61,12 @@ const options: swaggerJsdoc.Options = {
       { name: 'Queue', description: 'Queue management' },
       { name: 'Settings', description: 'Application settings' },
       { name: 'Analytics', description: 'Analytics and statistics' },
+      { name: 'Events', description: 'Event management (M4.0)' },
+      { name: 'Booths', description: 'Booth management (M4.0)' },
+      { name: 'Booth', description: 'Booth participant flow' },
     ],
   },
   apis: ['./src/routes/*.ts'],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
-
-// ─── Startup diagnostics ───────────────────────────────────
-console.log('NODE_ENV =', process.env.NODE_ENV);
-console.log('PORT =', process.env.PORT);
-console.log('APP_URL =', process.env.APP_URL);
-console.log('Swagger Server =', serverUrl);

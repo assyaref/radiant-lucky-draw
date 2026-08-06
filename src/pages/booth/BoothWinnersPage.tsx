@@ -12,7 +12,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineArrowPath } from 'react-icons/hi2';
+import {
+  HiOutlineChevronLeft,
+  HiOutlineChevronRight,
+  HiOutlineArrowPath,
+  HiOutlineArrowDownTray,
+} from 'react-icons/hi2';
 import { boothApi, type Winner } from '@/api/booth';
 
 const claimStatusColors: Record<string, string> = {
@@ -131,6 +136,27 @@ export default function BoothWinnersPage() {
     }
   }, []);
 
+  const exportCSV = useCallback(() => {
+    const headers = ['Nama', 'Perusahaan', 'WhatsApp', 'Hadiah', 'Tier', 'Klaim', 'Tanggal'];
+    const rows = winners.map((w) => [
+      w.participantName,
+      w.participantCompany,
+      w.participantPhone || '-',
+      w.prizeName,
+      w.prizeTier,
+      w.claimStatus === 'claimed' ? 'Klaim' : 'Belum',
+      new Date(w.announcedAt).toLocaleString(),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => JSON.stringify(c)).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `winners-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [winners]);
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
@@ -140,13 +166,22 @@ export default function BoothWinnersPage() {
           <h1 className="text-2xl font-bold text-white">Pemenang</h1>
           <p className="text-sm text-dark-text-tertiary mt-1">{total} total pemenang</p>
         </div>
-        <button
-          onClick={load}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 transition-colors text-sm"
-        >
-          <HiOutlineArrowPath className="w-4 h-4" />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportCSV}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-success-500/10 text-success-400 hover:bg-success-500/20 transition-colors text-sm"
+          >
+            <HiOutlineArrowDownTray className="w-4 h-4" />
+            Export
+          </button>
+          <button
+            onClick={load}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 transition-colors text-sm"
+          >
+            <HiOutlineArrowPath className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filter */}

@@ -13,6 +13,9 @@ on:
 env:
   NODE_VERSION: "22"
 
+permissions:
+  contents: read
+
 jobs:
   # ─── Lint & Type Check ────────────────────────────────────
   lint:
@@ -24,11 +27,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js (root)
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
+          cache-dependency-path: package-lock.json
 
       - name: Install frontend dependencies
         run: npm ci
@@ -39,17 +43,22 @@ jobs:
       - name: Type check frontend
         run: npm run type-check
 
+      - name: Setup Node.js (server)
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
+
       - name: Install backend dependencies
         working-directory: ./server
         run: npm ci
 
-      - name: Lint backend
-        working-directory: ./server
-        run: npm run lint
-
+      # NOTE: Server has no eslint dependency or config; lint is only scoped
+      # to the frontend workspace. Backend linting is handled by tsc --noEmit.
       - name: Type check backend
         working-directory: ./server
-        run: npx tsc --noEmit
+        run: npx --no-install tsc --noEmit
 
   # ─── Build ────────────────────────────────────────────────
   build:
@@ -62,16 +71,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js (root)
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
 
       - name: Build frontend
-        run: |
-          npm ci
-          npm run build
+        # Bypass "prebuild" script to avoid re-running type-check
+        # (already validated in the lint job).
+        run: npx tsc -b && npx vite build
+
+      - name: Setup Node.js (server)
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
 
       - name: Build backend
         working-directory: ./server
@@ -110,6 +130,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci

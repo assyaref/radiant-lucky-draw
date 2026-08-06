@@ -21,55 +21,21 @@ on:
 env:
   NODE_VERSION: "22"
 
+permissions:
+  contents: read
+
 jobs:
-  # ─── Deploy to Vercel (Frontend) ──────────────────────────
-  deploy-frontend:
-    name: Deploy Frontend to Vercel
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment:
-      name: ${{ github.event.inputs.environment || 'production' }}
-      url: ${{ steps.vercel-deploy.outputs.preview-url }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build frontend
-        run: npm run build
-        env:
-          VITE_APP_TITLE: "Radiant Lucky Draw"
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-          VITE_API_TIMEOUT: "30000"
-          VITE_ENABLE_MOCK: "false"
-          VITE_ENABLE_DEBUG: "false"
-
-      - name: Deploy to Vercel
-        id: vercel-deploy
-        uses: amondnet/vercel-action@v42
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: "--prod"
-          working-directory: ./
-
   # ─── Deploy to Railway (Backend) ──────────────────────────
+  # Backend deploys FIRST to prevent API / schema version
+  # mismatches between the live frontend and backend.
   deploy-backend:
     name: Deploy Backend to Railway
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     environment:
       name: ${{ github.event.inputs.environment || 'production' }}
+    outputs:
+      backend_url: ${{ steps.health-check.outputs.backend_url }}
 
     steps:
       - name: Checkout code
@@ -80,6 +46,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
+          cache-dependency-path: server/package-lock.json
 
       - name: Install backend dependencies
         working-directory: ./server
@@ -87,6 +54,8 @@ jobs:
 
       - name: Generate Prisma client
         working-directory: ./server
+        # Explicit generation so the pipeline never relies on
+        # postinstall alone (--ignore-scripts, NODE_ENV, etc.).
         run: npx prisma generate
 
       - name: Build backend
@@ -94,10 +63,112 @@ jobs:
         run: npm run build
 
       - name: Install Railway CLI
+        # Official Railway CLI — only supported deployment method.
         run: npm install -g @railway/cli
 
       - name: Deploy to Railway
+        id: railway-deploy
         working-directory: ./server
-        run: railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
+        # railway up reads railway.json (Dockerfile builder) and deploys.
+        run: |
+          railway up 2>&1 | tee /tmp/railway-deploy.log
+          BACKEND_URL=$(grep -oP 'https://[^\s]*\.up\.railway\.app' /tmp/railway-deploy.log | head -1)
+          if [ -z "$BACKEND_URL" ]; then
+            BACKEND_URL="https://${{ secrets.RAILWAY_SERVICE_ID }}.up.railway.app"
+          fi
+          echo "backend_url=${BACKEND_URL}" >> "$GITHUB_OUTPUT"
+          echo "Backend deployed at: ${BACKEND_URL}"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          # RAILWAY_SERVICE_ID is required when the local directory has
+          # not been linked to a Railway project (CI runners are ephemeral).
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+
+      - name: Run database migrations
+        working-directory: ./server
+        # prisma migrate deploy is NON-destructive: it only applies
+        # pending migrations and errors on drift (never resets data).
+        # Runs AFTER deployment so it targets the live database.
+        run: railway run npx prisma migrate deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+
+      - name: Health check
+        id: health-check
+        # Wait for the backend to become healthy before deploying the
+        # frontend.  30 attempts × 10 s = 5 min maximum wait.
+        run: |
+          BACKEND_URL="${{ steps.railway-deploy.outputs.backend_url }}"
+          echo "Checking health at ${BACKEND_URL}/api/health …"
+          SUCCESS=0
+          for i in $(seq 1 30); do
+            if curl -fsS "${BACKEND_URL}/api/health" 2>/dev/null; then
+              echo ""
+              echo "✅ Backend healthy after $i attempt(s)"
+              SUCCESS=1
+              break
+            fi
+            echo "⏳ Attempt $i/30 — backend not ready, waiting 10 s …"
+            sleep 10
+          done
+          if [ "$SUCCESS" -ne 1 ]; then
+            echo "❌ Backend health check FAILED after 30 attempts (5 min)"
+            exit 1
+          fi
+          echo "backend_url=${BACKEND_URL}" >> "$GITHUB_OUTPUT"
+
+  # ─── Deploy to Vercel (Frontend) ──────────────────────────
+  # Frontend deploys AFTER the backend is healthy so the SPA
+  # never references an API or schema that does not exist yet.
+  deploy-frontend:
+    name: Deploy Frontend to Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [deploy-backend]
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.vercel-deploy.outputs.deployment_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npx tsc -b && npx vite build
+        env:
+          VITE_APP_TITLE: "Radiant Lucky Draw"
+          VITE_API_TIMEOUT: "30000"
+          VITE_ENABLE_MOCK: "false"
+          VITE_ENABLE_DEBUG: "false"
+
+      - name: Deploy to Vercel
+        id: vercel-deploy
+        # Official Vercel CLI — replaces the deprecated
+        # amondnet/vercel-action.  --prebuilt reuses the
+        # dist/ folder we already built above.
+        run: |
+          DEPLOY_URL=$(npx vercel deploy \
+            --prod \
+            --prebuilt \
+            --token="${{ secrets.VERCEL_TOKEN }}" \
+            --yes \
+            2>&1 | tee /tmp/vercel-deploy.log \
+            | grep -oP 'Production:\s*\Khttps://[^\s]+' \
+            || grep -oP 'https://[^\s]*\.vercel\.app' /tmp/vercel-deploy.log \
+            | head -1)
+          echo "deployment_url=${DEPLOY_URL}" >> "$GITHUB_OUTPUT"
+          echo "Frontend deployed to: ${DEPLOY_URL}"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

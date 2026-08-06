@@ -56,33 +56,9 @@ export default function BoothParticipantsPage() {
   }, [page, search]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    boothApi
-      .listParticipants({
-        page,
-        limit: pageSize,
-        search: search || undefined,
-      })
-      .then((res) => {
-        if (!cancelled) {
-          setParticipants(res.data ?? []);
-          setTotal(res.meta?.total ?? res.data?.length ?? 0);
-          setError('');
-          setLoading(false);
-        }
-      })
-      .catch((err: any) => {
-        if (!cancelled) {
-          setError(err?.message ?? 'Gagal memuat data peserta');
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [page, search]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 

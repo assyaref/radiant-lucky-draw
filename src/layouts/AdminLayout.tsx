@@ -24,6 +24,9 @@ import {
   HiOutlineArrowRightOnRectangle,
   HiOutlineArrowLeft,
   HiOutlineChevronDown,
+  HiOutlineCalendarDays,
+  HiOutlinePaintBrush,
+  HiOutlineServer,
 } from 'react-icons/hi2';
 
 // ─── Navigation Items ────────────────────────────────────────────────
@@ -45,6 +48,21 @@ const navItems: NavItem[] = [
   { label: 'Prizes', path: '/dashboard/prizes', icon: <HiOutlineTrophy className="w-5 h-5" /> },
   { label: 'Queue', path: '/dashboard/queue', icon: <HiOutlineQueueList className="w-5 h-5" /> },
   { label: 'Winners', path: '/dashboard/winners', icon: <HiOutlineTrophy className="w-5 h-5" /> },
+  {
+    label: 'Event Config',
+    path: '/operator/event-config',
+    icon: <HiOutlineCalendarDays className="w-5 h-5" />,
+  },
+  {
+    label: 'Branding',
+    path: '/operator/branding',
+    icon: <HiOutlinePaintBrush className="w-5 h-5" />,
+  },
+  {
+    label: 'Monitoring',
+    path: '/operator/monitoring',
+    icon: <HiOutlineServer className="w-5 h-5" />,
+  },
   {
     label: 'Settings',
     path: '/dashboard/settings',

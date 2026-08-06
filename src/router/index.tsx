@@ -47,6 +47,13 @@ const OperatorAuditLogs = lazy(() => import('@pages/operator/AuditLogsPage'));
 const PublicBoothPage = lazy(() => import('@pages/booth/PublicBoothPage'));
 const BoothParticipantsPage = lazy(() => import('@pages/booth/BoothParticipantsPage'));
 const BoothWinnersPage = lazy(() => import('@pages/booth/BoothWinnersPage'));
+const WinnerWall = lazy(() => import('@pages/WinnerWallPage'));
+
+// ─── M3.3 Event Ready Pages ──────────────────────────────────────────
+const EventConfigPage = lazy(() => import('@pages/operator/EventConfigPage'));
+const BrandingSettingsPage = lazy(() => import('@pages/operator/BrandingSettingsPage'));
+const MonitoringPage = lazy(() => import('@pages/operator/MonitoringPage'));
+const BoothKioskPage = lazy(() => import('@pages/booth/BoothKioskPage'));
 
 const routes: RouteObject[] = [
   // ─── Dashboard Routes ─────────────────────────────────────────────
@@ -101,6 +108,9 @@ const routes: RouteObject[] = [
       { path: 'settings', element: <LazyPage Component={OperatorSettings} /> },
       { path: 'users', element: <LazyPage Component={OperatorUsers} /> },
       { path: 'audit-logs', element: <LazyPage Component={OperatorAuditLogs} /> },
+      { path: 'event-config', element: <LazyPage Component={EventConfigPage} /> },
+      { path: 'branding', element: <LazyPage Component={BrandingSettingsPage} /> },
+      { path: 'monitoring', element: <LazyPage Component={MonitoringPage} /> },
     ],
   },
   // ─── Public Routes ────────────────────────────────────────────────
@@ -136,6 +146,14 @@ const routes: RouteObject[] = [
   {
     path: '/live-tv',
     element: <LazyPage Component={LiveTVPage} />,
+  },
+  {
+    path: '/winner-wall',
+    element: <LazyPage Component={WinnerWall} />,
+  },
+  {
+    path: '/booth-kiosk',
+    element: <LazyPage Component={BoothKioskPage} />,
   },
   {
     path: '/prizes',

@@ -297,12 +297,21 @@ model Settings {
   id                String   @id @default(uuid()) @db.Uuid
   eventName         String   @map("event_name") @db.VarChar(200)
   eventDate         DateTime? @map("event_date")
+  eventLocation     String?  @map("event_location") @db.VarChar(300)
+  eventStatus       String   @default("upcoming") @map("event_status") @db.VarChar(20) // upcoming | active | completed
+  eventDescription  String?  @map("event_description") @db.Text
   maxParticipants   Int      @default(1000) @map("max_participants")
   drawInterval      Int      @default(30) @map("draw_interval")
   celebrationLevel  String   @default("medium") @map("celebration_level") @db.VarChar(20) // low | medium | high | extreme
   theme             String   @default("dark") @db.VarChar(20) // dark | light | luxury
   soundEnabled      Boolean  @default(true) @map("sound_enabled")
   autoAdvance       Boolean  @default(false) @map("auto_advance")
+  logoUrl           String?  @map("logo_url") @db.VarChar(500)
+  bannerUrl         String?  @map("banner_url") @db.VarChar(500)
+  backgroundUrl     String?  @map("background_url") @db.VarChar(500)
+  primaryColor      String   @default("#3b82f6") @map("primary_color") @db.VarChar(9)
+  secondaryColor    String   @default("#8b5cf6") @map("secondary_color") @db.VarChar(9)
+  sponsorIds        Json?    @map("sponsor_ids") @db.JsonB
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
   deletedAt         DateTime? @map("deleted_at")

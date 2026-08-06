@@ -41,3 +41,6 @@ export type {
   WinnerResponse,
   UpdateClaimStatusRequest,
 } from './booth.dto';
+
+export type { CreateEventRequest, UpdateEventRequest, EventResponse } from './event.dto';
+export type { CreateBoothRequest, UpdateBoothRequest, BoothResponse } from './booth.dto';

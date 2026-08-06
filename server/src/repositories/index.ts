@@ -13,3 +13,5 @@ export { QueueRepository } from './QueueRepository';
 export { SettingsRepository } from './SettingsRepository';
 export { SessionRepository } from './SessionRepository';
 export { AuditLogRepository } from './AuditLogRepository';
+export { EventRepository } from './EventRepository';
+export { BoothRepository } from './BoothRepository';

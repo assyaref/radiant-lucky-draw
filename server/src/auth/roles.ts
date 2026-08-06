@@ -64,6 +64,15 @@ export const PERMISSIONS = {
   // Sponsors & Announcements
   SPONSOR_WRITE: 'sponsor:write',
   ANNOUNCEMENT_WRITE: 'announcement:write',
+
+  // Event & Booth Management (M4.0)
+  EVENT_READ: 'event:read',
+  EVENT_WRITE: 'event:write',
+  BOOTH_READ: 'booth:read',
+  BOOTH_WRITE: 'booth:write',
+
+  // Reports
+  REPORT_EXPORT: 'report:export',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

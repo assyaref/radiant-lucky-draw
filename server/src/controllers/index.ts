@@ -11,3 +11,5 @@ export { SettingsController } from './SettingsController';
 export { AnalyticsController } from './AnalyticsController';
 export { HealthController } from './HealthController';
 export { BoothController } from './BoothController';
+export { EventController } from './EventController';
+export { BoothMgmtController } from './BoothMgmtController';

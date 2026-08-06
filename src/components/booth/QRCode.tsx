@@ -4,9 +4,9 @@ import QRCodeSVG from 'react-qr-code';
 import { floatLoop, pulseLoop, glowLoop } from '@animations/index';
 import { env } from '@config/env';
 
-// Registration URL used to encode the QR code.
+// Public Booth URL used to encode the QR code.
 // Resolved from env.PUBLIC_URL (development or production).
-const REGISTRATION_URL = `${env.PUBLIC_URL}/register`;
+const REGISTRATION_URL = `${env.PUBLIC_URL}/booth`;
 
 export const QRCode = memo(function QRCode() {
   return (

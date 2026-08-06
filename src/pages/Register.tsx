@@ -1,3 +1,6 @@
+import { Navigate } from 'react-router-dom';
+
+/** Redirect legacy /register links to the Public Booth. */
 export default function Register() {
-  return <div>Register Page</div>;
+  return <Navigate to="/booth" replace />;
 }

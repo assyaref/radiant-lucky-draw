@@ -20,7 +20,14 @@ export class EventService {
   }
 
   async create(data: CreateEventRequest, userId?: string): Promise<EventResponse> {
-    const event = await this.eventRepository.create({ ...data, createdBy: userId });
+    const now = new Date().toISOString();
+    const event = await this.eventRepository.create({
+      ...data,
+      createdBy: userId,
+      status: data.status ?? 'upcoming',
+      createdAt: now,
+      updatedAt: now,
+    });
     await this.auditService?.log({
       action: 'CREATE',
       entity: 'event',

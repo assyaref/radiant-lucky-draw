@@ -23,7 +23,13 @@ export class BoothMgmtService {
   async create(data: CreateBoothRequest, userId?: string): Promise<BoothResponse> {
     const existing = await this.boothRepository.findByCode(data.code);
     if (existing) throw new ValidationError('Booth code already exists');
-    const booth = await this.boothRepository.create(data);
+    const now = new Date().toISOString();
+    const booth = await this.boothRepository.create({
+      ...data,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    });
     await this.auditService?.log({
       action: 'CREATE',
       entity: 'booth',

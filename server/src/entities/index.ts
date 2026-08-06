@@ -13,3 +13,4 @@ export type { DrawAnalytics, DashboardStats } from './Analytics';
 export type { Session, PublicSession } from './Session';
 export type { Event } from './Event';
 export type { Booth } from './Booth';
+export type { AuditLog, AuditAction } from './AuditLog';

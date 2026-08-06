@@ -81,6 +81,10 @@ export abstract class PrismaRepository<T extends { id: string }> implements Repo
     return true;
   }
 
+  async softDelete(id: string): Promise<boolean> {
+    return this.delete(id);
+  }
+
   async paginate(page: number, limit: number): Promise<{ data: T[]; total: number }> {
     const skip = (page - 1) * limit;
     const [records, total] = await Promise.all([

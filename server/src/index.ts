@@ -29,9 +29,6 @@ process.on('unhandledRejection', (reason) => {
 // ─── Server Startup ────────────────────────────────────────
 
 async function main() {
-  // TEMP DEBUG: verify runtime DATABASE_URL (RC4.19)
-  console.log('DATABASE_URL =', process.env.DATABASE_URL);
-
   const { app, realtimeService } = createApp();
 
   const baseUrl = process.env.APP_URL ?? `http://localhost:${env.PORT}`;

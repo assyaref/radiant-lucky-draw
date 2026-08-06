@@ -9,11 +9,7 @@ export class EventController {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const result = await this.eventService.list(page, limit);
-    sendPaginated(res, result.data, {
-      page: result.page,
-      limit: result.limit,
-      total: result.total,
-    });
+    sendPaginated(res, result.data, result.page, result.limit, result.total);
   };
 
   getById = async (req: Request, res: Response): Promise<void> => {
@@ -24,7 +20,7 @@ export class EventController {
   create = async (req: Request, res: Response): Promise<void> => {
     const userId = (req as any).user?.id;
     const event = await this.eventService.create(req.body, userId);
-    sendSuccess(res, event, 201);
+    sendSuccess(res, event, undefined, 201);
   };
 
   update = async (req: Request, res: Response): Promise<void> => {

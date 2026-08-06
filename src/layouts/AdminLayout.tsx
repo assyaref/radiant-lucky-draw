@@ -27,6 +27,7 @@ import {
   HiOutlineCalendarDays,
   HiOutlinePaintBrush,
   HiOutlineServer,
+  HiOutlineBuildingStorefront,
 } from 'react-icons/hi2';
 
 // ─── Navigation Items ────────────────────────────────────────────────
@@ -52,6 +53,16 @@ const navItems: NavItem[] = [
     label: 'Event Config',
     path: '/operator/event-config',
     icon: <HiOutlineCalendarDays className="w-5 h-5" />,
+  },
+  {
+    label: 'Events',
+    path: '/operator/events',
+    icon: <HiOutlineCalendarDays className="w-5 h-5" />,
+  },
+  {
+    label: 'Booths',
+    path: '/operator/booths',
+    icon: <HiOutlineBuildingStorefront className="w-5 h-5" />,
   },
   {
     label: 'Branding',

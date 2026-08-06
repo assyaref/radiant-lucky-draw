@@ -30,6 +30,8 @@ import {
   createAnalyticsRoutes,
   createHealthRoutes,
   createBoothRoutes,
+  createEventRoutes,
+  createBoothMgmtRoutes,
 } from './routes';
 import {
   AuthController,
@@ -41,6 +43,8 @@ import {
   AnalyticsController,
   HealthController,
   BoothController,
+  EventController,
+  BoothMgmtController,
 } from './controllers';
 import {
   AuthService,
@@ -54,6 +58,8 @@ import {
   SettingsService,
   AnalyticsService,
   BoothService,
+  EventService,
+  BoothMgmtService,
 } from './services';
 import {
   UserRepository,
@@ -65,6 +71,8 @@ import {
   QueueRepository,
   SettingsRepository,
   WinnerRepository,
+  EventRepository,
+  BoothRepository,
 } from './repositories';
 
 import { RealtimeService } from './realtime';
@@ -89,6 +97,8 @@ export function createApp(): AppInstance {
   const queueRepository = new QueueRepository();
   const settingsRepository = new SettingsRepository();
   const winnerRepository = new WinnerRepository();
+  const eventRepository = new EventRepository();
+  const boothMgmtRepository = new BoothRepository();
 
   // =========================================================
   // Services (DI)
@@ -126,6 +136,8 @@ export function createApp(): AppInstance {
     winnerRepository,
     realtimeService,
   );
+  const eventService = new EventService(eventRepository, auditService);
+  const boothMgmtService = new BoothMgmtService(boothMgmtRepository, auditService);
 
   // =========================================================
   // Controllers (DI)
@@ -139,6 +151,8 @@ export function createApp(): AppInstance {
   const analyticsController = new AnalyticsController(analyticsService);
   const healthController = new HealthController();
   const boothController = new BoothController(boothService);
+  const eventController = new EventController(eventService);
+  const boothMgmtController = new BoothMgmtController(boothMgmtService);
 
   // =========================================================
   // Global Middleware
@@ -206,6 +220,8 @@ export function createApp(): AppInstance {
   app.use('/api/settings', createSettingsRoutes(settingsController, tokenService));
   app.use('/api/analytics', createAnalyticsRoutes(analyticsController, tokenService));
   app.use('/api/booth', createBoothRoutes(boothController, tokenService));
+  app.use('/api/events', createEventRoutes(eventController, tokenService));
+  app.use('/api/booths', createBoothMgmtRoutes(boothMgmtController, tokenService));
 
   // =========================================================
   // Root Route

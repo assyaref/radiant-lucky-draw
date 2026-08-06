@@ -15,7 +15,16 @@ export type AuditAction =
   | 'USER_CREATED'
   | 'USER_UPDATED'
   | 'USER_DELETED'
-  | 'ROLE_CHANGED';
+  | 'ROLE_CHANGED'
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'SPIN'
+  | 'CLAIM'
+  | 'EXPORT'
+  | 'UPLOAD'
+  | 'DOWNLOAD'
+  | 'SETTINGS_CHANGE';
 
 export interface AuditLog {
   id: string;

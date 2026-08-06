@@ -24,7 +24,12 @@ export class BoothMgmtService {
     const existing = await this.boothRepository.findByCode(data.code);
     if (existing) throw new ValidationError('Booth code already exists');
     const booth = await this.boothRepository.create(data);
-    await this.auditService?.log({ action: 'create', entity: 'booth', entityId: booth.id, userId });
+    await this.auditService?.log({
+      action: 'CREATE',
+      entity: 'booth',
+      entityId: booth.id,
+      userId: userId ?? null,
+    });
     return this.toResponse(booth);
   }
 
@@ -33,7 +38,12 @@ export class BoothMgmtService {
     if (!existing) throw new NotFoundError('Booth', id);
     const updated = await this.boothRepository.update(id, data);
     if (!updated) throw new NotFoundError('Booth', id);
-    await this.auditService?.log({ action: 'update', entity: 'booth', entityId: id, userId });
+    await this.auditService?.log({
+      action: 'UPDATE',
+      entity: 'booth',
+      entityId: id,
+      userId: userId ?? null,
+    });
     return this.toResponse(updated);
   }
 
@@ -41,7 +51,12 @@ export class BoothMgmtService {
     const existing = await this.boothRepository.findById(id);
     if (!existing) throw new NotFoundError('Booth', id);
     await this.boothRepository.softDelete(id);
-    await this.auditService?.log({ action: 'delete', entity: 'booth', entityId: id, userId });
+    await this.auditService?.log({
+      action: 'DELETE',
+      entity: 'booth',
+      entityId: id,
+      userId: userId ?? null,
+    });
   }
 
   private toResponse(b: any): BoothResponse {

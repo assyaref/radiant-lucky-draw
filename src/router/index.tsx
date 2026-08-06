@@ -53,6 +53,8 @@ const WinnerWall = lazy(() => import('@pages/WinnerWallPage'));
 const EventConfigPage = lazy(() => import('@pages/operator/EventConfigPage'));
 const BrandingSettingsPage = lazy(() => import('@pages/operator/BrandingSettingsPage'));
 const MonitoringPage = lazy(() => import('@pages/operator/MonitoringPage'));
+const EventsPage = lazy(() => import('@pages/operator/EventsPage'));
+const BoothsPage = lazy(() => import('@pages/operator/BoothsPage'));
 const BoothKioskPage = lazy(() => import('@pages/booth/BoothKioskPage'));
 
 const routes: RouteObject[] = [
@@ -111,6 +113,8 @@ const routes: RouteObject[] = [
       { path: 'event-config', element: <LazyPage Component={EventConfigPage} /> },
       { path: 'branding', element: <LazyPage Component={BrandingSettingsPage} /> },
       { path: 'monitoring', element: <LazyPage Component={MonitoringPage} /> },
+      { path: 'events', element: <LazyPage Component={EventsPage} /> },
+      { path: 'booths', element: <LazyPage Component={BoothsPage} /> },
     ],
   },
   // ─── Public Routes ────────────────────────────────────────────────

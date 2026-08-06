@@ -18,7 +18,7 @@ export class BoothMgmtController {
   create = async (req: Request, res: Response): Promise<void> => {
     const userId = (req as any).user?.id;
     const booth = await this.boothService.create(req.body, userId);
-    sendSuccess(res, booth, 201);
+    sendSuccess(res, booth, undefined, 201);
   };
 
   update = async (req: Request, res: Response): Promise<void> => {

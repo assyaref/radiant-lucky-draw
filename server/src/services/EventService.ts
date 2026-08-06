@@ -21,7 +21,12 @@ export class EventService {
 
   async create(data: CreateEventRequest, userId?: string): Promise<EventResponse> {
     const event = await this.eventRepository.create({ ...data, createdBy: userId });
-    await this.auditService?.log({ action: 'create', entity: 'event', entityId: event.id, userId });
+    await this.auditService?.log({
+      action: 'CREATE',
+      entity: 'event',
+      entityId: event.id,
+      userId: userId ?? null,
+    });
     return this.toResponse(event);
   }
 
@@ -30,7 +35,12 @@ export class EventService {
     if (!existing) throw new NotFoundError('Event', id);
     const updated = await this.eventRepository.update(id, data);
     if (!updated) throw new NotFoundError('Event', id);
-    await this.auditService?.log({ action: 'update', entity: 'event', entityId: id, userId });
+    await this.auditService?.log({
+      action: 'UPDATE',
+      entity: 'event',
+      entityId: id,
+      userId: userId ?? null,
+    });
     return this.toResponse(updated);
   }
 
@@ -38,7 +48,12 @@ export class EventService {
     const existing = await this.eventRepository.findById(id);
     if (!existing) throw new NotFoundError('Event', id);
     await this.eventRepository.softDelete(id);
-    await this.auditService?.log({ action: 'delete', entity: 'event', entityId: id, userId });
+    await this.auditService?.log({
+      action: 'DELETE',
+      entity: 'event',
+      entityId: id,
+      userId: userId ?? null,
+    });
   }
 
   private toResponse(e: any): EventResponse {

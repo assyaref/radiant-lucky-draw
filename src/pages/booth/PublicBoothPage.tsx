@@ -7,10 +7,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
-import { HiOutlineCamera, HiOutlineArrowPath } from 'react-icons/hi2';
+import {
+  HiOutlineCamera,
+  HiOutlineArrowPath,
+  HiOutlineArrowUturnLeft,
+  HiOutlineUsers,
+} from 'react-icons/hi2';
 import { boothApi, type BoothConfig, type SpinResult } from '@/api/booth';
 
 type Step = 'landing' | 'form' | 'camera' | 'preview' | 'ready' | 'spinning' | 'result';
+type CameraFacing = 'user' | 'environment';
 
 export default function PublicBoothPage() {
   const [config, setConfig] = useState<BoothConfig | null>(null);
@@ -18,6 +24,7 @@ export default function PublicBoothPage() {
   const [error, setError] = useState('');
   const [step, setStep] = useState<Step>('landing');
   const [participantId, setParticipantId] = useState<string | null>(null);
+  const [totalParticipants, setTotalParticipants] = useState(0);
 
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
@@ -29,6 +36,7 @@ export default function PublicBoothPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [cameraFacing, setCameraFacing] = useState<CameraFacing>('user');
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoSaving, setPhotoSaving] = useState(false);
 
@@ -38,6 +46,40 @@ export default function PublicBoothPage() {
   const [winW, setWinW] = useState(window.innerWidth);
   const [winH, setWinH] = useState(window.innerHeight);
 
+  // ─── Audio ────────────────────────────────────────────────
+  const audioRef = useRef<AudioContext | null>(null);
+
+  const playBeep = useCallback((freq: number, dur: number, type: OscillatorType = 'sine') => {
+    try {
+      if (!audioRef.current) audioRef.current = new AudioContext();
+      const ctx = audioRef.current;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, ctx.currentTime);
+      g.gain.setValueAtTime(0.06, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(ctx.currentTime);
+      o.stop(ctx.currentTime + dur);
+    } catch {
+      /* audio not critical */
+    }
+  }, []);
+
+  const playSpinSound = useCallback(() => {
+    for (let i = 0; i < 8; i++) {
+      setTimeout(() => playBeep(300 + Math.random() * 500, 0.08, 'square'), i * 80);
+    }
+  }, [playBeep]);
+
+  const playWinSound = useCallback(() => {
+    [523, 659, 784, 1047].forEach((f, i) =>
+      setTimeout(() => playBeep(f, 0.35, 'triangle'), i * 130),
+    );
+  }, [playBeep]);
+
   useEffect(() => {
     let c = false;
     const h = () => {
@@ -45,11 +87,11 @@ export default function PublicBoothPage() {
       setWinH(window.innerHeight);
     };
     window.addEventListener('resize', h);
-    boothApi
-      .getConfig()
-      .then((r) => {
+    Promise.all([boothApi.getConfig(), boothApi.listParticipants({ limit: 1 })])
+      .then(([configRes, participantsRes]) => {
         if (!c) {
-          setConfig(r.data);
+          setConfig(configRes.data);
+          setTotalParticipants(participantsRes.meta?.total ?? 0);
           setLoading(false);
         }
       })
@@ -105,22 +147,31 @@ export default function PublicBoothPage() {
     [name, company, whatsapp],
   );
 
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (facing: CameraFacing = 'user') => {
     setCameraError('');
     try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      }
       const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 480 } },
       });
       streamRef.current = s;
       if (videoRef.current) {
         videoRef.current.srcObject = s;
         await videoRef.current.play();
       }
+      setCameraFacing(facing);
       setCameraActive(true);
     } catch {
       setCameraError('Tidak dapat mengakses kamera');
     }
   }, []);
+
+  const flipCamera = useCallback(() => {
+    const next = cameraFacing === 'user' ? 'environment' : 'user';
+    startCamera(next);
+  }, [cameraFacing, startCamera]);
 
   const capture = useCallback(() => {
     const v = videoRef.current;
@@ -143,8 +194,8 @@ export default function PublicBoothPage() {
   const retake = useCallback(() => {
     setPhoto(null);
     setStep('camera');
-    startCamera();
-  }, [startCamera]);
+    startCamera(cameraFacing);
+  }, [startCamera, cameraFacing]);
 
   const savePhoto = useCallback(async () => {
     if (!participantId || !photo) return;
@@ -165,20 +216,22 @@ export default function PublicBoothPage() {
     setSpinning(true);
     setStep('spinning');
     setError('');
+    playSpinSound();
     try {
       await new Promise((r) => setTimeout(r, 2500));
       const res = await boothApi.spin({ participantId });
       setResult(res.data);
       setStep('result');
       setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 6000);
+      playWinSound();
+      setTimeout(() => setShowConfetti(false), 8000);
     } catch (err: any) {
       setError(err?.message ?? 'Gagal undian');
       setStep('ready');
     } finally {
       setSpinning(false);
     }
-  }, [participantId]);
+  }, [participantId, playSpinSound, playWinSound]);
 
   const handleDone = useCallback(() => {
     setStep('landing');
@@ -265,9 +318,13 @@ export default function PublicBoothPage() {
                   🎰
                 </motion.div>
                 <h2 className="text-2xl font-bold text-white mb-2">Lucky Draw Booth</h2>
-                <p className="text-white/50 text-sm mb-6">
+                <p className="text-white/50 text-sm mb-4">
                   Ambil foto, putar undian, dan menangkan hadiah menarik!
                 </p>
+                <div className="flex items-center justify-center gap-2 mb-4 text-white/40 text-xs">
+                  <HiOutlineUsers className="w-4 h-4" />
+                  <span>{totalParticipants} peserta</span>
+                </div>
                 {prizes.length > 0 && (
                   <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
                     {prizes.slice(0, 5).map((p) => (
@@ -420,11 +477,20 @@ export default function PublicBoothPage() {
                       <HiOutlineCamera className="w-12 h-12 text-white/20" />
                     </div>
                   )}
+                  {cameraActive && (
+                    <button
+                      onClick={flipCamera}
+                      className="absolute top-2 right-2 p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors text-white/70 hover:text-white z-10"
+                      title="Balik Kamera"
+                    >
+                      <HiOutlineArrowUturnLeft className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <div className="mt-5">
                   {!cameraActive ? (
                     <button
-                      onClick={startCamera}
+                      onClick={() => startCamera()}
                       className="px-6 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-500 transition-colors inline-flex items-center gap-2"
                     >
                       <HiOutlineCamera className="w-5 h-5" />

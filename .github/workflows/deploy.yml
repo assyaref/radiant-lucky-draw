@@ -81,9 +81,9 @@ jobs:
             BACKEND_URL=$(railway domain 2>/dev/null | grep -oP 'https://[^\s]+' | head -1) || true
           fi
 
-          # Fallback 2: construct from service ID (may differ from actual domain).
+          # Fallback 2: known production domain (matches env.ts fallback).
           if [ -z "$BACKEND_URL" ]; then
-            BACKEND_URL="https://${{ secrets.RAILWAY_SERVICE_ID }}.up.railway.app"
+            BACKEND_URL="https://radiant-lucky-draw-production.up.railway.app"
           fi
 
           echo "backend_url=${BACKEND_URL}" >> "$GITHUB_OUTPUT"
@@ -130,6 +130,8 @@ jobs:
           if [ "$SUCCESS" -ne 1 ]; then
             echo "❌ Backend health check FAILED after 60 attempts (10 min)"
             echo "   URL checked: ${BACKEND_URL}/api/health"
+            echo "   Debug: curl exit code from last attempt:"
+            curl -v "${BACKEND_URL}/api/health" 2>&1 | tail -20 || true
             exit 1
           fi
           echo "backend_url=${BACKEND_URL}" >> "$GITHUB_OUTPUT"

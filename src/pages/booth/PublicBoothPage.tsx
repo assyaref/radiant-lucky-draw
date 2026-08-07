@@ -140,7 +140,14 @@ export default function PublicBoothPage() {
         setParticipantId(r.data.id);
         setStep('camera');
       } catch (err: any) {
-        setError(err?.message ?? 'Gagal mendaftar');
+        const msg = err?.message ?? '';
+        if (msg.includes('whatsapp') || msg.includes('WhatsApp') || msg.includes('sudah terdaftar')) {
+          setError(msg);
+        } else if (msg.includes('name') || msg.includes('company') || msg.includes('nama') || msg.includes('perusahaan')) {
+          setError(msg);
+        } else {
+          setError(msg || 'Gagal mendaftar. Silakan coba lagi.');
+        }
       } finally {
         setSubmitting(false);
       }
@@ -206,7 +213,12 @@ export default function PublicBoothPage() {
       await boothApi.uploadPhoto({ participantId, photo });
       setStep('ready');
     } catch (err: any) {
-      setError(err?.message ?? 'Gagal menyimpan foto');
+      const msg = err?.message ?? '';
+      if (msg && msg !== 'Request failed') {
+        setError(msg);
+      } else {
+        setError('Gagal menyimpan foto. Silakan coba lagi.');
+      }
     } finally {
       setPhotoSaving(false);
     }

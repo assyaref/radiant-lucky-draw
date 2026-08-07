@@ -83,7 +83,7 @@ model Participant {
   registeredAt DateTime @default(now()) @map("registered_at")
   calledAt     DateTime? @map("called_at")
   completedAt  DateTime? @map("completed_at")
-  photoUrl     String?  @map("photo_url") @db.VarChar(500)
+  photoUrl     String?  @map("photo_url") @db.Text
   prizeId      String?  @map("prize_id") @db.Uuid
   claimStatus  String   @default("unclaimed") @map("claim_status") @db.VarChar(20) // unclaimed | claimed
   createdAt    DateTime @default(now()) @map("created_at")

@@ -236,7 +236,8 @@ export function JourneyProvider({ children }: { children: ReactNode }) {
       if (err instanceof ApiClientError) {
         setSubmitError(mapApiError(err));
       } else {
-        setSubmitError('An unexpected error occurred. Please try again.');
+        const msg = (err as any)?.message ?? '';
+        setSubmitError(msg || 'Registration failed. Please check your connection and try again.');
       }
       return false;
     }

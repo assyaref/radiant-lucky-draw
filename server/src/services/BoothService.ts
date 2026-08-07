@@ -157,6 +157,12 @@ export class BoothService {
       registeredAt: new Date().toISOString(),
     });
 
+    logger.info('[Booth] Participant registered', {
+      participantId: participant.id,
+      name: participant.name,
+      queueNumber: participant.queueNumber,
+    });
+
     return this.toParticipantResponse(participant);
   }
 

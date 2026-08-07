@@ -170,7 +170,8 @@ export function RegistrationProvider({ children }: { children: ReactNode }) {
       if (err instanceof ApiClientError) {
         setSubmitError(mapApiError(err));
       } else {
-        setSubmitError('An unexpected error occurred. Please try again.');
+        const msg = (err as any)?.message ?? '';
+        setSubmitError(msg || 'Registration failed. Please check your connection and try again.');
       }
     }
   }, [validateAll, formData]);

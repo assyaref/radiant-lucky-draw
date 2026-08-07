@@ -97,20 +97,28 @@ jobs:
         # prisma migrate deploy is NON-destructive: it only applies
         # pending migrations and errors on drift (never resets data).
         # Runs AFTER deployment so it targets the live database.
-        # NOTE: This step may fail if the Railway database is not
-        # reachable from GitHub Actions IP ranges.  In that case
-        # Railway handles migrations via its own deployment hooks.
-        continue-on-error: true
+        # If Railway DB is unreachable from GitHub Actions the pipeline
+        # fails explicitly — migrations MUST succeed in production.
         run: railway run npx prisma migrate deploy
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
 
-      - name: Health check
+      - name: Seed database
+        working-directory: ./server
+        # Idempotent seed: only creates default data when tables
+        # are empty.  Safe to run on every deploy.
+        run: railway run npx prisma db seed
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+
+      - name: Health check (API)
         id: health-check
-        # Wait for the backend to become healthy before deploying the
-        # frontend.  60 attempts × 10 s = 10 min maximum wait.
-        # Railway Docker builds can take several minutes.
+        # Two-level health check:
+        #   1. /api/health    — server + DB connectivity
+        #   2. /api/booth/config — real data (Settings + Prizes exist)
+        # Both must return HTTP 200 before frontend deploys.
         run: |
           BACKEND_URL="${{ steps.railway-deploy.outputs.backend_url }}"
           echo "Checking health at ${BACKEND_URL}/api/health …"
@@ -132,6 +140,23 @@ jobs:
             echo "   URL checked: ${BACKEND_URL}/api/health"
             echo "   Debug: curl exit code from last attempt:"
             curl -v "${BACKEND_URL}/api/health" 2>&1 | tail -20 || true
+            exit 1
+          fi
+
+          echo ""
+          echo "Checking booth config at ${BACKEND_URL}/api/booth/config …"
+          BOOTH_SUCCESS=0
+          for i in $(seq 1 10); do
+            if curl -fsS "${BACKEND_URL}/api/booth/config" 2>/dev/null; then
+              echo ""
+              echo "✅ Booth config healthy after $i attempt(s)"
+              BOOTH_SUCCESS=1
+              break
+            fi
+            sleep 3
+          done
+          if [ "$BOOTH_SUCCESS" -ne 1 ]; then
+            echo "❌ Booth config check FAILED after 10 attempts"
             exit 1
           fi
           echo "backend_url=${BACKEND_URL}" >> "$GITHUB_OUTPUT"

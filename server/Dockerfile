@@ -68,9 +68,5 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f "http://localhost:${PORT:-3001}/api/health" || exit 1
 
-# Run Prisma migrations before starting the server.
-# This ensures the production database schema is always synchronized
-# with the current Prisma schema, even if the CI migration step was
-# skipped (e.g. GitHub Actions IP blocked by Railway DB).
-# If migrations fail, the server still starts (graceful fallback).
-CMD ["sh", "-c", "npx prisma migrate deploy; echo 'Prisma migrate exit code:' $?; npm start"]
+# Start server
+CMD ["npm", "start"]

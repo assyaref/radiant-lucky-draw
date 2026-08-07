@@ -8,7 +8,7 @@
 import { createApp } from './app';
 import { env } from './config';
 import { logger } from './utils';
-import { ensureAdminUser } from './bootstrap';
+import { ensureAdminUser, ensureDefaultSettings, ensureDefaultPrizes } from './bootstrap';
 
 // ─── Uncaught Error Handlers ───────────────────────────────
 
@@ -33,8 +33,10 @@ async function main() {
 
   const baseUrl = process.env.APP_URL ?? `http://localhost:${env.PORT}`;
 
-  // Ensure the production admin user exists (idempotent auto-seed).
+  // Idempotent auto-seed: creates admin + settings + prizes only if missing.
   await ensureAdminUser();
+  await ensureDefaultSettings();
+  await ensureDefaultPrizes();
 
   const server = app.listen(env.PORT, () => {
     logger.info(`Server started on port ${env.PORT}`, {

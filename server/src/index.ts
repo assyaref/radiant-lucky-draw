@@ -8,7 +8,7 @@
 import { createApp } from './app';
 import { env } from './config';
 import { logger } from './utils';
-import { ensureAdminUser } from './bootstrap';
+import { ensureAdminUser, ensureDefaultSettings, ensureDefaultPrizes } from './bootstrap';
 
 // ─── Uncaught Error Handlers ───────────────────────────────
 
@@ -35,6 +35,10 @@ async function main() {
 
   // Ensure the production admin user exists (idempotent auto-seed).
   await ensureAdminUser();
+
+  // Ensure default settings and prizes exist for Public Booth.
+  await ensureDefaultSettings();
+  await ensureDefaultPrizes();
 
   const server = app.listen(env.PORT, () => {
     logger.info(`Server started on port ${env.PORT}`, {

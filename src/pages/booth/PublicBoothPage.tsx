@@ -141,9 +141,18 @@ export default function PublicBoothPage() {
         setStep('camera');
       } catch (err: any) {
         const msg = err?.message ?? '';
-        if (msg.includes('whatsapp') || msg.includes('WhatsApp') || msg.includes('sudah terdaftar')) {
+        if (
+          msg.includes('whatsapp') ||
+          msg.includes('WhatsApp') ||
+          msg.includes('sudah terdaftar')
+        ) {
           setError(msg);
-        } else if (msg.includes('name') || msg.includes('company') || msg.includes('nama') || msg.includes('perusahaan')) {
+        } else if (
+          msg.includes('name') ||
+          msg.includes('company') ||
+          msg.includes('nama') ||
+          msg.includes('perusahaan')
+        ) {
           setError(msg);
         } else {
           setError(msg || 'Gagal mendaftar. Silakan coba lagi.');

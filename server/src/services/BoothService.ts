@@ -67,7 +67,10 @@ export class BoothService {
       try {
         return await this.settingsRepository.getSettings();
       } catch (err) {
-        logger.error('BoothService.getBoothConfig: settingsRepository.getSettings() FAILED', errMeta(err, 'getSettings'));
+        logger.error(
+          'BoothService.getBoothConfig: settingsRepository.getSettings() FAILED',
+          errMeta(err, 'getSettings'),
+        );
         return null;
       }
     };
@@ -76,7 +79,10 @@ export class BoothService {
       try {
         return await this.prizeRepository.findActive();
       } catch (err) {
-        logger.error('BoothService.getBoothConfig: prizeRepository.findActive() FAILED', errMeta(err, 'findActive'));
+        logger.error(
+          'BoothService.getBoothConfig: prizeRepository.findActive() FAILED',
+          errMeta(err, 'findActive'),
+        );
         return [];
       }
     };
@@ -85,7 +91,10 @@ export class BoothService {
       try {
         return await this.participantRepository.count();
       } catch (err) {
-        logger.error('BoothService.getBoothConfig: participantRepository.count() FAILED', errMeta(err, 'count'));
+        logger.error(
+          'BoothService.getBoothConfig: participantRepository.count() FAILED',
+          errMeta(err, 'count'),
+        );
         return 0;
       }
     };
@@ -117,7 +126,10 @@ export class BoothService {
     } catch (err) {
       // Absolute last-resort fallback – should never be reached
       // because every sub-call is already individually guarded.
-      logger.error('BoothService.getBoothConfig: top-level UNEXPECTED FAILURE', errMeta(err, 'getBoothConfig'));
+      logger.error(
+        'BoothService.getBoothConfig: top-level UNEXPECTED FAILURE',
+        errMeta(err, 'getBoothConfig'),
+      );
       return {
         eventName: 'Lucky Draw',
         eventDate: undefined,
@@ -178,7 +190,9 @@ export class BoothService {
 
     const participant = await this.participantRepository.findById(data.participantId);
     if (!participant) {
-      logger.error('[Booth] Photo upload FAILED: participant not found', { participantId: data.participantId });
+      logger.error('[Booth] Photo upload FAILED: participant not found', {
+        participantId: data.participantId,
+      });
       throw new NotFoundError('Participant', data.participantId);
     }
 
@@ -186,7 +200,9 @@ export class BoothService {
       photoUrl: data.photo,
     });
     if (!updated) {
-      logger.error('[Booth] Photo upload FAILED: update returned null', { participantId: data.participantId });
+      logger.error('[Booth] Photo upload FAILED: update returned null', {
+        participantId: data.participantId,
+      });
       throw new NotFoundError('Participant', data.participantId);
     }
 

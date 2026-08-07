@@ -68,5 +68,9 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f "http://localhost:${PORT:-3001}/api/health" || exit 1
 
-# Start server
-CMD ["npm", "start"]
+# Start server.
+# prisma migrate deploy runs first to ensure the schema is synchronized.
+# This covers the case where the CI migration step was skipped because
+# GitHub Actions cannot reach the Railway database (IP restriction).
+# The command is idempotent — it only applies pending migrations.
+CMD ["sh", "-c", "npx prisma migrate deploy; npm start"]

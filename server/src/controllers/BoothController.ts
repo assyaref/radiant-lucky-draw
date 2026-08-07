@@ -6,7 +6,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { BoothService } from '../services';
-import { sendSuccess, sendPaginated } from '../utils';
+import { sendSuccess, sendPaginated, logger } from '../utils';
 
 export class BoothController {
   constructor(private boothService: BoothService) {}

@@ -24,7 +24,14 @@ export class BoothController {
     try {
       const result = await this.boothService.registerParticipant(req.body);
       sendSuccess(res, result, undefined, 201);
-    } catch (error) {
+    } catch (error: any) {
+      logger.error('[Booth] Registration FAILED', {
+        message: error?.message,
+        code: error?.code,
+        prismaCode: error?.code,
+        prismaMeta: error?.meta ? JSON.stringify(error.meta) : undefined,
+        body: { name: req.body?.name, company: req.body?.company },
+      });
       next(error);
     }
   };

@@ -70,7 +70,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Start server.
 # prisma migrate deploy runs first to ensure the schema is synchronized.
-# This covers the case where the CI migration step was skipped because
-# GitHub Actions cannot reach the Railway database (IP restriction).
-# The command is idempotent — it only applies pending migrations.
-CMD ["sh", "-c", "npx prisma migrate deploy; npm start"]
+# If migrations fail (drift, DB not ready), the container exits and
+# Railway retries automatically (ON_FAILURE, max 10 retries).
+# This guarantees the schema matches before any request is served.
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]

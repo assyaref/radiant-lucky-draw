@@ -12,6 +12,7 @@ export interface BoothConfig {
   theme: string;
   celebrationLevel: string;
   soundEnabled: boolean;
+  totalParticipants: number;
   prizes: PublicPrize[];
 }
 

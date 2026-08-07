@@ -40,8 +40,11 @@ export class BoothService {
    * Used by the Public Booth page on load.
    */
   async getBoothConfig(): Promise<BoothConfigResponse> {
-    const settings = await this.settingsRepository.getSettings();
-    const prizes = await this.prizeRepository.findActive();
+    const [settings, prizes, totalParticipants] = await Promise.all([
+      this.settingsRepository.getSettings(),
+      this.prizeRepository.findActive(),
+      this.participantRepository.count(),
+    ]);
 
     return {
       eventName: settings?.eventName ?? 'Lucky Draw',
@@ -49,6 +52,7 @@ export class BoothService {
       theme: settings?.theme ?? 'dark',
       celebrationLevel: settings?.celebrationLevel ?? 'medium',
       soundEnabled: settings?.soundEnabled ?? true,
+      totalParticipants,
       prizes: prizes.map((p) => ({
         id: p.id,
         name: p.name,

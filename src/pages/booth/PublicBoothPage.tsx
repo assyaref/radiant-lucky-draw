@@ -87,11 +87,12 @@ export default function PublicBoothPage() {
       setWinH(window.innerHeight);
     };
     window.addEventListener('resize', h);
-    Promise.all([boothApi.getConfig(), boothApi.listParticipants({ limit: 1 })])
-      .then(([configRes, participantsRes]) => {
+    boothApi
+      .getConfig()
+      .then((configRes) => {
         if (!c) {
           setConfig(configRes.data);
-          setTotalParticipants(participantsRes.meta?.total ?? 0);
+          setTotalParticipants(configRes.data?.totalParticipants ?? 0);
           setLoading(false);
         }
       })

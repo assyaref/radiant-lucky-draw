@@ -72,5 +72,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # This ensures the production database schema is always synchronized
 # with the current Prisma schema, even if the CI migration step was
 # skipped (e.g. GitHub Actions IP blocked by Railway DB).
-# On failure Railway restarts the container (ON_FAILURE, max 10 retries).
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# If migrations fail, the server still starts (graceful fallback).
+CMD ["sh", "-c", "npx prisma migrate deploy; echo 'Prisma migrate exit code:' $?; npm start"]

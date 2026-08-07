@@ -31,9 +31,9 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
     return;
   }
 
-  // Unknown error
+  // Unknown error — include the requestId so the client can report it.
   logger.error(`[${requestId}] Unhandled error: ${err.message}`, {
-    stack: env.isDevelopment ? err.stack : undefined,
+    stack: err.stack,
     path: req.path,
     method: req.method,
   });
@@ -42,8 +42,8 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
     success: false,
     error: {
       code: 'INTERNAL_ERROR',
-      message: env.isProduction ? 'An unexpected error occurred' : err.message,
+      message: 'Server error. Please try again later.',
+      requestId,
     },
-    requestId,
   });
 }

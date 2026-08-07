@@ -4,7 +4,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { ParticipantService } from '../services';
-import { sendSuccess, sendPaginated } from '../utils';
+import { sendSuccess, sendPaginated, logger } from '../utils';
 
 export class ParticipantController {
   constructor(private participantService: ParticipantService) {}
@@ -40,9 +40,19 @@ export class ParticipantController {
 
   register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      logger.info('[Participant] Public registration request', {
+        name: req.body?.name,
+        phone: req.body?.phone?.replace(/.(?=.{4})/g, '*'), // mask phone
+        company: req.body?.company,
+      });
       const result = await this.participantService.create(req.body);
+      logger.info('[Participant] Public registration success', { participantId: result.id });
       sendSuccess(res, result, undefined, 201);
-    } catch (error) {
+    } catch (error: any) {
+      logger.error('[Participant] Public registration FAILED', {
+        message: error?.message,
+        code: error?.code,
+      });
       next(error);
     }
   };

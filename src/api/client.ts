@@ -19,12 +19,14 @@ export interface ApiError {
   code: string;
   message: string;
   details?: unknown;
+  requestId?: string;
 }
 
 export class ApiClientError extends Error {
   readonly status: number;
   readonly code: string;
   readonly details?: unknown;
+  readonly requestId?: string;
 
   constructor(error: ApiError) {
     super(error.message);
@@ -32,6 +34,7 @@ export class ApiClientError extends Error {
     this.status = error.status;
     this.code = error.code;
     this.details = error.details;
+    this.requestId = error.requestId;
   }
 }
 
@@ -129,6 +132,7 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
         code: payload?.error?.code ?? 'REQUEST_FAILED',
         message: payload?.error?.message ?? 'Request failed',
         details: payload?.error?.details,
+        requestId: payload?.requestId ?? payload?.error?.requestId,
       };
       throw new ApiClientError(error);
     }

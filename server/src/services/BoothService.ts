@@ -171,13 +171,26 @@ export class BoothService {
    * The photo is stored as a data URL in the photoUrl field.
    */
   async uploadPhoto(data: UploadPhotoRequest): Promise<UploadPhotoResponse> {
+    logger.info('[Booth] Photo upload request', {
+      participantId: data.participantId,
+      photoSize: data.photo?.length,
+    });
+
     const participant = await this.participantRepository.findById(data.participantId);
-    if (!participant) throw new NotFoundError('Participant', data.participantId);
+    if (!participant) {
+      logger.error('[Booth] Photo upload FAILED: participant not found', { participantId: data.participantId });
+      throw new NotFoundError('Participant', data.participantId);
+    }
 
     const updated = await this.participantRepository.update(data.participantId, {
       photoUrl: data.photo,
     });
-    if (!updated) throw new NotFoundError('Participant', data.participantId);
+    if (!updated) {
+      logger.error('[Booth] Photo upload FAILED: update returned null', { participantId: data.participantId });
+      throw new NotFoundError('Participant', data.participantId);
+    }
+
+    logger.info('[Booth] Photo uploaded successfully', { participantId: data.participantId });
 
     return {
       id: updated.id,

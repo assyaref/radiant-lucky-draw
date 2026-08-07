@@ -13,7 +13,7 @@ import {
   WinnerRepository,
 } from '../repositories';
 import { prisma } from '../lib/prisma';
-import { NotFoundError, ValidationError, ConflictError } from '../utils';
+import { NotFoundError, ValidationError, ConflictError, logger } from '../utils';
 import { RealtimeService, DRAW_EVENTS } from '../realtime';
 import type {
   BoothConfigResponse,
@@ -38,29 +38,96 @@ export class BoothService {
   /**
    * Get the public booth configuration including active prizes.
    * Used by the Public Booth page on load.
+   *
+   * Graceful-fallback design:
+   * - Every DB call is individually caught so one broken table
+   *   never takes down the whole endpoint.
+   * - The real exception is always logged (class, message, Prisma code,
+   *   stack) so Railway logs expose the root cause.
+   * - A top-level try/catch guarantees the endpoint ALWAYS returns
+   *   a valid 200 response with sensible defaults (never a 500).
+   * - Only truly fatal errors (e.g. OOM, process signal) propagate.
    */
   async getBoothConfig(): Promise<BoothConfigResponse> {
-    const [settings, prizes, totalParticipants] = await Promise.all([
-      this.settingsRepository.getSettings(),
-      this.prizeRepository.findActive(),
-      this.participantRepository.count(),
-    ]);
-
-    return {
-      eventName: settings?.eventName ?? 'Lucky Draw',
-      eventDate: settings?.eventDate,
-      theme: settings?.theme ?? 'dark',
-      celebrationLevel: settings?.celebrationLevel ?? 'medium',
-      soundEnabled: settings?.soundEnabled ?? true,
-      totalParticipants,
-      prizes: prizes.map((p) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        imageUrl: p.imageUrl,
-        tier: p.tier,
-      })),
+    // ── Helper: extract structured diagnostics from any error ───
+    const errMeta = (err: unknown, label: string) => {
+      const e = err as any;
+      return {
+        operation: label,
+        exceptionClass: e?.constructor?.name ?? typeof err,
+        message: e?.message ?? String(err),
+        prismaCode: e?.code ?? undefined,
+        prismaMeta: e?.meta ?? undefined,
+        stack: e?.stack ?? undefined,
+      };
     };
+
+    // ── Safe helpers: catch + log any individual DB failure ────
+    const safeSettings = async () => {
+      try {
+        return await this.settingsRepository.getSettings();
+      } catch (err) {
+        logger.error('BoothService.getBoothConfig: settingsRepository.getSettings() FAILED', errMeta(err, 'getSettings'));
+        return null;
+      }
+    };
+
+    const safePrizes = async () => {
+      try {
+        return await this.prizeRepository.findActive();
+      } catch (err) {
+        logger.error('BoothService.getBoothConfig: prizeRepository.findActive() FAILED', errMeta(err, 'findActive'));
+        return [];
+      }
+    };
+
+    const safeCount = async () => {
+      try {
+        return await this.participantRepository.count();
+      } catch (err) {
+        logger.error('BoothService.getBoothConfig: participantRepository.count() FAILED', errMeta(err, 'count'));
+        return 0;
+      }
+    };
+
+    try {
+      const [settings, prizes, totalParticipants] = await Promise.all([
+        safeSettings(),
+        safePrizes(),
+        safeCount(),
+      ]);
+
+      return {
+        eventName: settings?.eventName ?? 'Lucky Draw',
+        eventDate: settings?.eventDate ?? undefined,
+        theme: settings?.theme ?? 'dark',
+        celebrationLevel: settings?.celebrationLevel ?? 'medium',
+        soundEnabled: settings?.soundEnabled ?? true,
+        totalParticipants: totalParticipants ?? 0,
+        prizes: Array.isArray(prizes)
+          ? prizes.map((p) => ({
+              id: p.id,
+              name: p.name,
+              description: p.description,
+              imageUrl: p.imageUrl,
+              tier: p.tier,
+            }))
+          : [],
+      };
+    } catch (err) {
+      // Absolute last-resort fallback – should never be reached
+      // because every sub-call is already individually guarded.
+      logger.error('BoothService.getBoothConfig: top-level UNEXPECTED FAILURE', errMeta(err, 'getBoothConfig'));
+      return {
+        eventName: 'Lucky Draw',
+        eventDate: undefined,
+        theme: 'dark',
+        celebrationLevel: 'medium',
+        soundEnabled: true,
+        totalParticipants: 0,
+        prizes: [],
+      };
+    }
   }
 
   /**

@@ -14,21 +14,27 @@ export class PrizeRepository extends PrismaRepository<Prize> {
   }
 
   protected toEntity(record: any): Prize {
+    const toDate = (val: unknown): string => {
+      if (val instanceof Date) return val.toISOString();
+      if (typeof val === 'string') return val;
+      return new Date().toISOString();
+    };
+
     return {
       id: record.id,
-      name: record.name,
+      name: record.name ?? 'Unknown Prize',
       description: record.description ?? '',
-      value: record.value,
-      currency: record.currency,
-      quantity: record.quantity,
-      remaining: record.remaining,
+      value: record.value ?? 0,
+      currency: record.currency ?? 'IDR',
+      quantity: record.quantity ?? 1,
+      remaining: record.remaining ?? 0,
       imageUrl: record.imageUrl ?? undefined,
       sponsor: record.sponsor ?? undefined,
-      tier: record.tier,
+      tier: record.tier ?? 'standard',
       probability: record.probability ?? 0,
-      isActive: record.isActive,
-      createdAt: record.createdAt.toISOString(),
-      updatedAt: record.updatedAt.toISOString(),
+      isActive: record.isActive ?? true,
+      createdAt: record.createdAt ? toDate(record.createdAt) : new Date().toISOString(),
+      updatedAt: record.updatedAt ? toDate(record.updatedAt) : new Date().toISOString(),
     };
   }
 

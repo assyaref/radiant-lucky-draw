@@ -14,26 +14,32 @@ export class SettingsRepository extends PrismaRepository<AppSettings> {
   }
 
   protected toEntity(record: any): AppSettings {
+    const toDate = (val: unknown): string => {
+      if (val instanceof Date) return val.toISOString();
+      if (typeof val === 'string') return val;
+      return new Date().toISOString();
+    };
+
     return {
       id: record.id,
-      eventName: record.eventName,
-      eventDate: record.eventDate ? record.eventDate.toISOString() : new Date().toISOString(),
+      eventName: record.eventName ?? 'Lucky Draw',
+      eventDate: record.eventDate ? toDate(record.eventDate) : new Date().toISOString(),
       eventLocation: record.eventLocation ?? undefined,
-      eventStatus: record.eventStatus,
+      eventStatus: record.eventStatus ?? 'upcoming',
       eventDescription: record.eventDescription ?? undefined,
-      maxParticipants: record.maxParticipants,
-      drawInterval: record.drawInterval,
-      celebrationLevel: record.celebrationLevel,
-      theme: record.theme,
-      soundEnabled: record.soundEnabled,
-      autoAdvance: record.autoAdvance,
+      maxParticipants: record.maxParticipants ?? 100,
+      drawInterval: record.drawInterval ?? 30,
+      celebrationLevel: record.celebrationLevel ?? 'medium',
+      theme: record.theme ?? 'dark',
+      soundEnabled: record.soundEnabled ?? true,
+      autoAdvance: record.autoAdvance ?? false,
       logoUrl: record.logoUrl ?? undefined,
       bannerUrl: record.bannerUrl ?? undefined,
       backgroundUrl: record.backgroundUrl ?? undefined,
-      primaryColor: record.primaryColor,
-      secondaryColor: record.secondaryColor,
+      primaryColor: record.primaryColor ?? '#3b82f6',
+      secondaryColor: record.secondaryColor ?? '#8b5cf6',
       sponsorIds: record.sponsorIds ?? undefined,
-      updatedAt: record.updatedAt.toISOString(),
+      updatedAt: record.updatedAt ? toDate(record.updatedAt) : new Date().toISOString(),
     };
   }
 

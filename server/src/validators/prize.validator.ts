@@ -13,7 +13,7 @@ export const createPrizeSchema = z.object({
     quantity: z.number().int().positive('Quantity must be positive'),
     imageUrl: z.string().url().optional(),
     sponsor: z.string().optional(),
-    tier: z.enum(['bronze', 'silver', 'gold', 'platinum', 'diamond']),
+    tier: z.enum(['doorprize', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'grand']),
   }),
 });
 
@@ -26,7 +26,7 @@ export const updatePrizeSchema = z.object({
     quantity: z.number().int().positive().optional(),
     imageUrl: z.string().url().optional(),
     sponsor: z.string().optional(),
-    tier: z.enum(['bronze', 'silver', 'gold', 'platinum', 'diamond']).optional(),
+    tier: z.enum(['doorprize', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'grand']).optional(),
     isActive: z.boolean().optional(),
   }),
 });

@@ -273,7 +273,7 @@ export default function BoothWinnersPage() {
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-dark-surface-tertiary flex items-center justify-center text-dark-text-tertiary text-xs">
-                          {w.participantName.charAt(0).toUpperCase()}
+                          {w.participantName?.charAt(0)?.toUpperCase()}
                         </div>
                       )}
                     </td>

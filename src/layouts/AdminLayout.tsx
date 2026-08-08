@@ -442,7 +442,7 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-dark-surface-tertiary transition-colors"
               >
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-xs font-bold text-white">
-                  {user?.username.charAt(0).toUpperCase() ?? 'A'}
+                  {user?.username?.charAt(0)?.toUpperCase() ?? 'A'}
                 </div>
                 <span className="hidden sm:block text-sm text-white">
                   {user?.username ?? 'Admin'}

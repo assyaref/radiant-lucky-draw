@@ -162,7 +162,7 @@ export default function BoothParticipantsPage() {
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-dark-surface-tertiary flex items-center justify-center text-dark-text-tertiary text-xs">
-                          {p.name.charAt(0).toUpperCase()}
+                          {p.name?.charAt(0)?.toUpperCase()}
                         </div>
                       )}
                     </td>

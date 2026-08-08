@@ -1,13 +1,13 @@
-﻿-- M4.0: Event and Booth models
+-- M4.0: Event and Booth models
 CREATE TABLE "events" (
     "id" UUID NOT NULL, "name" VARCHAR(200) NOT NULL, "description" TEXT, "location" VARCHAR(300),
-    "start_date" TIMESTAMP(3), "end_date" TIMESTAMP(3), "status" VARCHAR(20) NOT NULL DEFAULT '\''upcoming'\'',
+    "start_date" TIMESTAMP(3), "end_date" TIMESTAMP(3), "status" VARCHAR(20) NOT NULL DEFAULT 'upcoming',
     "logo_url" VARCHAR(500), "banner_url" VARCHAR(500), "theme" VARCHAR(20),
     "created_by" UUID, "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL, "deleted_at" TIMESTAMP(3), CONSTRAINT "events_pkey" PRIMARY KEY ("id"));
 CREATE TABLE "booths" (
     "id" UUID NOT NULL, "name" VARCHAR(100) NOT NULL, "code" VARCHAR(20) NOT NULL,
-    "location" VARCHAR(300), "status" VARCHAR(20) NOT NULL DEFAULT '\''active'\'',
+    "location" VARCHAR(300), "status" VARCHAR(20) NOT NULL DEFAULT 'active',
     "event_id" UUID NOT NULL, "operator_id" UUID, "theme" VARCHAR(20), "qr_code" VARCHAR(500),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updated_at" TIMESTAMP(3) NOT NULL,
     "deleted_at" TIMESTAMP(3), CONSTRAINT "booths_pkey" PRIMARY KEY ("id"));

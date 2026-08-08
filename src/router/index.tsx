@@ -45,7 +45,6 @@ const OperatorAuditLogs = lazy(() => import('@pages/operator/AuditLogsPage'));
 
 // ─── Booth Enterprise Pages ───────────────────────────────────────────
 const PublicBoothPage = lazy(() => import('@pages/booth/PublicBoothPage'));
-const BoothParticipantsPage = lazy(() => import('@pages/booth/BoothParticipantsPage'));
 const BoothWinnersPage = lazy(() => import('@pages/booth/BoothWinnersPage'));
 const WinnerWall = lazy(() => import('@pages/WinnerWallPage'));
 
@@ -77,7 +76,7 @@ const routes: RouteObject[] = [
           </Suspense>
         ),
         children: [
-          { path: 'participants', element: <LazyPage Component={BoothParticipantsPage} /> },
+          { path: 'participants', element: <LazyPage Component={OperatorParticipants} /> },
           { path: 'prizes', element: <LazyPage Component={OperatorPrizes} /> },
           { path: 'queue', element: <LazyPage Component={OperatorQueue} /> },
           { path: 'winners', element: <LazyPage Component={BoothWinnersPage} /> },

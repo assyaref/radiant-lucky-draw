@@ -6,6 +6,7 @@
 
 import { PrismaRepository } from './BaseRepository';
 import { prisma } from '../lib/prisma';
+import { logger } from '../utils';
 import type { Participant } from '../entities';
 
 export class ParticipantRepository extends PrismaRepository<Participant> {
@@ -92,26 +93,117 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
    * Returns the deleted participant or null if not found.
    */
   async deleteCascade(id: string): Promise<Participant | null> {
-    return prisma.$transaction(async (tx) => {
-      const participant = await tx.participant.findUnique({ where: { id } });
-      if (!participant || participant.deletedAt) return null;
+    logger.info('[DeleteCascade] START', { participantId: id });
 
-      // Snapshot before deletion for return value
-      const snapshot = this.toEntity(participant);
+    return prisma
+      .$transaction(async (tx) => {
+        logger.info('[DeleteCascade] TX findUnique', { participantId: id });
+        const participant = await tx.participant.findUnique({ where: { id } });
+        if (!participant || participant.deletedAt) {
+          logger.warn('[DeleteCascade] TX participant not found or already deleted', {
+            participantId: id,
+            found: !!participant,
+          });
+          return null;
+        }
+        logger.info('[DeleteCascade] TX participant found', {
+          participantId: id,
+          status: participant.status,
+        });
 
-      // Delete cascade: queue entries, draw participants, winners (ON DELETE CASCADE in DB handles these)
-      // Then soft-delete the participant
-      await tx.queueEntry.deleteMany({ where: { participantId: id } });
-      await tx.drawParticipant.deleteMany({ where: { participantId: id } });
-      await tx.winner.deleteMany({ where: { participantId: id } });
+        // Snapshot before deletion for return value
+        let snapshot: Participant;
+        try {
+          snapshot = this.toEntity(participant);
+          logger.info('[DeleteCascade] TX toEntity OK', { participantId: id });
+        } catch (err: any) {
+          logger.error('[DeleteCascade] TX toEntity FAILED', {
+            participantId: id,
+            error: err?.message,
+          });
+          throw err;
+        }
 
-      await tx.participant.update({
-        where: { id },
-        data: { deletedAt: new Date() },
+        // Delete cascade: queue entries, draw participants, winners
+        try {
+          const qeResult = await tx.queueEntry.deleteMany({ where: { participantId: id } });
+          logger.info('[DeleteCascade] TX queueEntry.deleteMany OK', {
+            participantId: id,
+            count: qeResult.count,
+          });
+        } catch (err: any) {
+          logger.error('[DeleteCascade] TX queueEntry.deleteMany FAILED', {
+            participantId: id,
+            errorName: err?.name,
+            errorMessage: err?.message,
+            errorCode: err?.code,
+          });
+          throw err;
+        }
+
+        try {
+          const dpResult = await tx.drawParticipant.deleteMany({ where: { participantId: id } });
+          logger.info('[DeleteCascade] TX drawParticipant.deleteMany OK', {
+            participantId: id,
+            count: dpResult.count,
+          });
+        } catch (err: any) {
+          logger.error('[DeleteCascade] TX drawParticipant.deleteMany FAILED', {
+            participantId: id,
+            errorName: err?.name,
+            errorMessage: err?.message,
+            errorCode: err?.code,
+          });
+          throw err;
+        }
+
+        try {
+          const wResult = await tx.winner.deleteMany({ where: { participantId: id } });
+          logger.info('[DeleteCascade] TX winner.deleteMany OK', {
+            participantId: id,
+            count: wResult.count,
+          });
+        } catch (err: any) {
+          logger.error('[DeleteCascade] TX winner.deleteMany FAILED', {
+            participantId: id,
+            errorName: err?.name,
+            errorMessage: err?.message,
+            errorCode: err?.code,
+          });
+          throw err;
+        }
+
+        try {
+          await tx.participant.update({
+            where: { id },
+            data: { deletedAt: new Date() },
+          });
+          logger.info('[DeleteCascade] TX participant.update (soft-delete) OK', {
+            participantId: id,
+          });
+        } catch (err: any) {
+          logger.error('[DeleteCascade] TX participant.update FAILED', {
+            participantId: id,
+            errorName: err?.name,
+            errorMessage: err?.message,
+            errorCode: err?.code,
+          });
+          throw err;
+        }
+
+        logger.info('[DeleteCascade] SUCCESS', { participantId: id });
+        return snapshot;
+      })
+      .catch((err: any) => {
+        logger.error('[DeleteCascade] TRANSACTION FAILED', {
+          participantId: id,
+          errorName: err?.name,
+          errorMessage: err?.message,
+          errorCode: err?.code,
+          errorStack: err?.stack?.split('\n').slice(0, 4).join(' | '),
+        });
+        throw err;
       });
-
-      return snapshot;
-    });
   }
 
   async getNextQueueNumber(): Promise<string> {

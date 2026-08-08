@@ -9,7 +9,7 @@ import {
   DrawRepository,
   WinnerRepository,
 } from '../repositories';
-import { NotFoundError, ConflictError, ValidationError, ForbiddenError } from '../utils';
+import { NotFoundError, ConflictError, ValidationError, ForbiddenError, logger } from '../utils';
 import type {
   CreateParticipantRequest,
   UpdateParticipantRequest,
@@ -90,29 +90,74 @@ export class ParticipantService {
    *  - All related queue entries, draw participants, and winner records are removed.
    */
   async delete(id: string, force: boolean = false): Promise<void> {
-    const participant = await this.participantRepository.findById(id);
-    if (!participant) throw new NotFoundError('Participant', id);
+    logger.info('[DeleteParticipant] START', { participantId: id, force });
 
-    // Check for active draws involving this participant
-    const activeDraws = await this.drawRepository.findActiveByParticipant(id);
-    if (activeDraws.length > 0) {
-      throw new ConflictError(
-        'Cannot delete participant while they are in an active draw. Please wait for the draw to complete.',
-      );
-    }
+    try {
+      const participant = await this.participantRepository.findById(id);
+      if (!participant) {
+        logger.warn('[DeleteParticipant] NOT_FOUND', { participantId: id });
+        throw new NotFoundError('Participant', id);
+      }
+      logger.info('[DeleteParticipant] STEP findById OK', { participantId: id });
 
-    // Check if participant has already won
-    if (!force) {
-      const hasWon = await this.winnerRepository.findByParticipant(id);
-      if (hasWon) {
-        throw new ForbiddenError(
-          'This participant has already won a prize. Use force=true to delete anyway.',
+      // Check for active draws involving this participant
+      const activeDraws = await this.drawRepository.findActiveByParticipant(id);
+      logger.info('[DeleteParticipant] STEP findActiveByParticipant OK', {
+        participantId: id,
+        activeDrawCount: activeDraws.length,
+      });
+      if (activeDraws.length > 0) {
+        logger.warn('[DeleteParticipant] IN_ACTIVE_DRAW', {
+          participantId: id,
+          activeDraws: activeDraws.map((d) => d.id),
+        });
+        throw new ConflictError(
+          'Cannot delete participant while they are in an active draw. Please wait for the draw to complete.',
         );
       }
-    }
 
-    const deleted = await this.participantRepository.deleteCascade(id);
-    if (!deleted) throw new NotFoundError('Participant', id);
+      // Check if participant has already won
+      if (!force) {
+        const hasWon = await this.winnerRepository.findByParticipant(id);
+        logger.info('[DeleteParticipant] STEP findByParticipant (winner check) OK', {
+          participantId: id,
+          hasWon: !!hasWon,
+        });
+        if (hasWon) {
+          logger.warn('[DeleteParticipant] IS_WINNER_NO_FORCE', { participantId: id });
+          throw new ForbiddenError(
+            'This participant has already won a prize. Use force=true to delete anyway.',
+          );
+        }
+      }
+
+      logger.info('[DeleteParticipant] STEP entering deleteCascade', { participantId: id, force });
+      const deleted = await this.participantRepository.deleteCascade(id);
+      logger.info('[DeleteParticipant] STEP deleteCascade completed', {
+        participantId: id,
+        deleted: !!deleted,
+      });
+      if (!deleted) throw new NotFoundError('Participant', id);
+
+      logger.info('[DeleteParticipant] SUCCESS', { participantId: id });
+    } catch (error: any) {
+      // Re-throw AppErrors as-is; log and wrap unexpected errors
+      if (
+        error instanceof NotFoundError ||
+        error instanceof ConflictError ||
+        error instanceof ForbiddenError
+      ) {
+        throw error;
+      }
+      logger.error('[DeleteParticipant] UNEXPECTED ERROR', {
+        participantId: id,
+        errorName: error?.name,
+        errorMessage: error?.message,
+        errorCode: error?.code,
+        errorStack: error?.stack?.split('\n').slice(0, 3).join(' | '),
+      });
+      throw error;
+    }
   }
 
   private async assertEventOpen(): Promise<void> {

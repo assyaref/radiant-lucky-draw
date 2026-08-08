@@ -89,7 +89,10 @@ export default function ParticipantsPage() {
     } finally {
       setDeleting(false);
       setDeleteId(null);
-      setForceDeleteId(null);
+      // Only clear forceDeleteId on force-delete completion (success or error)
+      if (force) {
+        setForceDeleteId(null);
+      }
     }
   };
 

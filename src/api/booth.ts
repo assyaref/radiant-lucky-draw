@@ -30,6 +30,7 @@ export interface BoothParticipant {
   company: string;
   whatsapp?: string;
   photoUrl?: string;
+  status?: string;
   registeredAt: string;
   hasPhoto: boolean;
 }

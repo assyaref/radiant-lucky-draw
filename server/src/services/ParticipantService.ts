@@ -2,7 +2,13 @@
  * Participant Service
  */
 
-import { ParticipantRepository, SettingsRepository, QueueRepository, DrawRepository, WinnerRepository } from '../repositories';
+import {
+  ParticipantRepository,
+  SettingsRepository,
+  QueueRepository,
+  DrawRepository,
+  WinnerRepository,
+} from '../repositories';
 import { NotFoundError, ConflictError, ValidationError, ForbiddenError } from '../utils';
 import type {
   CreateParticipantRequest,

@@ -70,8 +70,15 @@ export const env = {
   COOKIE_SAME_SITE: (process.env.COOKIE_SAME_SITE || 'lax') as 'lax' | 'strict' | 'none',
   COOKIE_MAX_AGE_MS: parseInt(process.env.COOKIE_MAX_AGE_MS || '604800000', 10), // 7 days
 
-  // CORS
-  CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  // CORS — comma-separated origins; production-safe default includes the Vercel
+  // frontend so the API works out-of-the-box without env-variable configuration.
+  CORS_ORIGIN:
+    process.env.CORS_ORIGIN ||
+    [
+      'https://radiant-lucky-draw.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:3000',
+    ].join(','),
 
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),

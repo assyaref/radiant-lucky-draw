@@ -2,7 +2,7 @@
 // Participants Page
 // ============================================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   HiOutlineMagnifyingGlass,
@@ -33,21 +33,37 @@ export default function ParticipantsPage() {
   const [toast, setToast] = useState('');
   const pageSize = 10;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await boothApi.listParticipants({ page, limit: pageSize, search: search || undefined });
-      setParticipants(res.data || []);
-      setTotal(res.meta?.total ?? 0);
-    } catch (err: any) {
-      setError(err?.message ?? 'Failed to load participants');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search]);
+  useEffect(() => {
+    let cancelled = false;
 
-  useEffect(() => { load(); }, [load]);
+    const fetchParticipants = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const res = await boothApi.listParticipants({
+          page,
+          limit: pageSize,
+          search: search || undefined,
+        });
+        if (!cancelled) {
+          setParticipants(res.data || []);
+          setTotal(res.meta?.total ?? 0);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setError(err?.message ?? 'Failed to load participants');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchParticipants();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, search]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -102,12 +118,16 @@ export default function ParticipantsPage() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Delete Participant?</h3>
-                <button onClick={() => setDeleteId(null)} className="p-1 rounded-lg text-dark-text-tertiary hover:text-white transition-colors">
+                <button
+                  onClick={() => setDeleteId(null)}
+                  className="p-1 rounded-lg text-dark-text-tertiary hover:text-white transition-colors"
+                >
                   <HiXMark className="w-5 h-5" />
                 </button>
               </div>
               <p className="text-sm text-dark-text-secondary mb-6">
-                This action cannot be undone. All related queue entries, draw records, and winner data will be permanently removed.
+                This action cannot be undone. All related queue entries, draw records, and winner
+                data will be permanently removed.
               </p>
               {deleteError && <p className="text-sm text-red-400 mb-4">{deleteError}</p>}
               <div className="flex items-center justify-end gap-3">
@@ -144,7 +164,10 @@ export default function ParticipantsPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             placeholder="Search participants..."
             className="w-full pl-10 pr-4 py-2 rounded-lg bg-dark-surface-secondary border border-dark-border text-white placeholder-dark-text-tertiary outline-none focus:border-primary-500/50 transition-colors text-sm"
           />
@@ -156,21 +179,51 @@ export default function ParticipantsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-dark-border">
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Name</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Company</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Photo</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Registered</th>
-                <th className="text-right px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">Actions</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Company
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Photo
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Registered
+                </th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-border/50">
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-dark-text-tertiary">Loading...</td></tr>
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-12 text-center text-sm text-dark-text-tertiary"
+                  >
+                    Loading...
+                  </td>
+                </tr>
               ) : error ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-red-400">{error}</td></tr>
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-sm text-red-400">
+                    {error}
+                  </td>
+                </tr>
               ) : participants.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-sm text-dark-text-tertiary">No participants found.</td></tr>
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-12 text-center text-sm text-dark-text-tertiary"
+                  >
+                    No participants found.
+                  </td>
+                </tr>
               ) : (
                 participants.map((p, i) => (
                   <motion.tr
@@ -181,14 +234,22 @@ export default function ParticipantsPage() {
                     className="hover:bg-dark-surface-tertiary/50 transition-colors"
                   >
                     <td className="px-4 py-3 text-sm text-white font-medium">{p.name}</td>
-                    <td className="px-4 py-3 text-sm text-dark-text-secondary">{p.company || '\u2014'}</td>
+                    <td className="px-4 py-3 text-sm text-dark-text-secondary">
+                      {p.company || '\u2014'}
+                    </td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[p.status || 'registered'] || statusColors.registered}`}>
+                      <span
+                        className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[p.status || 'registered'] || statusColors.registered}`}
+                      >
                         {p.status || 'registered'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-dark-text-tertiary">{p.hasPhoto ? '📸' : '\u2014'}</td>
-                    <td className="px-4 py-3 text-sm text-dark-text-tertiary">{new Date(p.registeredAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-sm text-dark-text-tertiary">
+                      {p.hasPhoto ? '📸' : '\u2014'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-dark-text-tertiary">
+                      {new Date(p.registeredAt).toLocaleDateString()}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => setDeleteId(p.id)}
@@ -207,7 +268,9 @@ export default function ParticipantsPage() {
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-dark-border">
-            <p className="text-sm text-dark-text-tertiary">Page {page} of {totalPages}</p>
+            <p className="text-sm text-dark-text-tertiary">
+              Page {page} of {totalPages}
+            </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage(Math.max(1, page - 1))}

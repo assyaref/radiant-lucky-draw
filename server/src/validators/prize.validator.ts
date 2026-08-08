@@ -26,7 +26,9 @@ export const updatePrizeSchema = z.object({
     quantity: z.number().int().positive().optional(),
     imageUrl: z.string().url().optional(),
     sponsor: z.string().optional(),
-    tier: z.enum(['doorprize', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'grand']).optional(),
+    tier: z
+      .enum(['doorprize', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'grand'])
+      .optional(),
     isActive: z.boolean().optional(),
   }),
 });

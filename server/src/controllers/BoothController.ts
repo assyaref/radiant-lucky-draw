@@ -26,10 +26,12 @@ export class BoothController {
       sendSuccess(res, result, undefined, 201);
     } catch (error: any) {
       logger.error('[Booth] Registration FAILED', {
+        name: error?.name,
         message: error?.message,
         code: error?.code,
         prismaCode: error?.code,
         prismaMeta: error?.meta ? JSON.stringify(error.meta) : undefined,
+        stack: error?.stack,
         body: { name: req.body?.name, company: req.body?.company },
       });
       next(error);

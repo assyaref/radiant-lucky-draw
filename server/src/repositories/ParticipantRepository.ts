@@ -18,7 +18,7 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
       id: record.id,
       name: record.name,
       email: record.email ?? '',
-      phone: record.phone ?? '',
+      phone: record.phone ?? null,
       company: record.company ?? '',
       queueNumber: record.queueNumber ?? '',
       status: record.status,

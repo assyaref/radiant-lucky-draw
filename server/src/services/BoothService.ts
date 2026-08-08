@@ -161,7 +161,7 @@ export class BoothService {
     const participant = await this.participantRepository.create({
       name: data.name,
       email: '',
-      phone: data.whatsapp ?? '',
+      phone: data.whatsapp || null,
       company: data.company,
       queueNumber,
       status: 'registered',

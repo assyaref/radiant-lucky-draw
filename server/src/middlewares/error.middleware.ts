@@ -42,7 +42,7 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
     success: false,
     error: {
       code: 'INTERNAL_ERROR',
-      message: 'Server error. Please try again later.',
+      message: env.isDevelopment ? err.message : 'Server error. Please try again later.',
       requestId,
     },
   });

@@ -28,6 +28,7 @@ export default function ParticipantsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [forceDeleteId, setForceDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [toast, setToast] = useState('');
@@ -65,21 +66,30 @@ export default function ParticipantsPage() {
     };
   }, [page, search]);
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
+  const handleDelete = async (force: boolean = false) => {
+    const targetId = force ? forceDeleteId : deleteId;
+    if (!targetId) return;
     setDeleting(true);
     setDeleteError('');
     try {
-      await boothApi.deleteParticipant(deleteId);
-      setParticipants((prev) => prev.filter((p) => p.id !== deleteId));
+      await boothApi.deleteParticipant(targetId, force);
+      setParticipants((prev) => prev.filter((p) => p.id !== targetId));
       setTotal((t) => t - 1);
       setToast('Participant deleted successfully');
       setTimeout(() => setToast(''), 3000);
     } catch (err: any) {
+      if (!force && err?.status === 403) {
+        // Winner protection — ask for force delete confirmation
+        setForceDeleteId(targetId);
+        setDeleteId(null);
+        setDeleting(false);
+        return;
+      }
       setDeleteError(err?.message ?? 'Failed to delete participant');
     } finally {
       setDeleting(false);
       setDeleteId(null);
+      setForceDeleteId(null);
     }
   };
 
@@ -139,11 +149,61 @@ export default function ParticipantsPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={handleDelete}
+                  onClick={() => handleDelete(false)}
                   disabled={deleting}
                   className="px-4 py-2 rounded-lg text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+        {forceDeleteId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => !deleting && setForceDeleteId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-dark-surface-secondary border border-dark-border rounded-xl p-6 w-full max-w-md mx-4"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Force Delete Winner?</h3>
+                <button
+                  onClick={() => setForceDeleteId(null)}
+                  className="p-1 rounded-lg text-dark-text-tertiary hover:text-white transition-colors"
+                >
+                  <HiXMark className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-dark-text-secondary mb-2">
+                This participant has already won a prize.
+              </p>
+              <p className="text-sm text-warning-400 mb-6">
+                Forcing deletion will also remove their winner record. This cannot be undone.
+              </p>
+              {deleteError && <p className="text-sm text-red-400 mb-4">{deleteError}</p>}
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setForceDeleteId(null)}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-lg text-sm text-dark-text-secondary hover:text-white hover:bg-dark-surface-tertiary transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(true)}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-lg text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {deleting ? 'Deleting...' : 'Force Delete'}
                 </button>
               </div>
             </motion.div>

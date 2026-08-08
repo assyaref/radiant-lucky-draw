@@ -111,6 +111,8 @@ export function createApp(): AppInstance {
     participantRepository,
     settingsRepository,
     queueRepository,
+    drawRepository,
+    winnerRepository,
   );
 
   const prizeService = new PrizeService(prizeRepository);
@@ -159,7 +161,19 @@ export function createApp(): AppInstance {
   // =========================================================
   app.use(helmet({ contentSecurityPolicy: env.isProduction ? undefined : false }));
   app.use(compression());
-  app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
+  // Parse comma-separated CORS origins and automatically expand www/non-www
+  // variants so both `https://example.com` and `https://www.example.com` work.
+  const corsOrigins = env.CORS_ORIGIN.split(',').flatMap((s) => {
+    const o = s.trim().replace(/\/+$/, '');
+    const www = o.startsWith('https://')
+      ? o.includes('://www.')
+        ? o.replace('://www.', '://')
+        : o.replace('://', '://www.')
+      : null;
+    return www && www !== o ? [o, www] : [o];
+  });
+
+  app.use(cors({ origin: corsOrigins, credentials: true }));
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());

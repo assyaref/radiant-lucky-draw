@@ -80,6 +80,40 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
     return this.model.count({ where: { deletedAt: null } });
   }
 
+  /**
+   * Cascade-delete a participant and all related records in a single transaction.
+   *
+   * Order matters — child records must be deleted before the parent:
+   *   1. queue_entries   (FK → participants.id, ON DELETE CASCADE handles this)
+   *   2. draw_participants (FK → participants.id, ON DELETE CASCADE handles this)
+   *   3. winners          (FK → participants.id, ON DELETE CASCADE handles this)
+   *   4. participant      (the parent record itself)
+   *
+   * Returns the deleted participant or null if not found.
+   */
+  async deleteCascade(id: string): Promise<Participant | null> {
+    return prisma.$transaction(async (tx) => {
+      const participant = await tx.participant.findUnique({ where: { id } });
+      if (!participant || participant.deletedAt) return null;
+
+      // Snapshot before deletion for return value
+      const snapshot = this.toEntity(participant);
+
+      // Delete cascade: queue entries, draw participants, winners (ON DELETE CASCADE in DB handles these)
+      // Then soft-delete the participant
+      await tx.queueEntry.deleteMany({ where: { participantId: id } });
+      await tx.drawParticipant.deleteMany({ where: { participantId: id } });
+      await tx.winner.deleteMany({ where: { participantId: id } });
+
+      await tx.participant.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      return snapshot;
+    });
+  }
+
   async getNextQueueNumber(): Promise<string> {
     const records = await this.model.findMany({
       where: { deletedAt: null },

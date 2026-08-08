@@ -2,8 +2,8 @@
  * Participant Service
  */
 
-import { ParticipantRepository, SettingsRepository, QueueRepository } from '../repositories';
-import { NotFoundError, ConflictError, ValidationError } from '../utils';
+import { ParticipantRepository, SettingsRepository, QueueRepository, DrawRepository, WinnerRepository } from '../repositories';
+import { NotFoundError, ConflictError, ValidationError, ForbiddenError } from '../utils';
 import type {
   CreateParticipantRequest,
   UpdateParticipantRequest,
@@ -17,6 +17,8 @@ export class ParticipantService {
     private participantRepository: ParticipantRepository,
     private settingsRepository: SettingsRepository,
     private queueRepository: QueueRepository,
+    private drawRepository: DrawRepository,
+    private winnerRepository: WinnerRepository,
   ) {}
 
   async findAll(page: number = 1, limit: number = 20) {
@@ -73,8 +75,37 @@ export class ParticipantService {
     return this.toResponse(participant);
   }
 
-  async delete(id: string): Promise<void> {
-    const deleted = await this.participantRepository.delete(id);
+  /**
+   * Delete a participant with cascade of related records.
+   *
+   * Business rules:
+   *  - Cannot delete if participant is currently in an active draw (status = 'countdown' | 'spinning' | 'revealed').
+   *  - Winner check: if the participant has already won, deletion is only allowed with force=true.
+   *  - All related queue entries, draw participants, and winner records are removed.
+   */
+  async delete(id: string, force: boolean = false): Promise<void> {
+    const participant = await this.participantRepository.findById(id);
+    if (!participant) throw new NotFoundError('Participant', id);
+
+    // Check for active draws involving this participant
+    const activeDraws = await this.drawRepository.findActiveByParticipant(id);
+    if (activeDraws.length > 0) {
+      throw new ConflictError(
+        'Cannot delete participant while they are in an active draw. Please wait for the draw to complete.',
+      );
+    }
+
+    // Check if participant has already won
+    if (!force) {
+      const hasWon = await this.winnerRepository.findByParticipant(id);
+      if (hasWon) {
+        throw new ForbiddenError(
+          'This participant has already won a prize. Use force=true to delete anyway.',
+        );
+      }
+    }
+
+    const deleted = await this.participantRepository.deleteCascade(id);
     if (!deleted) throw new NotFoundError('Participant', id);
   }
 

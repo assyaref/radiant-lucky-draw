@@ -68,7 +68,8 @@ export class ParticipantController {
 
   delete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await this.participantService.delete(req.params.id);
+      const force = req.query.force === 'true';
+      await this.participantService.delete(req.params.id, force);
       sendSuccess(res, { message: 'Participant deleted successfully' });
     } catch (error) {
       next(error);

@@ -125,6 +125,12 @@ export const boothApi = {
   /** Update winner claim status (admin) */
   updateClaimStatus: (id: string, claimStatus: 'unclaimed' | 'claimed') =>
     api.put<ApiEnvelope<Winner>>(`/booth/winners/${id}/claim`, { claimStatus }),
+
+  /** Delete a participant (admin, cascade) */
+  deleteParticipant: (id: string, force?: boolean) =>
+    api.delete<ApiEnvelope<{ message: string }>>(
+      `/participants/${id}${force ? '?force=true' : ''}`,
+    ),
 };
 
 export default boothApi;

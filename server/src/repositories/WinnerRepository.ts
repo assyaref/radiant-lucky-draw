@@ -49,6 +49,16 @@ export class WinnerRepository extends PrismaRepository<Winner> {
   }
 
   /**
+   * Find if a participant has already won any prize.
+   */
+  async findByParticipant(participantId: string): Promise<Winner | null> {
+    const record = await this.model.findFirst({
+      where: { participantId, deletedAt: null },
+    });
+    return record ? this.toEntity(record) : null;
+  }
+
+  /**
    * Find all winners with participant and prize details joined.
    * Used by the Pemenang (Winners) dashboard menu.
    */

@@ -86,6 +86,22 @@ export class DrawRepository extends PrismaRepository<Draw> {
     return this.toEntity(record);
   }
 
+  /**
+   * Find active draws containing a specific participant.
+   * Active statuses: countdown | spinning | revealed
+   */
+  async findActiveByParticipant(participantId: string): Promise<Draw[]> {
+    const records = await this.model.findMany({
+      where: {
+        status: { in: ['countdown', 'spinning', 'revealed'] },
+        deletedAt: null,
+        participants: { some: { participantId } },
+      },
+      include: { participants: true },
+    });
+    return records.map((r: any) => this.toEntity(r));
+  }
+
   /** Override paginate to include participants relation */
   async paginate(page: number, limit: number): Promise<{ data: Draw[]; total: number }> {
     const skip = (page - 1) * limit;

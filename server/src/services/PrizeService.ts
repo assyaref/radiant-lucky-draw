@@ -26,6 +26,7 @@ export class PrizeService {
   async create(data: CreatePrizeRequest): Promise<PrizeResponse> {
     const prize = await this.prizeRepository.create({
       ...data,
+      description: data.description ?? null,
       currency: data.currency || 'USD',
       remaining: data.quantity,
       probability: data.probability ?? 0,

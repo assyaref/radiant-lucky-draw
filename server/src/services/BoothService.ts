@@ -117,7 +117,7 @@ export class BoothService {
           ? prizes.map((p) => ({
               id: p.id,
               name: p.name,
-              description: p.description,
+              description: p.description ?? undefined,
               imageUrl: p.imageUrl,
               tier: p.tier,
             }))

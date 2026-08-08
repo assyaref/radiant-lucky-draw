@@ -31,7 +31,7 @@ export interface CreatePrizePayload {
   quantity: number;
   imageUrl?: string;
   sponsor?: string;
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+  tier: 'doorprize' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'grand';
   probability?: number;
 }
 
@@ -43,7 +43,7 @@ export interface UpdatePrizePayload {
   quantity?: number;
   imageUrl?: string;
   sponsor?: string;
-  tier?: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+  tier?: 'doorprize' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'grand';
   probability?: number;
   isActive?: boolean;
 }

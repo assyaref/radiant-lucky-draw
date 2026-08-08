@@ -4,13 +4,13 @@
 
 export interface CreatePrizeRequest {
   name: string;
-  description: string;
+  description?: string;
   value: number;
   currency?: string;
   quantity: number;
   imageUrl?: string;
   sponsor?: string;
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+  tier: 'doorprize' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'grand';
   probability?: number;
 }
 
@@ -22,7 +22,7 @@ export interface UpdatePrizeRequest {
   quantity?: number;
   imageUrl?: string;
   sponsor?: string;
-  tier?: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+  tier?: 'doorprize' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'grand';
   probability?: number;
   isActive?: boolean;
 }
@@ -30,7 +30,7 @@ export interface UpdatePrizeRequest {
 export interface PrizeResponse {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   value: number;
   currency: string;
   quantity: number;

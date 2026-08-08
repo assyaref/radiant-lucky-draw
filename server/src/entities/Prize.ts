@@ -5,14 +5,14 @@
 export interface Prize {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   value: number;
   currency: string;
   quantity: number;
   remaining: number;
   imageUrl?: string;
   sponsor?: string;
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+  tier: 'doorprize' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'grand';
   probability: number;
   isActive: boolean;
   createdAt: string;

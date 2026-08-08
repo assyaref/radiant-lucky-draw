@@ -28,14 +28,16 @@ import {
 import { prizeApi, type Prize } from '@/api/prize';
 
 const tierColors: Record<string, string> = {
+  grand: 'bg-warning-500/20 text-warning-400',
   gold: 'bg-warning-500/20 text-warning-400',
   silver: 'bg-dark-text-tertiary/20 text-dark-text-tertiary',
   bronze: 'bg-accent-500/20 text-accent-400',
   platinum: 'bg-secondary-500/20 text-secondary-400',
   diamond: 'bg-primary-500/20 text-primary-400',
+  doorprize: 'bg-success-500/20 text-success-400',
 };
 
-const tierOptions = ['bronze', 'silver', 'gold', 'platinum', 'diamond'] as const;
+const tierOptions = ['doorprize', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'grand'] as const;
 
 interface PrizeFormState {
   name: string;

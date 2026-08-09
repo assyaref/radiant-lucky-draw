@@ -7,6 +7,7 @@
 import { PrismaRepository } from './BaseRepository';
 import { prisma } from '../lib/prisma';
 import { logger } from '../utils';
+import { normalizeWhatsApp } from '../utils';
 import type { Participant } from '../entities';
 
 export class ParticipantRepository extends PrismaRepository<Participant> {
@@ -69,11 +70,12 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
   }
 
   async findByPhone(phone: string): Promise<Participant | null> {
-    const normalized = phone.replace(/[\s()-]/g, '');
+    const normalized = normalizeWhatsApp(phone);
+    if (!normalized) return null;
     const records = await this.model.findMany({
       where: { deletedAt: null },
     });
-    const match = records.find((r: any) => (r.phone ?? '').replace(/[\s()-]/g, '') === normalized);
+    const match = records.find((r: any) => normalizeWhatsApp(r.phone ?? '') === normalized);
     return match ? this.toEntity(match) : null;
   }
 

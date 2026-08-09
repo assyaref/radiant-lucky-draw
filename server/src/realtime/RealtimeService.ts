@@ -280,6 +280,12 @@ export class RealtimeService {
         this.broadcastDrawEvent(DRAW_EVENTS.SPINNING, {
           drawId: winnerData.drawId,
           participantId: winnerData.participantId,
+          participantName: winnerData.participantName,
+          participantPhotoUrl: winnerData.participantPhotoUrl ?? null,
+          prizeId: winnerData.prizeId,
+          prizeName: winnerData.prizeName,
+          prizeTier: winnerData.prizeTier,
+          prizeImageUrl: winnerData.prizeImageUrl ?? null,
           timestamp: new Date().toISOString(),
         });
       }, 4000),

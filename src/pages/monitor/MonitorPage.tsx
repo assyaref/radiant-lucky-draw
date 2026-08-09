@@ -258,10 +258,34 @@ const SAMPLE_NAMES = [
 
 function SpinningScreen({ participantName }: { participantName?: string | null }) {
   const [nameIdx, setNameIdx] = useState(0);
+  const [converge, setConverge] = useState(false);
+  const [converged, setConverged] = useState(false);
+
   useEffect(() => {
-    const iv = setInterval(() => setNameIdx((i) => (i + 1) % SAMPLE_NAMES.length), 120);
-    return () => clearInterval(iv);
-  }, []);
+    const slow = setTimeout(() => setConverge(true), 2000);
+    const iv = setInterval(
+      () => {
+        if (converged) return;
+        setNameIdx((i) => (i + 1) % SAMPLE_NAMES.length);
+      },
+      converge ? 200 : 80,
+    );
+    return () => {
+      clearInterval(iv);
+      clearTimeout(slow);
+    };
+  }, [converge, converged]);
+
+  // Lock to server-authoritative participant name after ~3.5s
+  useEffect(() => {
+    if (!participantName) return;
+    const lock = setTimeout(() => {
+      setConverged(true);
+    }, 3500);
+    return () => clearTimeout(lock);
+  }, [participantName]);
+
+  const displayName = converged && participantName ? participantName : SAMPLE_NAMES[nameIdx];
   return (
     <div className="flex flex-col items-center justify-center h-full w-full">
       <motion.div
@@ -318,7 +342,7 @@ function SpinningScreen({ participantName }: { participantName?: string | null }
         transition={{ duration: 0.08 }}
       >
         <p className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight text-white/80">
-          {participantName ?? SAMPLE_NAMES[nameIdx]}
+          {displayName}
         </p>
       </motion.div>
       <motion.p
@@ -431,6 +455,7 @@ export default function MonitorPage() {
   const [drawData, setDrawData] = useState<DrawData | null>(null);
   const countRef = useRef(3);
   const countTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const completedDrawIdRef = useRef<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const startCountdown = useCallback(() => {
@@ -548,14 +573,22 @@ export default function MonitorPage() {
 
   useSocketEvent(
     SOCKET_EVENTS.DRAW_COMPLETED as SocketEventName,
-    useCallback(() => {
-      stopCountdown();
-      setDrawState('COMPLETED');
-      setTimeout(() => {
-        setDrawState('IDLE');
-        setDrawData(null);
-      }, 5000);
-    }, [stopCountdown]),
+    useCallback(
+      (p: any) => {
+        stopCountdown();
+        const drawId = p?.drawId;
+        setDrawState('COMPLETED');
+        // Guard: only clear if the drawId hasn't changed (no new draw started)
+        if (drawId) completedDrawIdRef.current = drawId;
+        setTimeout(() => {
+          if (drawId && completedDrawIdRef.current !== drawId) return;
+          setDrawState('IDLE');
+          setDrawData(null);
+          completedDrawIdRef.current = null;
+        }, 5000);
+      },
+      [stopCountdown],
+    ),
   );
 
   // ─── Reconnection sync ──────────────────────────────────────────────

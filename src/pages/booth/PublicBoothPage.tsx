@@ -120,7 +120,7 @@ export default function PublicBoothPage() {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = 'Nama wajib diisi';
     if (!company.trim()) e.company = 'Perusahaan wajib diisi';
-    if (whatsapp.trim() && !/^[+]?[\\d\\s()-]{8,20}$/.test(whatsapp.trim()))
+    if (whatsapp.trim() && !/^[+]?[\d\s()-]{8,20}$/.test(whatsapp.trim()))
       e.whatsapp = 'Format tidak valid';
     setFieldErrors(e);
     return Object.keys(e).length === 0;

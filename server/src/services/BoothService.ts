@@ -13,7 +13,7 @@ import {
   WinnerRepository,
 } from '../repositories';
 import { prisma } from '../lib/prisma';
-import { NotFoundError, ValidationError, ConflictError, logger } from '../utils';
+import { NotFoundError, ValidationError, ConflictError, logger, normalizeWhatsApp } from '../utils';
 import { RealtimeService, DRAW_EVENTS } from '../realtime';
 import type { ActiveDrawState } from '../realtime';
 import type {
@@ -150,9 +150,10 @@ export class BoothService {
   async registerParticipant(
     data: CreateBoothParticipantRequest,
   ): Promise<BoothParticipantResponse> {
-    // Validate duplicate whatsapp if provided
-    if (data.whatsapp) {
-      const existing = await this.participantRepository.findByPhone(data.whatsapp);
+    // Normalize and validate duplicate whatsapp if provided
+    const normalizedPhone = data.whatsapp ? normalizeWhatsApp(data.whatsapp) : null;
+    if (normalizedPhone) {
+      const existing = await this.participantRepository.findByPhone(normalizedPhone);
       if (existing) {
         throw new ConflictError('Nomor WhatsApp sudah terdaftar');
       }
@@ -162,7 +163,7 @@ export class BoothService {
     const participant = await this.participantRepository.create({
       name: data.name,
       email: '',
-      phone: data.whatsapp || null,
+      phone: normalizedPhone,
       company: data.company,
       queueNumber,
       status: 'registered',

@@ -15,6 +15,7 @@ import {
 import { prisma } from '../lib/prisma';
 import { NotFoundError, ValidationError, ConflictError, logger } from '../utils';
 import { RealtimeService, DRAW_EVENTS } from '../realtime';
+import type { ActiveDrawState } from '../realtime';
 import type {
   BoothConfigResponse,
   CreateBoothParticipantRequest,
@@ -523,7 +524,7 @@ export class BoothService {
    * Get the current draw state from the RealtimeService.
    * Used by monitors for reconnection sync.
    */
-  getDrawState(): Record<string, unknown> {
+  getDrawState(): ActiveDrawState {
     if (this.realtimeService) {
       return this.realtimeService.getDrawState();
     }

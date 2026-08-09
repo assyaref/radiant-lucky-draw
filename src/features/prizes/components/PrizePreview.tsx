@@ -47,7 +47,11 @@ export function PrizePreview({ prize, compact = false }: PrizePreviewProps) {
           style={{ backgroundColor: `${prize.color}20` }}
         >
           {prize.image ? (
-            <img src={normalizeImageUrl(prize.image)} alt={prize.name} className="w-full h-full object-cover" />
+            <img
+              src={normalizeImageUrl(prize.image)}
+              alt={prize.name}
+              className="w-full h-full object-cover"
+            />
           ) : (
             <span>🎁</span>
           )}

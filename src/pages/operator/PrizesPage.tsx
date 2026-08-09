@@ -38,7 +38,15 @@ const tierColors: Record<string, string> = {
   doorprize: 'bg-success-500/20 text-success-400',
 };
 
-const tierOptions = ['doorprize', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'grand'] as const;
+const tierOptions = [
+  'doorprize',
+  'bronze',
+  'silver',
+  'gold',
+  'platinum',
+  'diamond',
+  'grand',
+] as const;
 
 interface PrizeFormState {
   name: string;

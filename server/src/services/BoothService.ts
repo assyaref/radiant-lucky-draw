@@ -247,100 +247,100 @@ export class BoothService {
     }
 
     try {
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Fetch all eligible prizes (active, in stock) inside the transaction.
-      const eligiblePrizes = await tx.prize.findMany({
-        where: { isActive: true, remaining: { gt: 0 }, deletedAt: null },
+      const result = await prisma.$transaction(async (tx) => {
+        // 1. Fetch all eligible prizes (active, in stock) inside the transaction.
+        const eligiblePrizes = await tx.prize.findMany({
+          where: { isActive: true, remaining: { gt: 0 }, deletedAt: null },
+        });
+        if (eligiblePrizes.length === 0) {
+          throw new ValidationError('Tidak ada hadiah yang tersedia');
+        }
+
+        // 2. Weighted random selection based on probability.
+        const selected = this.selectWeightedPrize(eligiblePrizes);
+        if (!selected) {
+          throw new ValidationError('Tidak ada hadiah yang tersedia');
+        }
+
+        // 3. Atomically decrement prize stock (prevents negative stock).
+        const prizeUpdate = await tx.prize.updateMany({
+          where: { id: selected.id, remaining: { gt: 0 }, deletedAt: null },
+          data: { remaining: { decrement: 1 } },
+        });
+        if (prizeUpdate.count === 0) {
+          throw new ValidationError('Stok hadiah habis');
+        }
+
+        const prizeRecord = await tx.prize.findUnique({ where: { id: selected.id } });
+        if (!prizeRecord) throw new NotFoundError('Prize', selected.id);
+
+        // 4. Create a draw record.
+        const draw = await tx.draw.create({
+          data: {
+            name: `Booth Draw - ${participant.name}`,
+            prizeId: prizeRecord.id,
+            prizeName: prizeRecord.name,
+            status: 'completed',
+            winnerId: participant.id,
+            winnerName: participant.name,
+            startedAt: new Date(),
+            completedAt: new Date(),
+          },
+        });
+
+        // 5. Record the winner.
+        await tx.winner.create({
+          data: {
+            drawId: draw.id,
+            participantId: participant.id,
+            prizeId: prizeRecord.id,
+            prizeTier: prizeRecord.tier,
+            prizeValue: prizeRecord.value,
+            claimStatus: 'unclaimed',
+            announcedAt: new Date(),
+          },
+        });
+
+        // 6. Update the participant with the won prize.
+        await tx.participant.update({
+          where: { id: participant.id },
+          data: {
+            prizeId: prizeRecord.id,
+            status: 'completed',
+            completedAt: new Date(),
+          },
+        });
+
+        return { draw, prizeRecord };
       });
-      if (eligiblePrizes.length === 0) {
-        throw new ValidationError('Tidak ada hadiah yang tersedia');
-      }
 
-      // 2. Weighted random selection based on probability.
-      const selected = this.selectWeightedPrize(eligiblePrizes);
-      if (!selected) {
-        throw new ValidationError('Tidak ada hadiah yang tersedia');
-      }
-
-      // 3. Atomically decrement prize stock (prevents negative stock).
-      const prizeUpdate = await tx.prize.updateMany({
-        where: { id: selected.id, remaining: { gt: 0 }, deletedAt: null },
-        data: { remaining: { decrement: 1 } },
-      });
-      if (prizeUpdate.count === 0) {
-        throw new ValidationError('Stok hadiah habis');
-      }
-
-      const prizeRecord = await tx.prize.findUnique({ where: { id: selected.id } });
-      if (!prizeRecord) throw new NotFoundError('Prize', selected.id);
-
-      // 4. Create a draw record.
-      const draw = await tx.draw.create({
-        data: {
-          name: `Booth Draw - ${participant.name}`,
-          prizeId: prizeRecord.id,
-          prizeName: prizeRecord.name,
-          status: 'completed',
-          winnerId: participant.id,
-          winnerName: participant.name,
-          startedAt: new Date(),
-          completedAt: new Date(),
-        },
-      });
-
-      // 5. Record the winner.
-      await tx.winner.create({
-        data: {
-          drawId: draw.id,
+      // ─── Start timed draw sequence for Monitor synchronization ───────
+      if (this.realtimeService) {
+        this.realtimeService.startDrawSequence({
+          drawId: result.draw.id,
           participantId: participant.id,
-          prizeId: prizeRecord.id,
-          prizeTier: prizeRecord.tier,
-          prizeValue: prizeRecord.value,
-          claimStatus: 'unclaimed',
-          announcedAt: new Date(),
-        },
-      });
+          participantName: participant.name,
+          participantCompany: participant.company ?? undefined,
+          participantPhotoUrl: participant.photoUrl ?? undefined,
+          prizeId: result.prizeRecord.id,
+          prizeName: result.prizeRecord.name,
+          prizeImageUrl: result.prizeRecord.imageUrl ?? undefined,
+          prizeTier: result.prizeRecord.tier,
+          remainingStock: result.prizeRecord.remaining - 1,
+        });
+      }
 
-      // 6. Update the participant with the won prize.
-      await tx.participant.update({
-        where: { id: participant.id },
-        data: {
-          prizeId: prizeRecord.id,
-          status: 'completed',
-          completedAt: new Date(),
-        },
-      });
-
-      return { draw, prizeRecord };
-    });
-
-    // ─── Start timed draw sequence for Monitor synchronization ───────
-    if (this.realtimeService) {
-      this.realtimeService.startDrawSequence({
+      return {
         drawId: result.draw.id,
         participantId: participant.id,
         participantName: participant.name,
-        participantCompany: participant.company ?? undefined,
-        participantPhotoUrl: participant.photoUrl ?? undefined,
         prizeId: result.prizeRecord.id,
         prizeName: result.prizeRecord.name,
         prizeImageUrl: result.prizeRecord.imageUrl ?? undefined,
         prizeTier: result.prizeRecord.tier,
         remainingStock: result.prizeRecord.remaining - 1,
-      });
-    }
-
-    return {
-      drawId: result.draw.id,
-      participantId: participant.id,
-      participantName: participant.name,
-      prizeId: result.prizeRecord.id,
-      prizeName: result.prizeRecord.name,
-      prizeImageUrl: result.prizeRecord.imageUrl ?? undefined,
-      prizeTier: result.prizeRecord.tier,
-      remainingStock: result.prizeRecord.remaining - 1,
-      timestamp: new Date().toISOString(),
-    };
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
       // Release draw lock on any error
       if (this.realtimeService) {

@@ -257,60 +257,82 @@ export class RealtimeService {
 
     // Step 1: COUNTDOWN (immediate)
     this.setDrawState({
-      state: 'COUNTDOWN', drawId: winnerData.drawId,
+      state: 'COUNTDOWN',
+      drawId: winnerData.drawId,
       participantId: winnerData.participantId,
       participantName: winnerData.participantName,
       participantCompany: winnerData.participantCompany ?? null,
       participantPhotoUrl: winnerData.participantPhotoUrl ?? null,
-      prizeId: winnerData.prizeId, prizeName: winnerData.prizeName,
+      prizeId: winnerData.prizeId,
+      prizeName: winnerData.prizeName,
       prizeImageUrl: winnerData.prizeImageUrl ?? null,
       prizeTier: winnerData.prizeTier,
-      remainingStock: winnerData.remainingStock, startedAt: ts,
+      remainingStock: winnerData.remainingStock,
+      startedAt: ts,
     });
     this.broadcastDrawEvent(DRAW_EVENTS.STARTED, { ...winnerData, timestamp: ts });
 
     // Step 2: SPINNING (after 4s)
-    this.drawSequenceTimers.push(setTimeout(() => {
-      if (this.activeDraw.state !== 'COUNTDOWN') return;
-      this.setDrawState({ state: 'SPINNING' });
-      this.broadcastDrawEvent(DRAW_EVENTS.SPINNING, {
-        drawId: winnerData.drawId, participantId: winnerData.participantId,
-        timestamp: new Date().toISOString(),
-      });
-    }, 4000));
+    this.drawSequenceTimers.push(
+      setTimeout(() => {
+        if (this.activeDraw.state !== 'COUNTDOWN') return;
+        this.setDrawState({ state: 'SPINNING' });
+        this.broadcastDrawEvent(DRAW_EVENTS.SPINNING, {
+          drawId: winnerData.drawId,
+          participantId: winnerData.participantId,
+          timestamp: new Date().toISOString(),
+        });
+      }, 4000),
+    );
 
     // Step 3: REVEALED (after 8s)
-    this.drawSequenceTimers.push(setTimeout(() => {
-      if (this.activeDraw.state !== 'SPINNING') return;
-      this.setDrawState({ state: 'REVEALED' });
-      this.broadcastDrawEvent(DRAW_EVENTS.WINNER, {
-        ...winnerData, probability: 0, timestamp: new Date().toISOString(),
-      });
-    }, 8000));
+    this.drawSequenceTimers.push(
+      setTimeout(() => {
+        if (this.activeDraw.state !== 'SPINNING') return;
+        this.setDrawState({ state: 'REVEALED' });
+        this.broadcastDrawEvent(DRAW_EVENTS.WINNER, {
+          ...winnerData,
+          probability: 0,
+          timestamp: new Date().toISOString(),
+        });
+      }, 8000),
+    );
 
     // Step 4: COMPLETED → IDLE (after 14s + 5s)
-    this.drawSequenceTimers.push(setTimeout(() => {
-      if (this.activeDraw.state !== 'REVEALED') return;
-      this.setDrawState({ state: 'COMPLETED' });
-      this.broadcastDrawEvent(DRAW_EVENTS.COMPLETED, {
-        drawId: winnerData.drawId, participantId: winnerData.participantId,
-        prizeId: winnerData.prizeId, prizeName: winnerData.prizeName,
-        remainingStock: winnerData.remainingStock,
-        totalWinners: 0, drawCount: 0,
-        timestamp: new Date().toISOString(),
-      });
+    this.drawSequenceTimers.push(
       setTimeout(() => {
-        this.setDrawState({
-          state: 'IDLE', drawId: null, participantId: null,
-          participantName: null, participantCompany: null,
-          participantPhotoUrl: null, prizeId: null, prizeName: null,
-          prizeImageUrl: null, prizeTier: null, remainingStock: null,
-          startedAt: null,
+        if (this.activeDraw.state !== 'REVEALED') return;
+        this.setDrawState({ state: 'COMPLETED' });
+        this.broadcastDrawEvent(DRAW_EVENTS.COMPLETED, {
+          drawId: winnerData.drawId,
+          participantId: winnerData.participantId,
+          prizeId: winnerData.prizeId,
+          prizeName: winnerData.prizeName,
+          remainingStock: winnerData.remainingStock,
+          totalWinners: 0,
+          drawCount: 0,
+          timestamp: new Date().toISOString(),
         });
-        this.releaseDrawLock();
-        logger.info('[Realtime] Draw sequence: IDLE, lock released');
-      }, 5000);
-    }, 14000));
+        setTimeout(() => {
+          this.setDrawState({
+            state: 'IDLE',
+            drawId: null,
+            participantId: null,
+            participantName: null,
+            participantCompany: null,
+            participantPhotoUrl: null,
+            prizeId: null,
+            prizeName: null,
+            prizeImageUrl: null,
+            prizeTier: null,
+            remainingStock: null,
+            startedAt: null,
+          });
+          this.releaseDrawLock();
+          logger.info('[Realtime] Draw sequence: IDLE, lock released');
+        }, 5000);
+      }, 14000),
+    );
 
     logger.info('[Realtime] Draw sequence started', { drawId: winnerData.drawId });
   }

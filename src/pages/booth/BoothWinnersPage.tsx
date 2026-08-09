@@ -19,6 +19,7 @@ import {
   HiOutlineArrowDownTray,
 } from 'react-icons/hi2';
 import { boothApi, type Winner } from '@/api/booth';
+import { normalizeImageUrl } from '@/utils';
 
 const claimStatusColors: Record<string, string> = {
   unclaimed: 'bg-warning-500/20 text-warning-400',
@@ -267,7 +268,7 @@ export default function BoothWinnersPage() {
                     <td className="px-4 py-3">
                       {w.participantPhotoUrl ? (
                         <img
-                          src={w.participantPhotoUrl}
+                          src={normalizeImageUrl(w.participantPhotoUrl)}
                           alt={w.participantName}
                           className="w-10 h-10 rounded-full object-cover border border-dark-border"
                         />

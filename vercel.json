@@ -1,10 +1,8 @@
 {
-  "name": "radiant-lucky-draw",
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "installCommand": "npm ci",
-  "framework": "vite",
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -15,7 +13,7 @@
       "destination": "https://radiant-lucky-draw-production.up.railway.app/socket.io/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
   ],

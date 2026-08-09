@@ -117,10 +117,47 @@ export interface DrawCompletedPayload {
   timestamp: string;
 }
 
+// ─── Draw State (Server-Authoritative) ──────────────────────────────────
+
+export type DrawState = 'IDLE' | 'COUNTDOWN' | 'SPINNING' | 'REVEALED' | 'COMPLETED';
+
+export interface ActiveDrawState {
+  state: DrawState;
+  drawId: string | null;
+  participantId: string | null;
+  participantName: string | null;
+  participantCompany: string | null;
+  participantPhotoUrl: string | null;
+  prizeId: string | null;
+  prizeName: string | null;
+  prizeTier: string | null;
+  prizeImageUrl: string | null;
+  remainingStock: number | null;
+  startedAt: string | null;
+  lastUpdated: string;
+}
+
 // ─── RealtimeService ────────────────────────────────────────────────────
 
 export class RealtimeService {
   private io: SocketIOServer | null = null;
+  private activeDraw: ActiveDrawState = {
+    state: 'IDLE',
+    drawId: null,
+    participantId: null,
+    participantName: null,
+    participantCompany: null,
+    participantPhotoUrl: null,
+    prizeId: null,
+    prizeName: null,
+    prizeTier: null,
+    prizeImageUrl: null,
+    remainingStock: null,
+    startedAt: null,
+    lastUpdated: new Date().toISOString(),
+  };
+  private drawSequenceTimers: ReturnType<typeof setTimeout>[] = [];
+  private isDrawLocked: boolean = false;
 
   /** Attach Socket.IO to the HTTP server */
   attach(server: HttpServer): void {
@@ -144,6 +181,12 @@ export class RealtimeService {
     this.io.on('connection', (socket) => {
       logger.info(`[Realtime] Client connected: ${socket.id}`);
 
+      // Send current draw state to newly connected monitor clients
+      socket.on('draw:get-state', () => {
+        socket.emit('draw:state-sync', this.getDrawState());
+        logger.info(`[Realtime] Draw state sent to: ${socket.id}`);
+      });
+
       socket.on('disconnect', () => {
         logger.info(`[Realtime] Client disconnected: ${socket.id}`);
       });
@@ -155,6 +198,127 @@ export class RealtimeService {
   /** Check if the realtime layer is attached */
   isAttached(): boolean {
     return this.io !== null;
+  }
+
+  // ─── Draw Lock ──────────────────────────────────────────────────────
+
+  /** Check if a draw is currently in progress (prevents double spin) */
+  isDrawActive(): boolean {
+    return this.isDrawLocked;
+  }
+
+  /** Attempt to acquire the draw lock. Returns true if lock acquired. */
+  acquireDrawLock(): boolean {
+    if (this.isDrawLocked) return false;
+    this.isDrawLocked = true;
+    return true;
+  }
+
+  /** Release the draw lock */
+  releaseDrawLock(): void {
+    this.isDrawLocked = false;
+  }
+
+  // ─── Draw State Management ──────────────────────────────────────────
+
+  /** Get the current draw state (for monitor reconnection) */
+  getDrawState(): ActiveDrawState {
+    return { ...this.activeDraw };
+  }
+
+  /** Set draw state internally */
+  private setDrawState(partial: Partial<ActiveDrawState>): void {
+    this.activeDraw = {
+      ...this.activeDraw,
+      ...partial,
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Start a sequenced draw lifecycle with timed broadcasts.
+   * Winner data is provided upfront (already determined by the server).
+   * Handles countdown→spinning→winner→completed animation sequence.
+   */
+  startDrawSequence(winnerData: {
+    drawId: string;
+    participantId: string;
+    participantName: string;
+    participantCompany?: string;
+    participantPhotoUrl?: string;
+    prizeId: string;
+    prizeName: string;
+    prizeImageUrl?: string;
+    prizeTier: string;
+    remainingStock: number;
+  }): void {
+    this.clearDrawTimers();
+    const ts = new Date().toISOString();
+
+    // Step 1: COUNTDOWN (immediate)
+    this.setDrawState({
+      state: 'COUNTDOWN', drawId: winnerData.drawId,
+      participantId: winnerData.participantId,
+      participantName: winnerData.participantName,
+      participantCompany: winnerData.participantCompany ?? null,
+      participantPhotoUrl: winnerData.participantPhotoUrl ?? null,
+      prizeId: winnerData.prizeId, prizeName: winnerData.prizeName,
+      prizeImageUrl: winnerData.prizeImageUrl ?? null,
+      prizeTier: winnerData.prizeTier,
+      remainingStock: winnerData.remainingStock, startedAt: ts,
+    });
+    this.broadcastDrawEvent(DRAW_EVENTS.STARTED, { ...winnerData, timestamp: ts });
+
+    // Step 2: SPINNING (after 4s)
+    this.drawSequenceTimers.push(setTimeout(() => {
+      if (this.activeDraw.state !== 'COUNTDOWN') return;
+      this.setDrawState({ state: 'SPINNING' });
+      this.broadcastDrawEvent(DRAW_EVENTS.SPINNING, {
+        drawId: winnerData.drawId, participantId: winnerData.participantId,
+        timestamp: new Date().toISOString(),
+      });
+    }, 4000));
+
+    // Step 3: REVEALED (after 8s)
+    this.drawSequenceTimers.push(setTimeout(() => {
+      if (this.activeDraw.state !== 'SPINNING') return;
+      this.setDrawState({ state: 'REVEALED' });
+      this.broadcastDrawEvent(DRAW_EVENTS.WINNER, {
+        ...winnerData, probability: 0, timestamp: new Date().toISOString(),
+      });
+    }, 8000));
+
+    // Step 4: COMPLETED → IDLE (after 14s + 5s)
+    this.drawSequenceTimers.push(setTimeout(() => {
+      if (this.activeDraw.state !== 'REVEALED') return;
+      this.setDrawState({ state: 'COMPLETED' });
+      this.broadcastDrawEvent(DRAW_EVENTS.COMPLETED, {
+        drawId: winnerData.drawId, participantId: winnerData.participantId,
+        prizeId: winnerData.prizeId, prizeName: winnerData.prizeName,
+        remainingStock: winnerData.remainingStock,
+        totalWinners: 0, drawCount: 0,
+        timestamp: new Date().toISOString(),
+      });
+      setTimeout(() => {
+        this.setDrawState({
+          state: 'IDLE', drawId: null, participantId: null,
+          participantName: null, participantCompany: null,
+          participantPhotoUrl: null, prizeId: null, prizeName: null,
+          prizeImageUrl: null, prizeTier: null, remainingStock: null,
+          startedAt: null,
+        });
+        this.releaseDrawLock();
+        logger.info('[Realtime] Draw sequence: IDLE, lock released');
+      }, 5000);
+    }, 14000));
+
+    logger.info('[Realtime] Draw sequence started', { drawId: winnerData.drawId });
+  }
+
+  /** Clear all pending draw sequence timers */
+  private clearDrawTimers(): void {
+    for (const t of this.drawSequenceTimers) clearTimeout(t);
+    this.drawSequenceTimers = [];
   }
 
   /** Broadcast a queue event to all connected clients */

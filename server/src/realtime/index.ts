@@ -13,4 +13,6 @@ export type {
   DrawSpinningPayload,
   DrawWinnerPayload,
   DrawCompletedPayload,
+  DrawState,
+  ActiveDrawState,
 } from './RealtimeService';

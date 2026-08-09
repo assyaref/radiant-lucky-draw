@@ -239,6 +239,14 @@ export class BoothService {
       throw new ValidationError('Peserta sudah pernah mengikuti undian');
     }
 
+    // ─── Draw Lock (prevents double spin) ───────────────────────────
+    if (this.realtimeService) {
+      if (!this.realtimeService.acquireDrawLock()) {
+        throw new ValidationError('Undian sedang berlangsung, silakan tunggu');
+      }
+    }
+
+    try {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Fetch all eligible prizes (active, in stock) inside the transaction.
       const eligiblePrizes = await tx.prize.findMany({
@@ -306,8 +314,21 @@ export class BoothService {
       return { draw, prizeRecord };
     });
 
-    // Broadcast realtime event so the admin dashboard updates automatically.
-    this.broadcastWinner(result.draw, result.prizeRecord, participant);
+    // ─── Start timed draw sequence for Monitor synchronization ───────
+    if (this.realtimeService) {
+      this.realtimeService.startDrawSequence({
+        drawId: result.draw.id,
+        participantId: participant.id,
+        participantName: participant.name,
+        participantCompany: participant.company ?? undefined,
+        participantPhotoUrl: participant.photoUrl ?? undefined,
+        prizeId: result.prizeRecord.id,
+        prizeName: result.prizeRecord.name,
+        prizeImageUrl: result.prizeRecord.imageUrl ?? undefined,
+        prizeTier: result.prizeRecord.tier,
+        remainingStock: result.prizeRecord.remaining - 1,
+      });
+    }
 
     return {
       drawId: result.draw.id,
@@ -320,6 +341,13 @@ export class BoothService {
       remainingStock: result.prizeRecord.remaining - 1,
       timestamp: new Date().toISOString(),
     };
+    } catch (error) {
+      // Release draw lock on any error
+      if (this.realtimeService) {
+        this.realtimeService.releaseDrawLock();
+      }
+      throw error;
+    }
   }
 
   /**
@@ -488,6 +516,31 @@ export class BoothService {
       photoUrl: p.photoUrl,
       registeredAt: p.registeredAt,
       hasPhoto: Boolean(p.photoUrl),
+    };
+  }
+
+  /**
+   * Get the current draw state from the RealtimeService.
+   * Used by monitors for reconnection sync.
+   */
+  getDrawState(): Record<string, unknown> {
+    if (this.realtimeService) {
+      return this.realtimeService.getDrawState();
+    }
+    return {
+      state: 'IDLE',
+      drawId: null,
+      participantId: null,
+      participantName: null,
+      participantCompany: null,
+      participantPhotoUrl: null,
+      prizeId: null,
+      prizeName: null,
+      prizeTier: null,
+      prizeImageUrl: null,
+      remainingStock: null,
+      startedAt: null,
+      lastUpdated: new Date().toISOString(),
     };
   }
 }

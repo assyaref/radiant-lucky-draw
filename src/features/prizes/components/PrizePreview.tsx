@@ -1,5 +1,6 @@
 import type { Prize } from '@/engine/types/prize';
 import { PrizeTier } from '@/engine/types/prize';
+import { normalizeImageUrl } from '@/utils';
 
 interface PrizePreviewProps {
   prize: Prize;
@@ -46,7 +47,7 @@ export function PrizePreview({ prize, compact = false }: PrizePreviewProps) {
           style={{ backgroundColor: `${prize.color}20` }}
         >
           {prize.image ? (
-            <img src={prize.image} alt={prize.name} className="w-full h-full object-cover" />
+            <img src={normalizeImageUrl(prize.image)} alt={prize.name} className="w-full h-full object-cover" />
           ) : (
             <span>🎁</span>
           )}
@@ -80,7 +81,7 @@ export function PrizePreview({ prize, compact = false }: PrizePreviewProps) {
           >
             {prize.image ? (
               <img
-                src={prize.image}
+                src={normalizeImageUrl(prize.image)}
                 alt={prize.name}
                 className="w-full h-full object-cover rounded-2xl"
               />

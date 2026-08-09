@@ -81,4 +81,18 @@ export class BoothController {
       next(error);
     }
   };
+
+  /**
+   * Get current draw state for monitor reconnection.
+   * Returns the active draw state (IDLE, COUNTDOWN, SPINNING, REVEALED, COMPLETED)
+   * so monitors that refresh mid-draw can sync back to the correct state.
+   */
+  getDrawState = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const state = await this.boothService.getDrawState();
+      sendSuccess(res, state);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

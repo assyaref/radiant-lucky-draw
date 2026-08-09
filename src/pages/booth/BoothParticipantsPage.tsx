@@ -22,6 +22,7 @@ import {
 } from 'react-icons/hi2';
 
 import { boothApi, type BoothParticipant } from '@/api/booth';
+import { normalizeImageUrl } from '@/utils';
 
 const claimStatusColors: Record<string, string> = {
   unclaimed: 'bg-warning-500/20 text-warning-400',
@@ -156,7 +157,7 @@ export default function BoothParticipantsPage() {
                     <td className="px-4 py-3">
                       {p.photoUrl ? (
                         <img
-                          src={p.photoUrl}
+                          src={normalizeImageUrl(p.photoUrl)}
                           alt={p.name}
                           className="w-10 h-10 rounded-full object-cover border border-dark-border"
                         />

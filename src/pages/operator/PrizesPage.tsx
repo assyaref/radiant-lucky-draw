@@ -26,6 +26,7 @@ import {
 } from 'react-icons/hi2';
 
 import { prizeApi, type Prize } from '@/api/prize';
+import { normalizeImageUrl } from '@/utils';
 
 const tierColors: Record<string, string> = {
   grand: 'bg-warning-500/20 text-warning-400',
@@ -301,7 +302,7 @@ export default function PrizesPage() {
                     <td className="px-4 py-3">
                       {p.imageUrl ? (
                         <img
-                          src={p.imageUrl}
+                          src={normalizeImageUrl(p.imageUrl)}
                           alt={p.name}
                           className="w-10 h-10 rounded-lg object-cover border border-dark-border"
                         />

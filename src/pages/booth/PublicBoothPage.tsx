@@ -14,6 +14,7 @@ import {
   HiOutlineUsers,
 } from 'react-icons/hi2';
 import { boothApi, type BoothConfig, type SpinResult } from '@/api/booth';
+import { normalizeImageUrl } from '@/utils';
 
 type Step = 'landing' | 'form' | 'camera' | 'preview' | 'ready' | 'spinning' | 'result';
 type CameraFacing = 'user' | 'environment';
@@ -240,7 +241,6 @@ export default function PublicBoothPage() {
     setError('');
     playSpinSound();
     try {
-      await new Promise((r) => setTimeout(r, 2500));
       const res = await boothApi.spin({ participantId });
       setResult(res.data);
       setStep('result');
@@ -357,7 +357,7 @@ export default function PublicBoothPage() {
                       >
                         {p.imageUrl ? (
                           <img
-                            src={p.imageUrl}
+                            src={normalizeImageUrl(p.imageUrl)}
                             alt={p.name}
                             className="w-full h-full object-cover rounded-xl"
                           />
@@ -606,7 +606,7 @@ export default function PublicBoothPage() {
                   disabled={spinning}
                   className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-amber-500/25 transition-all"
                 >
-                  {spinning ? 'Memutar...' : '🎰 MULAI'}
+                  {spinning ? 'Undian sedang berlangsung...' : '🎰 MULAI MEMUTAR UNDIAN'}
                 </button>
               </div>
             </motion.div>
@@ -693,7 +693,7 @@ export default function PublicBoothPage() {
                 >
                   {result.prizeImageUrl ? (
                     <img
-                      src={result.prizeImageUrl}
+                      src={normalizeImageUrl(result.prizeImageUrl)}
                       alt={result.prizeName}
                       className="w-44 h-44 mx-auto mb-4 rounded-2xl object-cover border-2 border-amber-500/30 shadow-xl"
                     />

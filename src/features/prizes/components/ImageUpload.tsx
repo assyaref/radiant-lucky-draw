@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import type { ImageUploadData } from '../types';
+import { normalizeImageUrl } from '@/utils';
 
 interface ImageUploadProps {
   value: ImageUploadData;
@@ -95,7 +96,7 @@ export function ImageUpload({ value, onChange, prizeColor = '#6366f1' }: ImageUp
         {hasImage ? (
           <div className="relative group">
             <img
-              src={value.previewUrl}
+              src={normalizeImageUrl(value.previewUrl)}
               alt="Prize preview"
               className="w-full h-40 object-contain rounded-lg"
             />

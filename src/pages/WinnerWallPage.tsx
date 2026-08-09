@@ -12,6 +12,7 @@ import {
   HiOutlineStar,
 } from 'react-icons/hi2';
 import { useSocketEvent, SOCKET_EVENTS } from '@services/socket';
+import { normalizeImageUrl } from '@/utils';
 
 interface Winner {
   id: string;
@@ -235,7 +236,7 @@ export default function WinnerWallPage() {
                     <div className="flex items-center gap-3 mb-3">
                       {winner.participantPhotoUrl ? (
                         <img
-                          src={winner.participantPhotoUrl}
+                          src={normalizeImageUrl(winner.participantPhotoUrl)}
                           alt={winner.participantName}
                           className="w-12 h-12 rounded-full object-cover border-2 border-dark-border"
                         />
@@ -256,7 +257,7 @@ export default function WinnerWallPage() {
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-dark-surface-tertiary/50">
                       {winner.prizeImageUrl ? (
                         <img
-                          src={winner.prizeImageUrl}
+                          src={normalizeImageUrl(winner.prizeImageUrl)}
                           alt={winner.prizeName}
                           className="w-14 h-14 rounded-lg object-cover"
                         />

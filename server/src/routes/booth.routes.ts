@@ -122,6 +122,9 @@ export function createBoothRoutes(
    */
   router.post('/luckydraw/spin', validate({ body: spinSchema.shape.body }), boothController.spin);
 
+  /** @openapi /api/booth/draw-state: get */
+  router.get('/draw-state', boothController.getDrawState);
+
   // ─── Admin endpoints (auth required) ───────────────────────────────────
 
   router.use(authenticate);

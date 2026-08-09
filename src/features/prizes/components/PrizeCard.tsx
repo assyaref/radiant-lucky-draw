@@ -1,4 +1,5 @@
 import type { Prize } from '@/engine/types/prize';
+import { normalizeImageUrl } from '@/utils';
 
 import { PrizeTier } from '@/engine/types/prize';
 
@@ -101,7 +102,7 @@ export function PrizeCard({
         >
           {prize.image ? (
             <img
-              src={prize.image}
+              src={normalizeImageUrl(prize.image)}
               alt={prize.name}
               className="w-full h-full object-cover rounded-lg"
             />

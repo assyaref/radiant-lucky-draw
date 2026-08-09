@@ -47,6 +47,7 @@ const OperatorAuditLogs = lazy(() => import('@pages/operator/AuditLogsPage'));
 const PublicBoothPage = lazy(() => import('@pages/booth/PublicBoothPage'));
 const BoothWinnersPage = lazy(() => import('@pages/booth/BoothWinnersPage'));
 const WinnerWall = lazy(() => import('@pages/WinnerWallPage'));
+const MonitorPage = lazy(() => import('@pages/monitor/MonitorPage'));
 
 // ─── M3.3 Event Ready Pages ──────────────────────────────────────────
 const EventConfigPage = lazy(() => import('@pages/operator/EventConfigPage'));
@@ -153,6 +154,10 @@ const routes: RouteObject[] = [
   {
     path: '/winner-wall',
     element: <LazyPage Component={WinnerWall} />,
+  },
+  {
+    path: '/monitor',
+    element: <LazyPage Component={MonitorPage} />,
   },
   {
     path: '/booth-kiosk',

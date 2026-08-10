@@ -356,89 +356,333 @@ function SpinningScreen({ participantName }: { participantName?: string | null }
   );
 }
 
-// ─── WINNER Screen ────────────────────────────────────────────────────────
+// ─── Gold Confetti (lightweight CSS) ──────────────────────────────────────
+
+function GoldConfetti({ active }: { active: boolean }) {
+  const flakes = useMemo(
+    () =>
+      Array.from({ length: 40 }, (_, i) => ({
+        id: i,
+        x: (i * 37 + 11) % 100,
+        delay: (i * 0.18) % 3,
+        duration: 2.5 + ((i * 13) % 7) * 0.6,
+        size: 6 + ((i * 17) % 10),
+        rotation: (i * 73) % 360,
+        drift: ((i % 2) * 2 - 1) * (20 + ((i * 23) % 40)),
+        shape: i % 3 === 0 ? 'circle' : i % 3 === 1 ? 'rect' : 'diamond',
+        color:
+          i % 5 === 0
+            ? '#fbbf24'
+            : i % 5 === 1
+              ? '#f59e0b'
+              : i % 5 === 2
+                ? '#fcd34d'
+                : i % 5 === 3
+                  ? '#eab308'
+                  : '#fef3c7',
+      })),
+    [],
+  );
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden z-20" aria-hidden>
+      {active &&
+        flakes.map((f) => (
+          <motion.div
+            key={f.id}
+            className="absolute"
+            style={{
+              left: `${f.x}%`,
+              width: f.size,
+              height: f.shape === 'rect' ? f.size * 0.6 : f.size,
+              borderRadius: f.shape === 'circle' ? '50%' : f.shape === 'diamond' ? '1px' : '1px',
+              background: f.color,
+              rotate: f.rotation,
+              opacity: 0,
+              top: '-5%',
+            }}
+            initial={{ y: '-10%', opacity: 0, rotate: f.rotation }}
+            animate={{
+              y: '110vh',
+              x: f.drift,
+              opacity: [0, 0.9, 0.9, 0.6, 0],
+              rotate: f.rotation + 360,
+            }}
+            transition={{
+              duration: f.duration,
+              delay: f.delay,
+              ease: 'easeIn',
+              repeat: Infinity,
+              repeatDelay: 0.5,
+            }}
+          />
+        ))}
+    </div>
+  );
+}
+
+// ─── Progress Timeline ───────────────────────────────────────────────────
+
+function ProgressTimeline({ state }: { state: DrawState }) {
+  const steps: { key: DrawState; label: string; icon: string }[] = [
+    { key: 'COUNTDOWN', label: 'COUNTDOWN', icon: '⏱' },
+    { key: 'SPINNING', label: 'SPINNING', icon: '🎰' },
+    { key: 'REVEALED', label: 'REVEAL', icon: '✨' },
+    { key: 'COMPLETED', label: 'COMPLETED', icon: '🏆' },
+  ];
+  const order: DrawState[] = ['IDLE', 'COUNTDOWN', 'SPINNING', 'REVEALED', 'COMPLETED'];
+  const currentIdx = order.indexOf(state);
+  return (
+    <div className="flex items-center gap-1">
+      {steps.map((s, i) => {
+        const stepIdx = order.indexOf(s.key);
+        const isActive = stepIdx <= currentIdx && currentIdx >= order.indexOf('COUNTDOWN');
+        const isCurrent = s.key === state;
+        return (
+          <div key={s.key} className="flex items-center">
+            {i > 0 && (
+              <div
+                className={`w-8 h-0.5 rounded-full transition-colors duration-500 ${isActive ? 'bg-amber-400/60 shadow-[0_0_6px_rgba(251,191,36,0.4)]' : 'bg-white/10'}`}
+              />
+            )}
+            <motion.div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-semibold tracking-wider uppercase transition-colors duration-500 ${
+                isActive
+                  ? 'bg-amber-400/10 text-amber-300 border border-amber-400/30'
+                  : 'bg-transparent text-white/15 border border-white/5'
+              } ${isCurrent ? 'shadow-[0_0_12px_rgba(251,191,36,0.3)]' : ''}`}
+              animate={isCurrent ? { scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] } : {}}
+              transition={isCurrent ? { repeat: Infinity, duration: 2 } : {}}
+            >
+              <span>{isActive ? '✓' : s.icon}</span>
+              <span>{s.label}</span>
+            </motion.div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Tier Badge ──────────────────────────────────────────────────────────
+
+function TierBadge({ prizeTier }: { prizeTier: string | null }) {
+  if (!prizeTier) return null;
+  const t = tier(prizeTier);
+  return (
+    <motion.span
+      className={`inline-flex items-center gap-1 px-4 py-1 rounded-full text-xs font-black tracking-widest border ${t.text} bg-gradient-to-r ${t.bg} border-current/20`}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.9, type: 'spring', stiffness: 200 }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-current shadow-[0_0_6px_currentColor]" />
+      {prizeTier.toUpperCase()}
+    </motion.span>
+  );
+}
+
+// ─── WINNER Screen (PREMIUM REDESIGN) ────────────────────────────────────
 
 function WinnerReveal({ data, done }: { data: DrawData; done: boolean }) {
   const t = tier(data.prizeTier);
+  const photoUrl = normalizeImageUrl(data.participantPhotoUrl);
+  const prizeUrl = normalizeImageUrl(data.prizeImageUrl);
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full px-8">
+    <div className="flex flex-col items-center justify-center h-full w-full px-6 md:px-10">
       <motion.div
         className="pointer-events-none absolute inset-0"
-        animate={{ opacity: [0.25, 0.6, 0.25] }}
-        transition={{ repeat: Infinity, duration: 2.5 }}
+        animate={{ opacity: [0.3, 0.6, 0.3] }}
+        transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
       >
         <div
           className="h-full w-full blur-3xl"
           style={{
-            background: `radial-gradient(ellipse at center, ${t.glow} 0%, transparent 60%)`,
+            background: `radial-gradient(ellipse 60% 50% at 50% 40%, rgba(234,179,8,0.18) 0%, rgba(251,191,36,0.08) 30%, ${t.glow} 50%, transparent 70%)`,
           }}
         />
       </motion.div>
-      <div className="z-10 flex flex-col items-center max-w-3xl w-full gap-4">
+      <GoldConfetti active />
+      <div className="z-10 flex flex-col items-center max-w-4xl w-full gap-5">
+        {/* HEADER */}
         <motion.div
-          className="rounded-full border border-amber-400/40 bg-amber-400/[0.06] px-10 py-3"
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ type: 'spring', stiffness: 180, damping: 14 }}
+          className="text-center"
+          initial={{ opacity: 0, y: -40, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          <span className="text-xl md:text-2xl font-black tracking-[0.3em] text-amber-300 uppercase">
-            🏆 {done ? 'PEMENANG' : 'MEMENANGKAN...'}
-          </span>
+          <h1
+            className="text-[clamp(2.5rem,7vw,5.5rem)] font-black leading-none tracking-tight"
+            style={{
+              backgroundImage: 'linear-gradient(180deg, #fef3c7 0%, #f59e0b 40%, #d97706 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            🎉 SELAMAT! 🎉
+          </h1>
+          <motion.p
+            className="text-[clamp(0.75rem,1.5vw,1.1rem)] font-bold tracking-[0.4em] uppercase text-amber-300/80 mt-1"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.5, 0.9, 0.5] }}
+            transition={{ delay: 0.3, repeat: Infinity, duration: 2.5 }}
+          >
+            PEMENANG LUCKY DRAW
+          </motion.p>
         </motion.div>
+        {/* PHOTO */}
         <motion.div
-          initial={{ scale: 0, rotate: -15 }}
+          className="relative"
+          initial={{ scale: 0, rotate: -20 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: 'spring', stiffness: 130, damping: 11, delay: 0.1 }}
+          transition={{ delay: 0.15, type: 'spring', stiffness: 100, damping: 12 }}
         >
-          {data.participantPhotoUrl ? (
-            <img
-              src={normalizeImageUrl(data.participantPhotoUrl)}
-              alt={data.participantName ?? 'Winner'}
-              className="w-44 h-44 md:w-56 md:h-56 rounded-full object-cover border-4 border-amber-400/25 shadow-[0_0_80px_rgba(251,191,36,0.15)]"
-            />
-          ) : (
-            <div className="w-44 h-44 md:w-56 md:h-56 rounded-full bg-gradient-to-br from-primary-500/20 to-secondary-500/20 border-4 border-amber-400/25 flex items-center justify-center text-8xl shadow-[0_0_80px_rgba(251,191,36,0.1)]">
+          <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-amber-400/20 via-amber-500/10 to-yellow-500/20 blur-2xl" />
+          <div className="absolute -inset-3 rounded-full border-2 border-amber-400/20 shadow-[0_0_60px_rgba(251,191,36,0.2)]" />
+          <div
+            className="absolute -inset-1.5 rounded-full"
+            style={{
+              background: 'conic-gradient(from 0deg, #fbbf24, #f59e0b, #d97706, #fbbf24)',
+              opacity: 0.6,
+              filter: 'blur(2px)',
+            }}
+          />
+          <div className="relative w-[clamp(8rem,18vw,12rem)] h-[clamp(8rem,18vw,12rem)] rounded-full border-[3px] border-amber-400/40 overflow-hidden shadow-[0_0_80px_rgba(251,191,36,0.25),0_0_160px_rgba(251,191,36,0.1)]">
+            {photoUrl ? (
+              <img
+                src={photoUrl}
+                alt={data.participantName ?? 'Winner'}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const el = e.target as HTMLImageElement;
+                  el.style.display = 'none';
+                  el.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div
+              className={`w-full h-full rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-[clamp(3rem,8vw,5rem)] ${photoUrl ? 'hidden' : ''}`}
+            >
               👤
             </div>
-          )}
+          </div>
+          <motion.div
+            className="absolute -inset-4 rounded-full border border-amber-400/15"
+            animate={{ scale: [1, 1.06, 1], opacity: [0.4, 0, 0.4] }}
+            transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+          />
         </motion.div>
-        <motion.h1
-          className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-white text-center"
-          initial={{ opacity: 0, y: 40 }}
+        {/* NAME RIBBON */}
+        <motion.div
+          className="relative"
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, type: 'spring', stiffness: 130, damping: 12 }}
+          transition={{ delay: 0.35, type: 'spring', stiffness: 120, damping: 12 }}
         >
-          {data.participantName ?? '—'}
-        </motion.h1>
+          <div className="relative px-10 py-3 overflow-hidden">
+            <div
+              className="absolute inset-0 opacity-15"
+              style={{
+                background:
+                  'linear-gradient(135deg, #fbbf24 0%, #f59e0b 25%, #d97706 50%, #f59e0b 75%, #fbbf24 100%)',
+              }}
+            />
+            <h2 className="relative text-[clamp(1.8rem,5vw,4rem)] font-black tracking-tight text-white text-center drop-shadow-[0_2px_12px_rgba(251,191,36,0.4)]">
+              {data.participantName ?? '—'}
+            </h2>
+          </div>
+          <div className="h-0.5 mx-6 rounded-full bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
+        </motion.div>
+        {/* COMPANY */}
         {data.participantCompany && (
           <motion.p
-            className="text-xl md:text-2xl text-white/35 font-light"
+            className="text-[clamp(0.8rem,1.3vw,1rem)] text-white/30 font-medium tracking-[0.15em] uppercase -mt-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.5 }}
           >
             {data.participantCompany}
           </motion.p>
         )}
+        {/* PRIZE CARD */}
         <motion.div
-          className={`rounded-3xl border border-white/10 bg-gradient-to-br ${t.bg} px-10 py-6 flex flex-col items-center gap-2`}
-          initial={{ opacity: 0, scale: 0.75 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.55, type: 'spring', stiffness: 130, damping: 12 }}
+          className="relative"
+          initial={{ opacity: 0, scale: 0.85, y: 40 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.6, type: 'spring', stiffness: 100, damping: 14 }}
         >
-          {data.prizeImageUrl ? (
-            <img
-              src={normalizeImageUrl(data.prizeImageUrl)}
-              alt={data.prizeName ?? 'Prize'}
-              className="w-28 h-28 rounded-2xl object-cover border border-white/10 shadow-lg"
-            />
-          ) : (
-            <span className="text-6xl">🎁</span>
+          <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-amber-500/15 via-transparent to-amber-500/10 blur-2xl" />
+          <div className="relative rounded-3xl border border-white/[0.08] bg-gradient-to-br from-white/[0.04] via-white/[0.02] to-white/[0.01] backdrop-blur-xl px-8 md:px-12 py-6 flex flex-col items-center gap-4 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
+            <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
+            <div className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent" />
+            <motion.p
+              className="text-[clamp(0.7rem,1vw,0.85rem)] font-bold tracking-[0.35em] uppercase text-amber-300/60"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+            >
+              MENDAPATKAN
+            </motion.p>
+            <motion.div
+              className="relative"
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.85, type: 'spring', stiffness: 150, damping: 12 }}
+            >
+              <div className="absolute -inset-2 rounded-2xl bg-amber-400/10 blur-xl" />
+              {prizeUrl ? (
+                <img
+                  src={prizeUrl}
+                  alt={data.prizeName ?? 'Prize'}
+                  className="relative w-[clamp(4rem,8vw,6rem)] h-[clamp(4rem,8vw,6rem)] rounded-2xl object-contain border border-white/10 shadow-xl"
+                />
+              ) : (
+                <div className="relative w-[clamp(4rem,8vw,6rem)] h-[clamp(4rem,8vw,6rem)] rounded-2xl bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border border-white/10 flex items-center justify-center text-[clamp(2rem,4vw,3rem)] shadow-xl">
+                  🎁
+                </div>
+              )}
+            </motion.div>
+            <motion.h3
+              className={`text-[clamp(1.5rem,4vw,2.8rem)] font-black text-center leading-tight ${t.text}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              {data.prizeName ?? '—'}
+            </motion.h3>
+            <TierBadge prizeTier={data.prizeTier} />
+          </div>
+        </motion.div>
+        {/* DRAW INFO */}
+        <motion.div
+          className="flex items-center gap-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2 }}
+        >
+          {data.drawId && (
+            <span className="text-white/15 text-[clamp(0.6rem,0.8vw,0.7rem)] font-mono tracking-wider">
+              DRAW ID: {data.drawId.slice(0, 12).toUpperCase()}
+            </span>
           )}
-          <p className={`text-3xl md:text-4xl font-black ${t.text}`}>{data.prizeName ?? '—'}</p>
-          <span className="text-white/25 text-sm font-bold tracking-widest uppercase">
-            {data.prizeTier ?? ''}
+          <span className="text-white/10">•</span>
+          <span className="text-white/15 text-[clamp(0.6rem,0.8vw,0.7rem)] font-mono tracking-wider">
+            {data.startedAt
+              ? new Date(data.startedAt).toLocaleTimeString('id-ID', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })
+              : ''}
           </span>
+        </motion.div>
+        {/* PROGRESS */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.4 }}
+        >
+          <ProgressTimeline state={done ? 'COMPLETED' : 'REVEALED'} />
         </motion.div>
       </div>
     </div>

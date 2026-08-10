@@ -13,9 +13,9 @@
 // ─── Production Defaults ────────────────────────────────────────────────
 // Single source of truth for the deployed backend. These are used ONLY as
 // a fallback when the corresponding VITE_ variable is not set at build time.
-const PRODUCTION_API_URL = 'https://radiant-lucky-draw-production.up.railway.app';
-const PRODUCTION_SOCKET_URL = 'wss://radiant-lucky-draw-production.up.railway.app';
-const PRODUCTION_PUBLIC_URL = 'https://radiant-lucky-draw-production.up.railway.app';
+const PRODUCTION_API_URL = 'https://radiant-lucky-draw.vercel.app';
+const PRODUCTION_SOCKET_URL = 'https://radiant-lucky-draw.vercel.app';
+const PRODUCTION_PUBLIC_URL = 'https://radiant-lucky-draw.vercel.app';
 
 // ─── API Base URL Normalization ─────────────────────────────────────────
 // The backend mounts every route under the `/api` prefix (e.g. `/api/auth/login`).

@@ -37,6 +37,7 @@ export const SOCKET_EVENTS = {
   DRAW_STARTED: 'draw:started',
   DRAW_WINNER: 'draw:winner',
   DRAW_COMPLETED: 'draw:completed',
+  DRAW_STATE_SYNC: 'draw:state-sync',
 
   // Winner events
   WINNER_ANNOUNCE: 'winner:announce',
@@ -71,6 +72,7 @@ export const EVENT_VERSIONS: Record<SocketEventName, string> = {
   [SOCKET_EVENTS.DRAW_STARTED]: '1.0.0',
   [SOCKET_EVENTS.DRAW_WINNER]: '1.0.0',
   [SOCKET_EVENTS.DRAW_COMPLETED]: '1.0.0',
+  [SOCKET_EVENTS.DRAW_STATE_SYNC]: '1.0.0',
   [SOCKET_EVENTS.WINNER_ANNOUNCE]: '1.0.0',
 
   [SOCKET_EVENTS.DASHBOARD_UPDATE]: '1.0.0',

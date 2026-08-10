@@ -265,8 +265,14 @@ export class SocketService {
       this.listeners.set(event, new Set());
     }
 
-    const wrappedCallback = (envelope: SocketEventEnvelope<T>) => {
-      callback(envelope.payload);
+    // NOTE: The backend broadcasts flat payloads (e.g. { drawId, participantName, ... }),
+    // NOT SocketEventEnvelope-wrapped objects. We pass the raw data through directly so that
+    // consumers receive the same shape the backend emitted.
+    // For frontend-emitted messages that DO wrap in SocketEventEnvelope, consumers should
+    // unwrap .payload themselves if needed — but in this architecture all realtime events
+    // originate from the backend and arrive as flat objects.
+    const wrappedCallback = (...args: unknown[]) => {
+      callback(args[0] as T);
     };
 
     this.listeners.get(event)!.add(wrappedCallback as (...args: unknown[]) => void);

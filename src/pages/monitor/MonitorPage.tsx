@@ -482,12 +482,32 @@ export default function MonitorPage() {
     }
   }, []);
 
-  // ─── Socket events ──────────────────────────────────────────────────
+  // ─── Socket connection diagnostics ──────────────────────────────────
+  useEffect(() => {
+    console.log('[Monitor] API URL:', env.API_BASE_URL);
+    console.log('[Monitor] Socket URL:', env.SOCKET_URL);
+  }, []);
+
+  useEffect(() => {
+    console.log('[Monitor] Socket status:', isConnected ? 'CONNECTED' : 'OFFLINE');
+  }, [isConnected]);
+
+  useEffect(() => {
+    if (isConnected) {
+      console.log('[Monitor] Socket CONNECTED');
+    }
+  }, [isConnected]);
   useSocketEvent(
     SOCKET_EVENTS.DRAW_STARTED as SocketEventName,
     useCallback(
       (p: any) => {
         if (!p) return;
+        console.log('[Monitor] draw:started', {
+          drawId: p.drawId,
+          participantName: p.participantName,
+          prizeName: p.prizeName,
+          prizeId: p.prizeId,
+        });
         setDrawData({
           state: 'COUNTDOWN',
           drawId: p.drawId ?? null,
@@ -514,6 +534,10 @@ export default function MonitorPage() {
     useCallback(
       (p: any) => {
         stopCountdown();
+        console.log('[Monitor] draw:spinning', {
+          participantName: p?.participantName,
+          prizeName: p?.prizeName,
+        });
         // Merge any new participant data from spinning payload if present
         if (p && (p.participantName || p.prizeName)) {
           setDrawData((prev) => {
@@ -539,6 +563,12 @@ export default function MonitorPage() {
       (p: any) => {
         if (!p) return;
         stopCountdown();
+        console.log('[Monitor] draw:winner', {
+          drawId: p.drawId,
+          participantName: p.participantName,
+          prizeName: p.prizeName,
+          prizeId: p.prizeId,
+        });
         setDrawData((prev) => {
           const base = prev ?? {
             state: 'REVEALED' as DrawState,
@@ -576,6 +606,7 @@ export default function MonitorPage() {
     useCallback(
       (p: any) => {
         stopCountdown();
+        console.log('[Monitor] draw:completed', { drawId: p?.drawId });
         const drawId = p?.drawId;
         setDrawState('COMPLETED');
         // Guard: only clear if the drawId hasn't changed (no new draw started)
@@ -597,9 +628,14 @@ export default function MonitorPage() {
   }, [isConnected, emit]);
 
   useSocketEvent(
-    'draw:state-sync' as SocketEventName,
+    SOCKET_EVENTS.DRAW_STATE_SYNC as SocketEventName,
     useCallback(
       (st: any) => {
+        console.log('[Monitor] draw:state-sync', {
+          state: st?.state,
+          participantName: st?.participantName,
+          prizeName: st?.prizeName,
+        });
         if (!st?.state || st.state === 'IDLE') return;
         setDrawData({
           state: st.state ?? 'IDLE',

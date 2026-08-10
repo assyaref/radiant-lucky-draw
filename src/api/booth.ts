@@ -129,7 +129,11 @@ export const boothApi = {
 
   /** Get all prizes with stock for Monitor (public) */
   getMonitorPrizes: () =>
-    api.get<ApiEnvelope<Array<{ id: string; name: string; imageUrl?: string; tier: string; remaining: number }>>>('/booth/monitor-prizes'),
+    api.get<
+      ApiEnvelope<
+        Array<{ id: string; name: string; imageUrl?: string; tier: string; remaining: number }>
+      >
+    >('/booth/monitor-prizes'),
 
   /** Get winner history for Monitor (public) */
   getPublicWinners: (limit?: number) => {

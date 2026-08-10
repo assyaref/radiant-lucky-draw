@@ -535,7 +535,9 @@ export class BoothService {
    * Get all prizes with stock info for the Monitor display.
    * Public endpoint — no auth required.
    */
-  async getMonitorPrizes(): Promise<Array<{ id: string; name: string; imageUrl?: string; tier: string; remaining: number }>> {
+  async getMonitorPrizes(): Promise<
+    Array<{ id: string; name: string; imageUrl?: string; tier: string; remaining: number }>
+  > {
     const prizes = await this.prizeRepository.findActive();
     return prizes.map((p) => ({
       id: p.id,

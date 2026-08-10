@@ -12,6 +12,7 @@ import type { SocketEventName } from '@services/socket';
 import { env } from '@config/env';
 import { normalizeImageUrl } from '@/utils';
 import { boothApi, type Winner } from '@/api/booth';
+import radiantGroupLogo from '@assets/images/radiant-group-logo.png';
 
 type DrawState = 'IDLE' | 'COUNTDOWN' | 'SPINNING' | 'REVEALED' | 'COMPLETED';
 interface DrawData {
@@ -126,18 +127,18 @@ function PrizeListPanel({
 }) {
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.05]">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.05] backdrop-blur-sm">
         <span className="text-lg">{String.fromCodePoint(0x1f381)}</span>
-        <h3 className="text-white/25 text-xs font-bold tracking-[0.25em] uppercase">HADIAH</h3>
+        <h3 className="text-white/30 text-xs font-bold tracking-[0.25em] uppercase">HADIAH</h3>
         <span className="ml-auto text-white/10 text-[10px] font-mono">{prizes.length} item</span>
       </div>
       <div
-        className="flex-1 overflow-y-auto px-3 py-2 space-y-2"
+        className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5"
         style={{ scrollbarWidth: 'thin' }}
       >
         {prizes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-white/10">
-            <span className="text-5xl">{String.fromCodePoint(0x1f381)}</span>
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-white/10">
+            <span className="text-6xl">{String.fromCodePoint(0x1f381)}</span>
             <p className="text-xs tracking-widest uppercase">BELUM ADA HADIAH</p>
           </div>
         ) : (
@@ -151,61 +152,62 @@ function PrizeListPanel({
                 key={p.id}
                 layout
                 className={
-                  'relative flex items-center gap-3 p-2.5 rounded-xl border transition-all ' +
+                  'relative flex items-center gap-3.5 p-3 rounded-2xl border transition-all ' +
                   (isActive
-                    ? 'border-amber-400/40 bg-amber-400/[0.06]'
+                    ? 'border-amber-400/50 bg-gradient-to-r from-amber-500/[0.08] to-yellow-500/[0.04] shadow-[0_0_30px_rgba(251,191,36,0.12)]'
                     : soldOut
                       ? 'border-white/[0.03] bg-white/[0.01] opacity-50'
-                      : 'border-white/[0.04] bg-white/[0.015]')
+                      : 'border-white/[0.05] bg-white/[0.02] hover:border-white/[0.08]')
                 }
                 animate={
                   isActive
                     ? {
                         boxShadow: [
-                          '0 0 15px rgba(251,191,36,0.08)',
-                          '0 0 30px rgba(251,191,36,0.18)',
-                          '0 0 15px rgba(251,191,36,0.08)',
+                          '0 0 20px rgba(251,191,36,0.1)',
+                          '0 0 40px rgba(251,191,36,0.22)',
+                          '0 0 20px rgba(251,191,36,0.1)',
                         ],
                       }
                     : {}
                 }
-                transition={{ repeat: Infinity, duration: 2 }}
+                transition={{ repeat: Infinity, duration: 2.2 }}
               >
                 {isActive && (
-                  <div className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-amber-500 text-[9px] font-bold text-black tracking-wider z-10">
-                    AKTIF
+                  <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-amber-500 text-[9px] font-bold text-black tracking-wider z-10 shadow-[0_0_12px_rgba(251,191,36,0.4)]">
+                    SEDANG DIUNDI
                   </div>
                 )}
-                <div className="w-10 h-10 rounded-lg overflow-hidden bg-white/[0.03] flex-shrink-0 flex items-center justify-center border border-white/[0.04]">
+                <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/[0.04] flex-shrink-0 flex items-center justify-center border border-white/[0.06] shadow-[0_0_15px_rgba(0,0,0,0.3)]">
                   {imgUrl ? (
                     <img
                       src={imgUrl}
                       alt={p.name}
-                      className="w-full h-full object-contain p-0.5"
+                      className="w-full h-full object-contain p-1"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}
                     />
                   ) : (
-                    <span className="text-white/15 text-sm">{String.fromCodePoint(0x1f381)}</span>
+                    <span className="text-white/20 text-xl">{String.fromCodePoint(0x1f381)}</span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white/80 text-xs font-semibold truncate">{p.name}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={'text-[10px] font-medium ' + t.text}>
+                  <p className="text-white/85 text-xs font-semibold truncate leading-tight">
+                    {p.name}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={'text-[10px] font-bold ' + t.text}>
                       {p.tier.toUpperCase()}
+                    </span>
+                    <span
+                      className={
+                        'text-[10px] font-mono ' + (soldOut ? 'text-red-400/60' : 'text-white/25')
+                      }
+                    >
+                      {soldOut ? 'HABIS' : 'Stok: ' + p.remaining}
                     </span>
                   </div>
                 </div>
-                <span
-                  className={
-                    'text-[10px] font-mono flex-shrink-0 ' +
-                    (soldOut ? 'text-red-400/50' : 'text-white/25')
-                  }
-                >
-                  {soldOut ? 'HABIS' : 'Stok: ' + p.remaining}
-                </span>
               </motion.div>
             );
           })
@@ -241,8 +243,18 @@ function CenterPanel({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8 }}
           >
+            <motion.div
+              className="pointer-events-none absolute inset-0"
+              animate={{ opacity: [0.08, 0.18, 0.08] }}
+              transition={{ repeat: Infinity, duration: 4 }}
+            >
+              <div className="h-full w-full bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.15)_0%,rgba(139,92,246,0.06)_35%,transparent_65%)]" />
+            </motion.div>
+            <p className="text-white/15 text-sm md:text-base font-light tracking-[0.3em] uppercase z-10">
+              RADIANT GROUP
+            </p>
             <h1
-              className="text-[clamp(2.5rem,6vw,5rem)] font-black tracking-tight text-center leading-none"
+              className="text-[clamp(2.5rem,6vw,5rem)] font-black tracking-tight text-center leading-none z-10"
               style={{
                 backgroundImage: 'linear-gradient(135deg,#3b82f6,#8b5cf6,#f59e0b)',
                 WebkitBackgroundClip: 'text',
@@ -344,18 +356,18 @@ function CenterPanel({
 function WinnerListPanel({ winners }: { winners: WinnerEntry[] }) {
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.05]">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.05] backdrop-blur-sm">
         <span className="text-lg">{String.fromCodePoint(0x1f3c6)}</span>
-        <h3 className="text-white/25 text-xs font-bold tracking-[0.25em] uppercase">PEMENANG</h3>
+        <h3 className="text-white/30 text-xs font-bold tracking-[0.25em] uppercase">PEMENANG</h3>
         <span className="ml-auto text-white/10 text-[10px] font-mono">{winners.length} orang</span>
       </div>
       <div
-        className="flex-1 overflow-y-auto px-3 py-2 space-y-2"
+        className="flex-1 overflow-y-auto px-3 py-3 space-y-2.5"
         style={{ scrollbarWidth: 'thin' }}
       >
         {winners.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-white/10">
-            <span className="text-5xl">{String.fromCodePoint(0x1f3c6)}</span>
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-white/10">
+            <span className="text-6xl">{String.fromCodePoint(0x1f3c6)}</span>
             <p className="text-xs tracking-widest uppercase">BELUM ADA PEMENANG</p>
           </div>
         ) : (
@@ -372,20 +384,53 @@ function WinnerListPanel({ winners }: { winners: WinnerEntry[] }) {
                   : i === 2
                     ? String.fromCodePoint(0x1f949)
                     : String.fromCodePoint(0x2b50);
+            const isLatest = i === 0;
             return (
               <motion.div
                 key={w.drawId}
                 initial={i < 3 ? { opacity: 0, x: 30 } : false}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05, duration: 0.3 }}
+                animate={
+                  isLatest
+                    ? {
+                        opacity: 1,
+                        x: 0,
+                        boxShadow: [
+                          '0 0 15px rgba(251,191,36,0.06)',
+                          '0 0 35px rgba(251,191,36,0.15)',
+                          '0 0 15px rgba(251,191,36,0.06)',
+                        ],
+                      }
+                    : { opacity: 1, x: 0 }
+                }
+                transition={
+                  isLatest
+                    ? {
+                        delay: i * 0.05,
+                        duration: 0.35,
+                        boxShadow: { repeat: Infinity, duration: 2.5 },
+                      }
+                    : { delay: i * 0.05, duration: 0.35 }
+                }
                 className={
-                  'relative flex items-center gap-3 p-2.5 rounded-xl border ' +
-                  (i === 0
-                    ? 'border-amber-400/25 bg-amber-400/[0.04]'
-                    : 'border-white/[0.04] bg-white/[0.015]')
+                  'relative flex items-center gap-3.5 p-3 rounded-2xl border transition-all ' +
+                  (isLatest
+                    ? 'border-amber-400/40 bg-gradient-to-r from-amber-500/[0.06] to-yellow-500/[0.03] shadow-[0_0_25px_rgba(251,191,36,0.1)]'
+                    : 'border-white/[0.05] bg-white/[0.02] hover:border-white/[0.08]')
                 }
               >
-                <div className="w-9 h-9 rounded-full overflow-hidden bg-white/[0.03] flex-shrink-0 flex items-center justify-center border border-white/[0.06]">
+                {isLatest && (
+                  <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 text-[9px] font-bold text-black tracking-wider z-10 shadow-[0_0_12px_rgba(251,191,36,0.4)]">
+                    PEMENANG
+                  </div>
+                )}
+                <div
+                  className={
+                    'relative w-14 h-14 flex-shrink-0 rounded-full overflow-hidden flex items-center justify-center ' +
+                    (isLatest
+                      ? 'ring-2 ring-amber-400/40 shadow-[0_0_20px_rgba(251,191,36,0.2)]'
+                      : 'border-2 border-white/[0.06]')
+                  }
+                >
                   {photoUrl ? (
                     <img
                       src={photoUrl}
@@ -396,17 +441,19 @@ function WinnerListPanel({ winners }: { winners: WinnerEntry[] }) {
                       }}
                     />
                   ) : (
-                    <span className="text-white/15 text-xs">{medal}</span>
+                    <span className="text-white/20 text-base">{medal}</span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white/85 text-xs font-semibold truncate">
+                  <p className="text-white/90 text-xs font-bold truncate leading-tight">
                     {w.participantName}
                   </p>
-                  <p className="text-white/30 text-[10px] truncate">{w.participantCompany}</p>
-                  <p className={'text-[9px] font-medium mt-0.5 ' + t.text}>{w.prizeName}</p>
+                  <p className="text-white/35 text-[10px] truncate mt-0.5">
+                    {w.participantCompany}
+                  </p>
+                  <p className={'text-[10px] font-semibold mt-1 ' + t.text}>{w.prizeName}</p>
                 </div>
-                <span className="text-white/10 text-[10px] flex-shrink-0">{medal}</span>
+                <span className="text-white/10 text-sm flex-shrink-0 ml-1">{medal}</span>
               </motion.div>
             );
           })
@@ -1012,17 +1059,17 @@ export default function MonitorPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#070b1a] via-[#020617] to-[#060a18]" />
       <ParticleField />
 
-      {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-6 md:px-10 py-3 border-b border-white/[0.04] bg-gradient-to-b from-[#020617cc] to-transparent">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-            <span className="text-white font-black text-base">R</span>
-          </div>
-          <span className="text-white/35 text-sm font-semibold tracking-widest uppercase">
-            RADIANT GROUP
-          </span>
-          <span className="text-white/10 text-xs font-mono ml-2 hidden sm:inline">LUCKY DRAW</span>
-        </div>
+      <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-6 md:px-10 py-4 border-b border-white/[0.04] bg-gradient-to-b from-[#020617cc] to-transparent">
+        <img
+          src={radiantGroupLogo}
+          alt="Radiant Group"
+          className="object-contain"
+          style={{
+            width: 'clamp(140px, 10vw, 220px)',
+            height: 'auto',
+            filter: 'drop-shadow(0 0 12px rgba(59,130,246,0.12))',
+          }}
+        />
         <div className="flex items-center gap-4">
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${isConnected ? 'bg-success-500/10 text-success-400' : 'bg-danger-500/10 text-danger-400'}`}

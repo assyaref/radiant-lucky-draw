@@ -160,24 +160,34 @@ export class BoothService {
     }
 
     const queueNumber = await this.participantRepository.getNextQueueNumber();
-    const participant = await this.participantRepository.create({
-      name: data.name,
-      email: '',
-      phone: normalizedPhone,
-      company: data.company,
-      queueNumber,
-      status: 'registered',
-      claimStatus: 'unclaimed',
-      registeredAt: new Date().toISOString(),
-    });
+    try {
+      const participant = await this.participantRepository.create({
+        name: data.name,
+        email: '',
+        phone: normalizedPhone,
+        company: data.company,
+        queueNumber,
+        status: 'registered',
+        claimStatus: 'unclaimed',
+        registeredAt: new Date().toISOString(),
+      });
 
-    logger.info('[Booth] Participant registered', {
-      participantId: participant.id,
-      name: participant.name,
-      queueNumber: participant.queueNumber,
-    });
+      logger.info('[Booth] Participant registered', {
+        participantId: participant.id,
+        name: participant.name,
+        queueNumber: participant.queueNumber,
+      });
 
-    return this.toParticipantResponse(participant);
+      return this.toParticipantResponse(participant);
+    } catch (error: any) {
+      // Handle Prisma unique constraint violation (P2002) on phone field
+      // This can happen during a race condition where two concurrent
+      // registrations submit the same phone number simultaneously.
+      if (error?.code === 'P2002') {
+        throw new ConflictError('Nomor WhatsApp sudah terdaftar');
+      }
+      throw error;
+    }
   }
 
   /**

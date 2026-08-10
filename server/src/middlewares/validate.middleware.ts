@@ -34,7 +34,10 @@ export function validate(schemas: ValidationSchemas) {
           path: e.path.join('.'),
           message: e.message,
         }));
-        throw new ValidationError('Validation failed', details);
+        // Use the first error's message as the primary message for
+        // easier client-side pattern matching (e.g. "whatsapp: Format tidak valid")
+        const primaryMessage = error.errors[0]?.message ?? 'Validation failed';
+        throw new ValidationError(primaryMessage, details);
       }
       next(error);
     }

@@ -18,11 +18,18 @@ export const createBoothParticipantSchema = z.object({
       .max(100, 'Perusahaan maksimal 100 karakter'),
     whatsapp: z
       .string()
-      .min(8, 'Nomor WhatsApp minimal 8 karakter')
-      .max(20, 'Nomor WhatsApp maksimal 20 karakter')
-      .regex(/^[+]?[\d\s()-]+$/, 'Format nomor WhatsApp tidak valid')
-      .optional()
-      .or(z.literal('')),
+      .transform((val) => val.trim())
+      .pipe(
+        z.union([
+          z.string().length(0),
+          z
+            .string()
+            .min(8, 'Nomor WhatsApp minimal 8 karakter')
+            .max(20, 'Nomor WhatsApp maksimal 20 karakter')
+            .regex(/^[+]?[\d\s()-]+$/, 'Format nomor WhatsApp tidak valid'),
+        ]),
+      )
+      .optional(),
   }),
 });
 

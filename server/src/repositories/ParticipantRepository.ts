@@ -24,9 +24,13 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
       company: record.company ?? '',
       queueNumber: record.queueNumber ?? '',
       status: record.status,
-      registeredAt: record.registeredAt.toISOString(),
-      calledAt: record.calledAt ? record.calledAt.toISOString() : undefined,
-      completedAt: record.completedAt ? record.completedAt.toISOString() : undefined,
+      registeredAt:
+        record.registeredAt instanceof Date
+          ? record.registeredAt.toISOString()
+          : new Date().toISOString(),
+      calledAt: record.calledAt instanceof Date ? record.calledAt.toISOString() : undefined,
+      completedAt:
+        record.completedAt instanceof Date ? record.completedAt.toISOString() : undefined,
       photoUrl: record.photoUrl ?? undefined,
       prizeId: record.prizeId ?? undefined,
       claimStatus: record.claimStatus ?? 'unclaimed',
@@ -72,11 +76,13 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
   async findByPhone(phone: string): Promise<Participant | null> {
     const normalized = normalizeWhatsApp(phone);
     if (!normalized) return null;
-    const records = await this.model.findMany({
-      where: { deletedAt: null },
+    const record = await this.model.findFirst({
+      where: {
+        deletedAt: null,
+        phone: normalized,
+      },
     });
-    const match = records.find((r: any) => normalizeWhatsApp(r.phone ?? '') === normalized);
-    return match ? this.toEntity(match) : null;
+    return record ? this.toEntity(record) : null;
   }
 
   async count(): Promise<number> {

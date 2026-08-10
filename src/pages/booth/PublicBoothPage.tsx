@@ -145,14 +145,17 @@ export default function PublicBoothPage() {
         if (
           msg.includes('whatsapp') ||
           msg.includes('WhatsApp') ||
-          msg.includes('sudah terdaftar')
+          msg.includes('sudah terdaftar') ||
+          msg.includes('Format nomor WhatsApp')
         ) {
           setError(msg);
         } else if (
           msg.includes('name') ||
           msg.includes('company') ||
           msg.includes('nama') ||
-          msg.includes('perusahaan')
+          msg.includes('perusahaan') ||
+          msg.includes('Nama') ||
+          msg.includes('PT / Perusahaan')
         ) {
           setError(msg);
         } else {

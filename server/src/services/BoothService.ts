@@ -532,6 +532,45 @@ export class BoothService {
   }
 
   /**
+   * Get all prizes with stock info for the Monitor display.
+   * Public endpoint — no auth required.
+   */
+  async getMonitorPrizes(): Promise<Array<{ id: string; name: string; imageUrl?: string; tier: string; remaining: number }>> {
+    const prizes = await this.prizeRepository.findActive();
+    return prizes.map((p) => ({
+      id: p.id,
+      name: p.name,
+      imageUrl: p.imageUrl ?? undefined,
+      tier: p.tier,
+      remaining: (p as any).remaining ?? (p as any).quantity ?? 0,
+    }));
+  }
+
+  /**
+   * Get public winner history for the Monitor display.
+   * Public endpoint — no auth required.
+   * Returns the most recent completed winners with participant and prize details.
+   */
+  async getPublicWinners(limit: number = 50): Promise<WinnerResponse[]> {
+    const result = await this.winnerRepository.findWithDetails(1, limit);
+    return result.data.map((w: any) => ({
+      id: w.id,
+      drawId: w.drawId,
+      participantId: w.participantId,
+      participantName: w.participantName,
+      participantCompany: w.participantCompany,
+      participantPhotoUrl: w.participantPhotoUrl,
+      prizeId: w.prizeId,
+      prizeName: w.prizeName,
+      prizeImageUrl: w.prizeImageUrl,
+      prizeTier: w.prizeTier,
+      prizeValue: w.prizeValue,
+      claimStatus: w.claimStatus,
+      announcedAt: w.announcedAt,
+    }));
+  }
+
+  /**
    * Get the current draw state from the RealtimeService.
    * Used by monitors for reconnection sync.
    */

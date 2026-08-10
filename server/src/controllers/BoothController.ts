@@ -95,4 +95,25 @@ export class BoothController {
       next(error);
     }
   };
+
+  /** Get all prizes for Monitor display (public, no auth) */
+  getMonitorPrizes = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const prizes = await this.boothService.getMonitorPrizes();
+      sendSuccess(res, prizes);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /** Get winner history for Monitor display (public, no auth) */
+  getPublicWinners = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const winners = await this.boothService.getPublicWinners(limit);
+      sendSuccess(res, winners);
+    } catch (error) {
+      next(error);
+    }
+  };
 }

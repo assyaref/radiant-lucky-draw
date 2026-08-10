@@ -127,6 +127,16 @@ export const boothApi = {
   updateClaimStatus: (id: string, claimStatus: 'unclaimed' | 'claimed') =>
     api.put<ApiEnvelope<Winner>>(`/booth/winners/${id}/claim`, { claimStatus }),
 
+  /** Get all prizes with stock for Monitor (public) */
+  getMonitorPrizes: () =>
+    api.get<ApiEnvelope<Array<{ id: string; name: string; imageUrl?: string; tier: string; remaining: number }>>>('/booth/monitor-prizes'),
+
+  /** Get winner history for Monitor (public) */
+  getPublicWinners: (limit?: number) => {
+    const q = limit ? `?limit=${limit}` : '';
+    return api.get<ApiEnvelope<Winner[]>>(`/booth/winners-public${q}`);
+  },
+
   /** Delete a participant (admin, cascade) */
   deleteParticipant: (id: string, force?: boolean) =>
     api.delete<ApiEnvelope<{ message: string }>>(

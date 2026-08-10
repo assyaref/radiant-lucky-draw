@@ -125,6 +125,10 @@ export function createBoothRoutes(
   /** @openapi /api/booth/draw-state: get */
   router.get('/draw-state', boothController.getDrawState);
 
+  /** Public Monitor endpoints (no auth) */
+  router.get('/monitor-prizes', boothController.getMonitorPrizes);
+  router.get('/winners-public', boothController.getPublicWinners);
+
   // ─── Admin endpoints (auth required) ───────────────────────────────────
 
   router.use(authenticate);

@@ -11,6 +11,7 @@ import { SOCKET_EVENTS } from '@services/socket';
 import type { SocketEventName } from '@services/socket';
 import { env } from '@config/env';
 import { normalizeImageUrl } from '@/utils';
+import { boothApi, type Winner } from '@/api/booth';
 
 type DrawState = 'IDLE' | 'COUNTDOWN' | 'SPINNING' | 'REVEALED' | 'COMPLETED';
 interface DrawData {
@@ -26,6 +27,24 @@ interface DrawData {
   prizeImageUrl: string | null;
   remainingStock: number | null;
   startedAt: string | null;
+}
+
+interface PrizeEntry {
+  id: string;
+  name: string;
+  imageUrl?: string;
+  tier: string;
+  remaining: number;
+}
+
+interface WinnerEntry {
+  id: string;
+  drawId: string;
+  participantName: string;
+  participantCompany: string;
+  participantPhotoUrl?: string;
+  prizeName: string;
+  prizeTier: string;
 }
 
 const TIER: Record<string, { bg: string; text: string; glow: string }> = {
@@ -97,77 +116,305 @@ function ParticleField() {
 
 // ─── IDLE Screen ─────────────────────────────────────────────────────────
 
-function IdleScreen() {
+// --- PRIZE LIST PANEL (Left) ---
+function PrizeListPanel({
+  prizes,
+  activePrizeId,
+}: {
+  prizes: PrizeEntry[];
+  activePrizeId: string | null;
+}) {
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full">
-      <motion.div
-        className="pointer-events-none absolute inset-0"
-        animate={{ opacity: [0.12, 0.25, 0.12] }}
-        transition={{ repeat: Infinity, duration: 4 }}
+    <div className="flex flex-col h-full w-full">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.05]">
+        <span className="text-lg">{String.fromCodePoint(0x1f381)}</span>
+        <h3 className="text-white/25 text-xs font-bold tracking-[0.25em] uppercase">HADIAH</h3>
+        <span className="ml-auto text-white/10 text-[10px] font-mono">{prizes.length} item</span>
+      </div>
+      <div
+        className="flex-1 overflow-y-auto px-3 py-2 space-y-2"
+        style={{ scrollbarWidth: 'thin' }}
       >
-        <div className="h-full w-full bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.18)_0%,rgba(139,92,246,0.08)_35%,transparent_65%)]" />
-      </motion.div>
-      <motion.div
-        className="z-10 flex flex-col items-center gap-8"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.2 }}
-      >
-        {/* Brand */}
-        <div className="text-center">
-          <p className="text-white/20 text-lg md:text-xl font-light tracking-[0.35em] uppercase">
-            RADIANT GROUP
-          </p>
-          <h1
-            className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mt-2"
-            style={{
-              backgroundImage: 'linear-gradient(135deg,#3b82f6,#8b5cf6,#f59e0b)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            LUCKY DRAW
-          </h1>
-          <p className="text-white/30 text-xl md:text-2xl font-light tracking-wider mt-1">
-            DIGITAL BOOTH
-          </p>
-        </div>
-        {/* CTA */}
-        <motion.div
-          className="rounded-full border border-primary-400/20 bg-primary-400/[0.04] px-12 py-5"
-          animate={{
-            scale: [1, 1.015, 1],
-            borderColor: ['rgba(96,165,250,0.2)', 'rgba(139,92,246,0.3)', 'rgba(96,165,250,0.2)'],
-          }}
-          transition={{ repeat: Infinity, duration: 4 }}
-        >
-          <p className="text-white/60 text-2xl md:text-3xl font-light tracking-wider">
-            SIAP UNTUK MENANG?
-          </p>
-        </motion.div>
-        {/* Pulsing dots */}
-        <div className="flex gap-4 mt-4">
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="w-3 h-3 rounded-full bg-gradient-to-r from-primary-400 to-secondary-400"
-              animate={{ opacity: [0.15, 1, 0.15], scale: [1, 1.4, 1] }}
-              transition={{ repeat: Infinity, duration: 1.8, delay: i * 0.5 }}
-            />
-          ))}
-        </div>
-        {/* Event tagline */}
-        <p className="text-white/15 text-sm md:text-base font-light tracking-widest uppercase mt-4">
-          🎰 LUCKY DRAW DIGITAL BOOTH
-        </p>
-      </motion.div>
+        {prizes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-white/10">
+            <span className="text-5xl">{String.fromCodePoint(0x1f381)}</span>
+            <p className="text-xs tracking-widest uppercase">BELUM ADA HADIAH</p>
+          </div>
+        ) : (
+          prizes.map((p) => {
+            const isActive = p.id === activePrizeId;
+            const t = tier(p.tier);
+            const soldOut = p.remaining <= 0;
+            const imgUrl = p.imageUrl ? normalizeImageUrl(p.imageUrl) : null;
+            return (
+              <motion.div
+                key={p.id}
+                layout
+                className={
+                  'relative flex items-center gap-3 p-2.5 rounded-xl border transition-all ' +
+                  (isActive
+                    ? 'border-amber-400/40 bg-amber-400/[0.06]'
+                    : soldOut
+                      ? 'border-white/[0.03] bg-white/[0.01] opacity-50'
+                      : 'border-white/[0.04] bg-white/[0.015]')
+                }
+                animate={
+                  isActive
+                    ? {
+                        boxShadow: [
+                          '0 0 15px rgba(251,191,36,0.08)',
+                          '0 0 30px rgba(251,191,36,0.18)',
+                          '0 0 15px rgba(251,191,36,0.08)',
+                        ],
+                      }
+                    : {}
+                }
+                transition={{ repeat: Infinity, duration: 2 }}
+              >
+                {isActive && (
+                  <div className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-amber-500 text-[9px] font-bold text-black tracking-wider z-10">
+                    AKTIF
+                  </div>
+                )}
+                <div className="w-10 h-10 rounded-lg overflow-hidden bg-white/[0.03] flex-shrink-0 flex items-center justify-center border border-white/[0.04]">
+                  {imgUrl ? (
+                    <img
+                      src={imgUrl}
+                      alt={p.name}
+                      className="w-full h-full object-contain p-0.5"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <span className="text-white/15 text-sm">{String.fromCodePoint(0x1f381)}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white/80 text-xs font-semibold truncate">{p.name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={'text-[10px] font-medium ' + t.text}>
+                      {p.tier.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+                <span
+                  className={
+                    'text-[10px] font-mono flex-shrink-0 ' +
+                    (soldOut ? 'text-red-400/50' : 'text-white/25')
+                  }
+                >
+                  {soldOut ? 'HABIS' : 'Stok: ' + p.remaining}
+                </span>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
 
-// ─── COUNTDOWN Screen ────────────────────────────────────────────────────
+// --- CENTER PANEL ---
+function CenterPanel({
+  drawState,
+  drawData,
+  count,
+  showGo,
+  done,
+}: {
+  drawState: DrawState;
+  drawData: DrawData | null;
+  count: number;
+  showGo: boolean;
+  done: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full w-full px-4">
+      <AnimatePresence mode="wait">
+        {drawState === 'IDLE' && (
+          <motion.div
+            key="ci"
+            className="flex flex-col items-center gap-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h1
+              className="text-[clamp(2.5rem,6vw,5rem)] font-black tracking-tight text-center leading-none"
+              style={{
+                backgroundImage: 'linear-gradient(135deg,#3b82f6,#8b5cf6,#f59e0b)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              LUCKY DRAW
+            </h1>
+            <div className="rounded-full border border-primary-400/15 bg-primary-400/[0.03] px-10 py-4">
+              <p className="text-white/50 text-xl font-light tracking-wider">SIAP UNTUK MENANG?</p>
+            </div>
+            <div className="flex gap-4">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  className="w-3 h-3 rounded-full bg-primary-400"
+                  animate={{ opacity: [0.15, 1, 0.15], scale: [1, 1.4, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.8, delay: i * 0.5 }}
+                />
+              ))}
+            </div>
+            <p className="text-white/10 text-sm tracking-widest uppercase">DIGITAL BOOTH</p>
+          </motion.div>
+        )}
+        {drawState === 'COUNTDOWN' && (
+          <motion.div
+            key="cc"
+            className="w-full h-full flex items-center justify-center"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <CountdownScreen count={count} showGo={showGo} />
+          </motion.div>
+        )}
+        {drawState === 'SPINNING' && (
+          <motion.div
+            key="cs"
+            className="w-full h-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <SpinningScreen participantName={drawData?.participantName} />
+          </motion.div>
+        )}
+        {(drawState === 'REVEALED' || drawState === 'COMPLETED') && (
+          <motion.div
+            key="cw"
+            className="flex flex-col items-center gap-5"
+            initial={{ opacity: 0, y: -30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.7 }}
+          >
+            <motion.div
+              className="pointer-events-none absolute inset-0"
+              animate={{ opacity: [0.25, 0.5, 0.25] }}
+              transition={{ repeat: Infinity, duration: 3 }}
+            >
+              <div
+                className="h-full w-full blur-3xl"
+                style={{
+                  background:
+                    'radial-gradient(ellipse 60% 50% at 50% 40%, rgba(234,179,8,0.16) 0%, rgba(251,191,36,0.06) 30%, transparent 70%)',
+                }}
+              />
+            </motion.div>
+            <h1
+              className="text-[clamp(2rem,4.5vw,3.8rem)] font-black leading-none tracking-tight text-center z-10"
+              style={{
+                backgroundImage: 'linear-gradient(180deg, #fef3c7 0%, #f59e0b 40%, #d97706 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {String.fromCodePoint(0x1f389)} SELAMAT! {String.fromCodePoint(0x1f389)}
+            </h1>
+            <p className="text-amber-300/60 text-sm font-bold tracking-[0.35em] uppercase z-10 animate-pulse">
+              PEMENANG LUCKY DRAW
+            </p>
+            {done && (
+              <p className="text-white/30 text-xs font-mono z-10">
+                {String.fromCodePoint(0x2713)} Draw Selesai
+              </p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
+// --- WINNER LIST PANEL (Right) ---
+function WinnerListPanel({ winners }: { winners: WinnerEntry[] }) {
+  return (
+    <div className="flex flex-col h-full w-full">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.05]">
+        <span className="text-lg">{String.fromCodePoint(0x1f3c6)}</span>
+        <h3 className="text-white/25 text-xs font-bold tracking-[0.25em] uppercase">PEMENANG</h3>
+        <span className="ml-auto text-white/10 text-[10px] font-mono">{winners.length} orang</span>
+      </div>
+      <div
+        className="flex-1 overflow-y-auto px-3 py-2 space-y-2"
+        style={{ scrollbarWidth: 'thin' }}
+      >
+        {winners.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-white/10">
+            <span className="text-5xl">{String.fromCodePoint(0x1f3c6)}</span>
+            <p className="text-xs tracking-widest uppercase">BELUM ADA PEMENANG</p>
+          </div>
+        ) : (
+          winners.map((w, i) => {
+            const t = tier(w.prizeTier);
+            const photoUrl = w.participantPhotoUrl
+              ? normalizeImageUrl(w.participantPhotoUrl)
+              : null;
+            const medal =
+              i === 0
+                ? String.fromCodePoint(0x1f947)
+                : i === 1
+                  ? String.fromCodePoint(0x1f948)
+                  : i === 2
+                    ? String.fromCodePoint(0x1f949)
+                    : String.fromCodePoint(0x2b50);
+            return (
+              <motion.div
+                key={w.drawId}
+                initial={i < 3 ? { opacity: 0, x: 30 } : false}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.3 }}
+                className={
+                  'relative flex items-center gap-3 p-2.5 rounded-xl border ' +
+                  (i === 0
+                    ? 'border-amber-400/25 bg-amber-400/[0.04]'
+                    : 'border-white/[0.04] bg-white/[0.015]')
+                }
+              >
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-white/[0.03] flex-shrink-0 flex items-center justify-center border border-white/[0.06]">
+                  {photoUrl ? (
+                    <img
+                      src={photoUrl}
+                      alt={w.participantName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <span className="text-white/15 text-xs">{medal}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white/85 text-xs font-semibold truncate">
+                    {w.participantName}
+                  </p>
+                  <p className="text-white/30 text-[10px] truncate">{w.participantCompany}</p>
+                  <p className={'text-[9px] font-medium mt-0.5 ' + t.text}>{w.prizeName}</p>
+                </div>
+                <span className="text-white/10 text-[10px] flex-shrink-0">{medal}</span>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
 function CountdownScreen({ count, showGo }: { count: number; showGo: boolean }) {
   const c = count > 0 ? count : 0;
   const color = c === 1 ? '#ef4444' : c === 2 ? '#f59e0b' : c === 3 ? '#3b82f6' : '#8b5cf6';
@@ -463,233 +710,7 @@ function ProgressTimeline({ state }: { state: DrawState }) {
   );
 }
 
-// ─── Tier Badge ──────────────────────────────────────────────────────────
-
-function TierBadge({ prizeTier }: { prizeTier: string | null }) {
-  if (!prizeTier) return null;
-  const t = tier(prizeTier);
-  return (
-    <motion.span
-      className={`inline-flex items-center gap-1 px-4 py-1 rounded-full text-xs font-black tracking-widest border ${t.text} bg-gradient-to-r ${t.bg} border-current/20`}
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.9, type: 'spring', stiffness: 200 }}
-    >
-      <span className="w-1.5 h-1.5 rounded-full bg-current shadow-[0_0_6px_currentColor]" />
-      {prizeTier.toUpperCase()}
-    </motion.span>
-  );
-}
-
 // ─── WINNER Screen (PREMIUM REDESIGN) ────────────────────────────────────
-
-function WinnerReveal({ data, done }: { data: DrawData; done: boolean }) {
-  const t = tier(data.prizeTier);
-  const photoUrl = normalizeImageUrl(data.participantPhotoUrl);
-  const prizeUrl = normalizeImageUrl(data.prizeImageUrl);
-  return (
-    <div className="flex flex-col items-center justify-center h-full w-full px-6 md:px-10">
-      <motion.div
-        className="pointer-events-none absolute inset-0"
-        animate={{ opacity: [0.3, 0.6, 0.3] }}
-        transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-      >
-        <div
-          className="h-full w-full blur-3xl"
-          style={{
-            background: `radial-gradient(ellipse 60% 50% at 50% 40%, rgba(234,179,8,0.18) 0%, rgba(251,191,36,0.08) 30%, ${t.glow} 50%, transparent 70%)`,
-          }}
-        />
-      </motion.div>
-      <GoldConfetti active />
-      <div className="z-10 flex flex-col items-center max-w-4xl w-full gap-5">
-        {/* HEADER */}
-        <motion.div
-          className="text-center"
-          initial={{ opacity: 0, y: -40, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
-        >
-          <h1
-            className="text-[clamp(2.5rem,7vw,5.5rem)] font-black leading-none tracking-tight"
-            style={{
-              backgroundImage: 'linear-gradient(180deg, #fef3c7 0%, #f59e0b 40%, #d97706 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            🎉 SELAMAT! 🎉
-          </h1>
-          <motion.p
-            className="text-[clamp(0.75rem,1.5vw,1.1rem)] font-bold tracking-[0.4em] uppercase text-amber-300/80 mt-1"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0.5, 0.9, 0.5] }}
-            transition={{ delay: 0.3, repeat: Infinity, duration: 2.5 }}
-          >
-            PEMENANG LUCKY DRAW
-          </motion.p>
-        </motion.div>
-        {/* PHOTO */}
-        <motion.div
-          className="relative"
-          initial={{ scale: 0, rotate: -20 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: 0.15, type: 'spring', stiffness: 100, damping: 12 }}
-        >
-          <div className="absolute -inset-6 rounded-full bg-gradient-to-br from-amber-400/20 via-amber-500/10 to-yellow-500/20 blur-2xl" />
-          <div className="absolute -inset-3 rounded-full border-2 border-amber-400/20 shadow-[0_0_60px_rgba(251,191,36,0.2)]" />
-          <div
-            className="absolute -inset-1.5 rounded-full"
-            style={{
-              background: 'conic-gradient(from 0deg, #fbbf24, #f59e0b, #d97706, #fbbf24)',
-              opacity: 0.6,
-              filter: 'blur(2px)',
-            }}
-          />
-          <div className="relative w-[clamp(8rem,18vw,12rem)] h-[clamp(8rem,18vw,12rem)] rounded-full border-[3px] border-amber-400/40 overflow-hidden shadow-[0_0_80px_rgba(251,191,36,0.25),0_0_160px_rgba(251,191,36,0.1)]">
-            {photoUrl ? (
-              <img
-                src={photoUrl}
-                alt={data.participantName ?? 'Winner'}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  const el = e.target as HTMLImageElement;
-                  el.style.display = 'none';
-                  el.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-            ) : null}
-            <div
-              className={`w-full h-full rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-[clamp(3rem,8vw,5rem)] ${photoUrl ? 'hidden' : ''}`}
-            >
-              👤
-            </div>
-          </div>
-          <motion.div
-            className="absolute -inset-4 rounded-full border border-amber-400/15"
-            animate={{ scale: [1, 1.06, 1], opacity: [0.4, 0, 0.4] }}
-            transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-          />
-        </motion.div>
-        {/* NAME RIBBON */}
-        <motion.div
-          className="relative"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35, type: 'spring', stiffness: 120, damping: 12 }}
-        >
-          <div className="relative px-10 py-3 overflow-hidden">
-            <div
-              className="absolute inset-0 opacity-15"
-              style={{
-                background:
-                  'linear-gradient(135deg, #fbbf24 0%, #f59e0b 25%, #d97706 50%, #f59e0b 75%, #fbbf24 100%)',
-              }}
-            />
-            <h2 className="relative text-[clamp(1.8rem,5vw,4rem)] font-black tracking-tight text-white text-center drop-shadow-[0_2px_12px_rgba(251,191,36,0.4)]">
-              {data.participantName ?? '—'}
-            </h2>
-          </div>
-          <div className="h-0.5 mx-6 rounded-full bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
-        </motion.div>
-        {/* COMPANY */}
-        {data.participantCompany && (
-          <motion.p
-            className="text-[clamp(0.8rem,1.3vw,1rem)] text-white/30 font-medium tracking-[0.15em] uppercase -mt-3"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            {data.participantCompany}
-          </motion.p>
-        )}
-        {/* PRIZE CARD */}
-        <motion.div
-          className="relative"
-          initial={{ opacity: 0, scale: 0.85, y: 40 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: 0.6, type: 'spring', stiffness: 100, damping: 14 }}
-        >
-          <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-amber-500/15 via-transparent to-amber-500/10 blur-2xl" />
-          <div className="relative rounded-3xl border border-white/[0.08] bg-gradient-to-br from-white/[0.04] via-white/[0.02] to-white/[0.01] backdrop-blur-xl px-8 md:px-12 py-6 flex flex-col items-center gap-4 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
-            <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
-            <div className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-amber-400/20 to-transparent" />
-            <motion.p
-              className="text-[clamp(0.7rem,1vw,0.85rem)] font-bold tracking-[0.35em] uppercase text-amber-300/60"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-            >
-              MENDAPATKAN
-            </motion.p>
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.85, type: 'spring', stiffness: 150, damping: 12 }}
-            >
-              <div className="absolute -inset-2 rounded-2xl bg-amber-400/10 blur-xl" />
-              {prizeUrl ? (
-                <img
-                  src={prizeUrl}
-                  alt={data.prizeName ?? 'Prize'}
-                  className="relative w-[clamp(4rem,8vw,6rem)] h-[clamp(4rem,8vw,6rem)] rounded-2xl object-contain border border-white/10 shadow-xl"
-                />
-              ) : (
-                <div className="relative w-[clamp(4rem,8vw,6rem)] h-[clamp(4rem,8vw,6rem)] rounded-2xl bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border border-white/10 flex items-center justify-center text-[clamp(2rem,4vw,3rem)] shadow-xl">
-                  🎁
-                </div>
-              )}
-            </motion.div>
-            <motion.h3
-              className={`text-[clamp(1.5rem,4vw,2.8rem)] font-black text-center leading-tight ${t.text}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-            >
-              {data.prizeName ?? '—'}
-            </motion.h3>
-            <TierBadge prizeTier={data.prizeTier} />
-          </div>
-        </motion.div>
-        {/* DRAW INFO */}
-        <motion.div
-          className="flex items-center gap-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-        >
-          {data.drawId && (
-            <span className="text-white/15 text-[clamp(0.6rem,0.8vw,0.7rem)] font-mono tracking-wider">
-              DRAW ID: {data.drawId.slice(0, 12).toUpperCase()}
-            </span>
-          )}
-          <span className="text-white/10">•</span>
-          <span className="text-white/15 text-[clamp(0.6rem,0.8vw,0.7rem)] font-mono tracking-wider">
-            {data.startedAt
-              ? new Date(data.startedAt).toLocaleTimeString('id-ID', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                })
-              : ''}
-          </span>
-        </motion.div>
-        {/* PROGRESS */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.4 }}
-        >
-          <ProgressTimeline state={done ? 'COMPLETED' : 'REVEALED'} />
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-// ─── MonitorPage (Main Export) ────────────────────────────────────────────
 
 export default function MonitorPage() {
   const { isConnected, emit } = useSocket();
@@ -701,6 +722,35 @@ export default function MonitorPage() {
   const countTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const completedDrawIdRef = useRef<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [prizes, setPrizes] = useState<PrizeEntry[]>([]);
+  const [winners, setWinners] = useState<WinnerEntry[]>([]);
+
+  // Fetch prizes and winners on mount
+  useEffect(() => {
+    boothApi
+      .getMonitorPrizes()
+      .then((r) => {
+        if (Array.isArray(r.data)) setPrizes(r.data);
+      })
+      .catch((err) => console.error('[Monitor] Failed to load prizes', err));
+    boothApi
+      .getPublicWinners(50)
+      .then((r) => {
+        if (Array.isArray(r.data)) {
+          const mapped: WinnerEntry[] = (r.data as Winner[]).map((w) => ({
+            id: w.id,
+            drawId: w.drawId,
+            participantName: w.participantName,
+            participantCompany: w.participantCompany,
+            participantPhotoUrl: w.participantPhotoUrl,
+            prizeName: w.prizeName,
+            prizeTier: w.prizeTier,
+          }));
+          setWinners(mapped);
+        }
+      })
+      .catch((err) => console.error('[Monitor] Failed to load winners', err));
+  }, []);
 
   const startCountdown = useCallback(() => {
     countRef.current = 3;
@@ -851,6 +901,28 @@ export default function MonitorPage() {
       (p: any) => {
         stopCountdown();
         console.log('[Monitor] draw:completed', { drawId: p?.drawId });
+        // Add winner to list (deduplicate by drawId)
+        if (p?.drawId && p?.participantName) {
+          setWinners((prev) => {
+            if (prev.some((w) => w.drawId === p.drawId)) return prev;
+            const entry: WinnerEntry = {
+              id: p.drawId,
+              drawId: p.drawId,
+              participantName: p.participantName || '',
+              participantCompany: p.participantCompany || '',
+              participantPhotoUrl: p.participantPhotoUrl,
+              prizeName: p.prizeName || '',
+              prizeTier: p.prizeTier || '',
+            };
+            return [entry, ...prev];
+          });
+        }
+        // Update prize stock if available
+        if (p?.prizeId != null && p?.remainingStock != null) {
+          setPrizes((prev) =>
+            prev.map((pr) => (pr.id === p.prizeId ? { ...pr, remaining: p.remainingStock } : pr)),
+          );
+        }
         const drawId = p?.drawId;
         setDrawState('COMPLETED');
         // Guard: only clear if the drawId hasn't changed (no new draw started)
@@ -979,64 +1051,47 @@ export default function MonitorPage() {
         </div>
       </div>
 
-      {/* Main stage */}
-      <AnimatePresence mode="wait">
-        {drawState === 'IDLE' && (
-          <motion.div
-            key="idle"
-            className="absolute inset-0 pt-14"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <IdleScreen />
-          </motion.div>
-        )}
-        {drawState === 'COUNTDOWN' && (
-          <motion.div
-            key="ct"
-            className="absolute inset-0 pt-14"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.25 }}
-          >
-            <CountdownScreen count={count} showGo={showGo} />
-          </motion.div>
-        )}
-        {drawState === 'SPINNING' && (
-          <motion.div
-            key="sp"
-            className="absolute inset-0 pt-14"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <SpinningScreen participantName={drawData?.participantName} />
-          </motion.div>
-        )}
-        {(drawState === 'REVEALED' || drawState === 'COMPLETED') && drawData && (
-          <motion.div
-            key="rv"
-            className="absolute inset-0 pt-14"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <WinnerReveal data={drawData} done={drawState === 'COMPLETED'} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Main stage: 3-Column Grid */}
+      <div
+        className="absolute top-16 bottom-9 left-0 right-0 z-10 grid"
+        style={{
+          gridTemplateColumns: 'minmax(280px, 0.8fr) minmax(500px, 1.8fr) minmax(280px, 0.8fr)',
+        }}
+      >
+        {/* LEFT: Prize List */}
+        <div className="relative border-r border-white/[0.03]">
+          <PrizeListPanel prizes={prizes} activePrizeId={drawData?.prizeId ?? null} />
+        </div>
+
+        {/* CENTER: Lucky Draw */}
+        <div className="relative">
+          <CenterPanel
+            drawState={drawState}
+            drawData={drawData}
+            count={count}
+            showGo={showGo}
+            done={drawState === 'COMPLETED'}
+          />
+        </div>
+
+        {/* RIGHT: Winner List */}
+        <div className="relative border-l border-white/[0.03]">
+          <WinnerListPanel winners={winners} />
+        </div>
+      </div>
+
+      {/* Gold Confetti during winner reveal */}
+      {(drawState === 'REVEALED' || drawState === 'COMPLETED') && <GoldConfetti active />}
 
       {/* Footer */}
       <div className="absolute bottom-0 left-0 right-0 z-30 flex justify-between items-center px-8 py-2 border-t border-white/[0.04] bg-gradient-to-t from-[#020617] to-transparent">
-        <span className="text-white/10 text-[10px] font-mono tracking-wider">
-          RADIANT LUCKY DRAW · v1.0
-        </span>
-        <span className="text-white/08 text-[10px] font-mono">1920×1080 · 16:9 EVENT DISPLAY</span>
+        <div className="flex items-center gap-4">
+          <ProgressTimeline state={drawState} />
+          <span className="text-white/10 text-[10px] font-mono tracking-wider">
+            RADIANT LUCKY DRAW · v1.0
+          </span>
+        </div>
+        <span className="text-white/06 text-[10px] font-mono">1920x1080 · 16:9</span>
       </div>
     </div>
   );

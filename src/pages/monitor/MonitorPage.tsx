@@ -119,10 +119,10 @@ function ParticleField() {
 // --- PRIZE LIST PANEL (Left) ---
 function PrizeListPanel({
   prizes,
-  activePrizeId,
+  highlightedPrizeId,
 }: {
   prizes: PrizeEntry[];
-  activePrizeId: string | null;
+  highlightedPrizeId?: string | null;
 }) {
   return (
     <div className="flex flex-col h-full w-full">
@@ -142,7 +142,7 @@ function PrizeListPanel({
           </div>
         ) : (
           prizes.map((p) => {
-            const isActive = p.id === activePrizeId;
+            const isHighlighted = p.id === highlightedPrizeId;
             const t = tier(p.tier);
             const soldOut = p.remaining <= 0;
             const imgUrl = p.imageUrl ? normalizeImageUrl(p.imageUrl) : null;
@@ -152,15 +152,16 @@ function PrizeListPanel({
                 layout
                 className={
                   'relative flex items-center gap-3.5 p-3 rounded-2xl border transition-all ' +
-                  (isActive
+                  (isHighlighted
                     ? 'border-amber-400/50 bg-gradient-to-r from-amber-500/[0.08] to-yellow-500/[0.04] shadow-[0_0_30px_rgba(251,191,36,0.12)]'
                     : soldOut
                       ? 'border-white/[0.03] bg-white/[0.01] opacity-50'
                       : 'border-white/[0.05] bg-white/[0.02] hover:border-white/[0.08]')
                 }
                 animate={
-                  isActive
+                  isHighlighted
                     ? {
+                        scale: [1, 1.01, 1],
                         boxShadow: [
                           '0 0 20px rgba(251,191,36,0.1)',
                           '0 0 40px rgba(251,191,36,0.22)',
@@ -171,11 +172,6 @@ function PrizeListPanel({
                 }
                 transition={{ repeat: Infinity, duration: 2.2 }}
               >
-                {isActive && (
-                  <div className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-amber-500 text-[9px] font-bold text-black tracking-wider z-10 shadow-[0_0_12px_rgba(251,191,36,0.4)]">
-                    SEDANG DIUNDI
-                  </div>
-                )}
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/[0.04] flex-shrink-0 flex items-center justify-center border border-white/[0.06] shadow-[0_0_15px_rgba(0,0,0,0.3)]">
                   {imgUrl ? (
                     <img
@@ -224,6 +220,7 @@ function CenterPanel({
   showGo,
   done,
   prizes,
+  onVisualStop,
 }: {
   drawState: DrawState;
   drawData: DrawData | null;
@@ -231,6 +228,7 @@ function CenterPanel({
   showGo: boolean;
   done: boolean;
   prizes: PrizeEntry[];
+  onVisualStop?: (prizeId: string) => void;
 }) {
   const participantPhotoUrl = drawData?.participantPhotoUrl
     ? normalizeImageUrl(drawData.participantPhotoUrl)
@@ -307,7 +305,7 @@ function CenterPanel({
             transition={{ duration: 0.2 }}
           >
             {/* VISUAL ONLY: no actual winner data displayed during SPINNING */}
-            <SpinningScreen prizes={prizes} />
+            <SpinningScreen prizes={prizes} onVisualStop={onVisualStop} />
           </motion.div>
         )}
         {(drawState === 'REVEALED' || drawState === 'COMPLETED') && (
@@ -641,13 +639,35 @@ function CountdownScreen({ count, showGo }: { count: number; showGo: boolean }) 
 // displayPrize is for ANIMATION ONLY — it does NOT determine the actual winner.
 // The actual winner & prize come from draw:winner via Socket.IO (server-authoritative).
 
-function SpinningScreen({ prizes }: { prizes: PrizeEntry[] }) {
+function SpinningScreen({
+  prizes,
+  onVisualStop,
+}: {
+  prizes: PrizeEntry[];
+  onVisualStop?: (prizeId: string) => void;
+}) {
   const [displayPrize, setDisplayPrize] = useState<PrizeEntry | null>(null);
   const [converge, setConverge] = useState(false);
+  const finalPrizeRef = useRef<PrizeEntry | null>(null);
+  const hasStoppedRef = useRef(false);
+  const mountedRef = useRef(true);
+  const onVisualStopRef = useRef(onVisualStop);
+  onVisualStopRef.current = onVisualStop;
+
+  // Mark unmounted to prevent state updates after unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Phase 1: Fast cycling (80ms)
   useEffect(() => {
     if (prizes.length === 0) return;
+    setConverge(false);
+    hasStoppedRef.current = false;
+    finalPrizeRef.current = null;
 
     const fastInterval = setInterval(() => {
       // VISUAL ONLY — does NOT determine the actual winner
@@ -668,7 +688,7 @@ function SpinningScreen({ prizes }: { prizes: PrizeEntry[] }) {
     };
   }, [prizes]);
 
-  // Phase 2: Slower cycling (200ms) after converge
+  // Phase 2: Slower cycling (200ms) after converge, then STOP
   useEffect(() => {
     if (!converge || prizes.length === 0) return;
 
@@ -680,8 +700,28 @@ function SpinningScreen({ prizes }: { prizes: PrizeEntry[] }) {
 
     console.log('[Monitor] visual prize spinning SLOWING DOWN');
 
+    // Phase 3: Stop cycling after ~3s of slow phase
+    const stopTimeout = setTimeout(() => {
+      clearInterval(slowInterval);
+      if (!mountedRef.current) return;
+      // Pick final visual prize
+      const finalIdx = Math.floor(Math.random() * prizes.length);
+      const finalPrize = prizes[finalIdx];
+      setDisplayPrize(finalPrize);
+      finalPrizeRef.current = finalPrize;
+      if (!hasStoppedRef.current) {
+        hasStoppedRef.current = true;
+        console.log('[Monitor] visual prize spinning STOPPED', {
+          prizeId: finalPrize.id,
+          prizeName: finalPrize.name,
+        });
+        onVisualStopRef.current?.(finalPrize.id);
+      }
+    }, 3000);
+
     return () => {
       clearInterval(slowInterval);
+      clearTimeout(stopTimeout);
     };
   }, [converge, prizes]);
 
@@ -899,6 +939,7 @@ export default function MonitorPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [prizes, setPrizes] = useState<PrizeEntry[]>([]);
   const [winners, setWinners] = useState<WinnerEntry[]>([]);
+  const [highlightedPrizeId, setHighlightedPrizeId] = useState<string | null>(null);
 
   // Fetch prizes and winners on mount
   useEffect(() => {
@@ -1021,6 +1062,7 @@ export default function MonitorPage() {
           });
         }
         setDrawState('SPINNING');
+        setHighlightedPrizeId(null);
       },
       [stopCountdown],
     ),
@@ -1065,6 +1107,7 @@ export default function MonitorPage() {
           };
         });
         setDrawState('REVEALED');
+        setHighlightedPrizeId(null);
 
         // Debug: log the actual winner data from server
         console.log('[Monitor] ACTUAL WINNER REVEAL', {
@@ -1111,12 +1154,14 @@ export default function MonitorPage() {
         }
         const drawId = p?.drawId;
         setDrawState('COMPLETED');
+        setHighlightedPrizeId(null);
         // Guard: only clear if the drawId hasn't changed (no new draw started)
         if (drawId) completedDrawIdRef.current = drawId;
         setTimeout(() => {
           if (drawId && completedDrawIdRef.current !== drawId) return;
           setDrawState('IDLE');
           setDrawData(null);
+          setHighlightedPrizeId(null);
           completedDrawIdRef.current = null;
         }, 5000);
       },
@@ -1238,7 +1283,7 @@ export default function MonitorPage() {
         <div className="relative border-r border-white/[0.03]">
           <PrizeListPanel
             prizes={prizes}
-            activePrizeId={drawState === 'REVEALED' ? (drawData?.prizeId ?? null) : null}
+            highlightedPrizeId={highlightedPrizeId}
           />
         </div>
 
@@ -1251,6 +1296,7 @@ export default function MonitorPage() {
             showGo={showGo}
             done={drawState === 'COMPLETED'}
             prizes={prizes}
+            onVisualStop={(prizeId) => setHighlightedPrizeId(prizeId)}
           />
         </div>
 

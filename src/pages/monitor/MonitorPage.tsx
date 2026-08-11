@@ -12,7 +12,6 @@ import type { SocketEventName } from '@services/socket';
 import { env } from '@config/env';
 import { normalizeImageUrl } from '@/utils';
 import { boothApi, type Winner } from '@/api/booth';
-import radiantGroupLogo from '@assets/images/radiant-group-logo.png';
 
 type DrawState = 'IDLE' | 'COUNTDOWN' | 'SPINNING' | 'REVEALED' | 'COMPLETED';
 interface DrawData {
@@ -224,13 +223,21 @@ function CenterPanel({
   count,
   showGo,
   done,
+  prizes,
 }: {
   drawState: DrawState;
   drawData: DrawData | null;
   count: number;
   showGo: boolean;
   done: boolean;
+  prizes: PrizeEntry[];
 }) {
+  const participantPhotoUrl = drawData?.participantPhotoUrl
+    ? normalizeImageUrl(drawData.participantPhotoUrl)
+    : null;
+  const prizeImageUrl = drawData?.prizeImageUrl ? normalizeImageUrl(drawData.prizeImageUrl) : null;
+  const t = tier(drawData?.prizeTier);
+
   return (
     <div className="flex flex-col items-center justify-center h-full w-full px-4">
       <AnimatePresence mode="wait">
@@ -250,9 +257,7 @@ function CenterPanel({
             >
               <div className="h-full w-full bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.15)_0%,rgba(139,92,246,0.06)_35%,transparent_65%)]" />
             </motion.div>
-            <p className="text-white/15 text-sm md:text-base font-light tracking-[0.3em] uppercase z-10">
-              RADIANT GROUP
-            </p>
+            <p className="text-white/15 text-sm md:text-base font-light tracking-[0.3em] uppercase z-10"></p>
             <h1
               className="text-[clamp(2.5rem,6vw,5rem)] font-black tracking-tight text-center leading-none z-10"
               style={{
@@ -301,7 +306,8 @@ function CenterPanel({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <SpinningScreen participantName={drawData?.participantName} />
+            {/* VISUAL ONLY: no actual winner data displayed during SPINNING */}
+            <SpinningScreen prizes={prizes} />
           </motion.div>
         )}
         {(drawState === 'REVEALED' || drawState === 'COMPLETED') && (
@@ -340,6 +346,102 @@ function CenterPanel({
             <p className="text-amber-300/60 text-sm font-bold tracking-[0.35em] uppercase z-10 animate-pulse">
               PEMENANG LUCKY DRAW
             </p>
+
+            {/* ── ACTUAL WINNER: Participant Photo + Info (server-authoritative) ── */}
+            {drawData && (
+              <motion.div
+                className="z-10 flex flex-col items-center gap-4 mt-2"
+                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+              >
+                {/* Participant Photo */}
+                <motion.div
+                  className="relative w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-amber-400/60 bg-white/[0.04] flex items-center justify-center"
+                  style={{
+                    boxShadow: '0 0 50px rgba(251,191,36,0.3), 0 0 100px rgba(245,158,11,0.15)',
+                  }}
+                >
+                  {participantPhotoUrl ? (
+                    <img
+                      src={participantPhotoUrl}
+                      alt={drawData.participantName ?? 'Winner'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <span className="text-5xl">{String.fromCodePoint(0x1f464)}</span>
+                  )}
+                </motion.div>
+
+                {/* Participant Name */}
+                <p className="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight text-white text-center">
+                  {drawData.participantName ?? '\u2014'}
+                </p>
+
+                {/* Participant Company */}
+                {drawData.participantCompany && (
+                  <p className="text-base md:text-lg text-amber-200/60 font-medium tracking-wide">
+                    {drawData.participantCompany}
+                  </p>
+                )}
+
+                {/* Divider */}
+                <div className="flex items-center gap-3 w-full max-w-xs">
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
+                  <span className="text-amber-300/50 text-xs font-bold tracking-[0.25em] uppercase">
+                    MENDAPATKAN
+                  </span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
+                </div>
+
+                {/* Prize Image */}
+                <motion.div
+                  className="relative w-36 h-36 md:w-44 md:h-44 rounded-2xl overflow-hidden bg-white/[0.04] border border-amber-400/30 flex items-center justify-center"
+                  style={{
+                    boxShadow: '0 0 40px rgba(251,191,36,0.2)',
+                  }}
+                  animate={{
+                    boxShadow: [
+                      '0 0 40px rgba(251,191,36,0.2)',
+                      '0 0 60px rgba(251,191,36,0.35)',
+                      '0 0 40px rgba(251,191,36,0.2)',
+                    ],
+                  }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                >
+                  {prizeImageUrl ? (
+                    <img
+                      src={prizeImageUrl}
+                      alt={drawData.prizeName ?? 'Prize'}
+                      className="w-full h-full object-contain p-3"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <span className="text-5xl">{String.fromCodePoint(0x1f381)}</span>
+                  )}
+                </motion.div>
+
+                {/* Prize Name */}
+                <p className="text-xl md:text-2xl font-bold tracking-tight text-amber-200 text-center max-w-md">
+                  {drawData.prizeName ?? '\u2014'}
+                </p>
+
+                {/* Prize Tier Badge */}
+                {drawData.prizeTier && (
+                  <span
+                    className={`px-4 py-1 rounded-full text-xs font-bold tracking-wider uppercase ${t.text} bg-white/[0.05] border border-white/10`}
+                  >
+                    {drawData.prizeTier}
+                  </span>
+                )}
+              </motion.div>
+            )}
+
             {done && (
               <p className="text-white/30 text-xs font-mono z-10">
                 {String.fromCodePoint(0x2713)} Draw Selesai
@@ -535,116 +637,142 @@ function CountdownScreen({ count, showGo }: { count: number; showGo: boolean }) 
   );
 }
 
-// ─── SPINNING Screen ──────────────────────────────────────────────────────
+// ─── SPINNING Screen (VISUAL PRIZE ONLY) ────────────────────────────────────
+// displayPrize is for ANIMATION ONLY — it does NOT determine the actual winner.
+// The actual winner & prize come from draw:winner via Socket.IO (server-authoritative).
 
-const SAMPLE_NAMES = [
-  'SYARIF',
-  'RUI',
-  'BUDI',
-  'SITI',
-  'AHMAD',
-  'DEWI',
-  'RUDI',
-  'FITRI',
-  'HENDRA',
-  'RATNA',
-];
-
-function SpinningScreen({ participantName }: { participantName?: string | null }) {
-  const [nameIdx, setNameIdx] = useState(0);
+function SpinningScreen({ prizes }: { prizes: PrizeEntry[] }) {
+  const [displayPrize, setDisplayPrize] = useState<PrizeEntry | null>(null);
   const [converge, setConverge] = useState(false);
-  const [converged, setConverged] = useState(false);
 
+  // Phase 1: Fast cycling (80ms)
   useEffect(() => {
-    const slow = setTimeout(() => setConverge(true), 2000);
-    const iv = setInterval(
-      () => {
-        if (converged) return;
-        setNameIdx((i) => (i + 1) % SAMPLE_NAMES.length);
-      },
-      converge ? 200 : 80,
-    );
+    if (prizes.length === 0) return;
+
+    const fastInterval = setInterval(() => {
+      // VISUAL ONLY — does NOT determine the actual winner
+      const index = Math.floor(Math.random() * prizes.length);
+      setDisplayPrize(prizes[index]);
+    }, 80);
+
+    const slowTimeout = setTimeout(() => {
+      setConverge(true);
+      clearInterval(fastInterval);
+    }, 2000);
+
+    console.log('[Monitor] visual prize spinning STARTED (fast phase)');
+
     return () => {
-      clearInterval(iv);
-      clearTimeout(slow);
+      clearInterval(fastInterval);
+      clearTimeout(slowTimeout);
     };
-  }, [converge, converged]);
+  }, [prizes]);
 
-  // Lock to server-authoritative participant name after ~3.5s
+  // Phase 2: Slower cycling (200ms) after converge
   useEffect(() => {
-    if (!participantName) return;
-    const lock = setTimeout(() => {
-      setConverged(true);
-    }, 3500);
-    return () => clearTimeout(lock);
-  }, [participantName]);
+    if (!converge || prizes.length === 0) return;
 
-  const displayName = converged && participantName ? participantName : SAMPLE_NAMES[nameIdx];
+    const slowInterval = setInterval(() => {
+      // VISUAL ONLY — does NOT determine the actual winner
+      const index = Math.floor(Math.random() * prizes.length);
+      setDisplayPrize(prizes[index]);
+    }, 200);
+
+    console.log('[Monitor] visual prize spinning SLOWING DOWN');
+
+    return () => {
+      clearInterval(slowInterval);
+    };
+  }, [converge, prizes]);
+
+  useEffect(() => {
+    if (displayPrize) {
+      console.log('[Monitor] visual prize spinning', {
+        prizeId: displayPrize.id,
+        prizeName: displayPrize.name,
+      });
+    }
+  }, [displayPrize]);
+
+  const imgUrl = displayPrize?.imageUrl ? normalizeImageUrl(displayPrize.imageUrl) : null;
+
   return (
     <div className="flex flex-col items-center justify-center h-full w-full">
+      {/* Pulsing background glow */}
       <motion.div
         className="pointer-events-none absolute inset-0"
-        animate={{ opacity: [0.2, 0.55, 0.2] }}
-        transition={{ repeat: Infinity, duration: 0.5 }}
+        animate={{ opacity: [0.15, 0.45, 0.15] }}
+        transition={{ repeat: Infinity, duration: converge ? 1.2 : 0.5 }}
       >
-        <div className="h-full w-full bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.3)_0%,rgba(59,130,246,0.15)_35%,transparent_65%)]" />
+        <div className="h-full w-full bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.25)_0%,rgba(59,130,246,0.12)_35%,transparent_65%)]" />
       </motion.div>
-      {/* Rotating orb */}
-      <motion.div
-        className="relative z-10 mb-8"
-        animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
-      >
-        <div className="w-56 h-56 md:w-72 md:h-72 rounded-full bg-gradient-to-br from-primary-500/15 via-secondary-500/25 to-warning-400/15 border-2 border-white/10" />
-        <div className="absolute inset-6 rounded-full bg-gradient-to-br from-primary-400/10 to-secondary-400/10 border border-white/5" />
-        <div className="absolute inset-16 rounded-full bg-gradient-to-br from-warning-400/15 to-primary-400/10" />
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
-          const a = (i / 8) * Math.PI * 2;
-          return (
-            <motion.div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                background: i % 2 === 0 ? '#60a5fa' : '#c084fc',
-                boxShadow: `0 0 16px ${i % 2 === 0 ? '#60a5fa' : '#c084fc'}`,
-                width: 14,
-                height: 14,
-                left: '50%',
-                top: '50%',
-                marginLeft: -7,
-                marginTop: -7,
-              }}
-              animate={{ x: Math.cos(a) * 140, y: Math.sin(a) * 140 }}
-              transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-            />
-          );
-        })}
-      </motion.div>
+
       {/* Scanning line */}
       <motion.div
-        className="absolute left-[15%] right-[15%] h-0.5 rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent blur-sm z-10"
-        animate={{ top: ['25%', '75%', '25%'] }}
-        transition={{ repeat: Infinity, duration: 0.7, ease: 'linear' }}
+        className="absolute left-[10%] right-[10%] h-0.5 rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent blur-sm z-10"
+        animate={{ top: ['20%', '70%', '20%'] }}
+        transition={{ repeat: Infinity, duration: converge ? 1.4 : 0.7, ease: 'linear' }}
       />
-      {/* Name cycling */}
-      <motion.div
-        key={nameIdx}
-        className="z-10 mb-4"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.08 }}
-      >
-        <p className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight text-white/80">
-          {displayName}
-        </p>
-      </motion.div>
+
+      {/* Prize image cycling */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={displayPrize?.id ?? 'empty'}
+          className="z-10 flex flex-col items-center gap-5"
+          initial={{ opacity: 0, scale: 0.85, filter: 'blur(4px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, scale: 0.85, filter: 'blur(4px)' }}
+          transition={{ duration: converge ? 0.25 : 0.1 }}
+        >
+          {/* Prize image container with glow */}
+          <motion.div
+            className="relative w-44 h-44 md:w-56 md:h-56 rounded-2xl overflow-hidden bg-white/[0.04] border border-white/10 flex items-center justify-center"
+            style={{
+              boxShadow: '0 0 40px rgba(139,92,246,0.2), 0 0 80px rgba(59,130,246,0.1)',
+            }}
+            animate={{
+              boxShadow: converge
+                ? [
+                    '0 0 40px rgba(139,92,246,0.2), 0 0 80px rgba(59,130,246,0.1)',
+                    '0 0 60px rgba(251,191,36,0.3), 0 0 100px rgba(245,158,11,0.15)',
+                    '0 0 40px rgba(139,92,246,0.2), 0 0 80px rgba(59,130,246,0.1)',
+                  ]
+                : [
+                    '0 0 40px rgba(139,92,246,0.2), 0 0 80px rgba(59,130,246,0.1)',
+                    '0 0 50px rgba(139,92,246,0.35), 0 0 90px rgba(59,130,246,0.2)',
+                    '0 0 40px rgba(139,92,246,0.2), 0 0 80px rgba(59,130,246,0.1)',
+                  ],
+            }}
+            transition={{ repeat: Infinity, duration: converge ? 2.5 : 1 }}
+          >
+            {imgUrl ? (
+              <img
+                src={imgUrl}
+                alt={displayPrize?.name ?? 'Prize'}
+                className="w-full h-full object-contain p-3"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <span className="text-6xl">{String.fromCodePoint(0x1f381)}</span>
+            )}
+          </motion.div>
+
+          {/* Prize name */}
+          <p className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-white/80 text-center px-4 max-w-sm">
+            {displayPrize?.name ?? '...'}
+          </p>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Bottom label */}
       <motion.p
-        className="z-10 text-xl md:text-2xl font-bold tracking-[0.25em] text-white/40 uppercase"
+        className="z-10 mt-6 text-lg md:text-xl font-bold tracking-[0.25em] text-white/40 uppercase"
         animate={{ opacity: [0.3, 0.7, 0.3] }}
         transition={{ repeat: Infinity, duration: 0.8 }}
       >
-        MEMUTAR UNDIAN
+        MEMUTAR HADIAH
       </motion.p>
     </div>
   );
@@ -937,6 +1065,17 @@ export default function MonitorPage() {
           };
         });
         setDrawState('REVEALED');
+
+        // Debug: log the actual winner data from server
+        console.log('[Monitor] ACTUAL WINNER REVEAL', {
+          participantName: p.participantName,
+          participantPhotoUrl: p.participantPhotoUrl,
+          participantCompany: p.participantCompany,
+          prizeId: p.prizeId,
+          prizeName: p.prizeName,
+          prizeImageUrl: p.prizeImageUrl,
+          prizeTier: p.prizeTier,
+        });
       },
       [stopCountdown],
     ),
@@ -1060,17 +1199,7 @@ export default function MonitorPage() {
       <ParticleField />
 
       <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-6 md:px-10 py-4 border-b border-white/[0.04] bg-gradient-to-b from-[#020617cc] to-transparent">
-        <img
-          src={radiantGroupLogo}
-          alt="Radiant Group"
-          className="object-contain"
-          style={{
-            width: 'clamp(140px, 10vw, 220px)',
-            height: 'auto',
-            filter: 'drop-shadow(0 0 12px rgba(59,130,246,0.12))',
-          }}
-        />
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 ml-auto">
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${isConnected ? 'bg-success-500/10 text-success-400' : 'bg-danger-500/10 text-danger-400'}`}
           >
@@ -1107,7 +1236,10 @@ export default function MonitorPage() {
       >
         {/* LEFT: Prize List */}
         <div className="relative border-r border-white/[0.03]">
-          <PrizeListPanel prizes={prizes} activePrizeId={drawData?.prizeId ?? null} />
+          <PrizeListPanel
+            prizes={prizes}
+            activePrizeId={drawState === 'REVEALED' ? (drawData?.prizeId ?? null) : null}
+          />
         </div>
 
         {/* CENTER: Lucky Draw */}
@@ -1118,6 +1250,7 @@ export default function MonitorPage() {
             count={count}
             showGo={showGo}
             done={drawState === 'COMPLETED'}
+            prizes={prizes}
           />
         </div>
 

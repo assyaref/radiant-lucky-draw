@@ -652,7 +652,11 @@ function SpinningScreen({
   const hasStoppedRef = useRef(false);
   const mountedRef = useRef(true);
   const onVisualStopRef = useRef(onVisualStop);
-  onVisualStopRef.current = onVisualStop;
+
+  // Keep callback ref in sync without mutation during render
+  useEffect(() => {
+    onVisualStopRef.current = onVisualStop;
+  });
 
   // Mark unmounted to prevent state updates after unmount
   useEffect(() => {
@@ -665,7 +669,6 @@ function SpinningScreen({
   // Phase 1: Fast cycling (80ms)
   useEffect(() => {
     if (prizes.length === 0) return;
-    setConverge(false);
     hasStoppedRef.current = false;
     finalPrizeRef.current = null;
 
@@ -685,6 +688,7 @@ function SpinningScreen({
     return () => {
       clearInterval(fastInterval);
       clearTimeout(slowTimeout);
+      setConverge(false);
     };
   }, [prizes]);
 
@@ -1305,10 +1309,7 @@ export default function MonitorPage() {
       >
         {/* LEFT: Prize List */}
         <div className="relative border-r border-white/[0.03]">
-          <PrizeListPanel
-            prizes={prizes}
-            highlightedPrizeId={highlightedPrizeId}
-          />
+          <PrizeListPanel prizes={prizes} highlightedPrizeId={highlightedPrizeId} />
         </div>
 
         {/* CENTER: Lucky Draw */}

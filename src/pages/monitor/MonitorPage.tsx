@@ -936,6 +936,7 @@ export default function MonitorPage() {
   const countRef = useRef(3);
   const countTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const completedDrawIdRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [prizes, setPrizes] = useState<PrizeEntry[]>([]);
   const [winners, setWinners] = useState<WinnerEntry[]>([]);
@@ -966,6 +967,40 @@ export default function MonitorPage() {
         }
       })
       .catch((err) => console.error('[Monitor] Failed to load winners', err));
+  }, []);
+
+  // Cleanup mounted flag on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // ─── Refresh winner list from server ─────────────────────────────────
+  const refreshWinners = useCallback(async () => {
+    console.log('[Monitor] Refreshing winner list after draw completed');
+    try {
+      const response = await boothApi.getPublicWinners(50);
+      if (!mountedRef.current) return;
+
+      if (Array.isArray(response.data)) {
+        const mapped: WinnerEntry[] = (response.data as Winner[]).map((w) => ({
+          id: w.id,
+          drawId: w.drawId,
+          participantName: w.participantName,
+          participantCompany: w.participantCompany,
+          participantPhotoUrl: w.participantPhotoUrl,
+          prizeName: w.prizeName,
+          prizeTier: w.prizeTier,
+        }));
+        setWinners(mapped);
+        console.log('[Monitor] Winner list refreshed', {
+          count: mapped.length,
+        });
+      }
+    } catch (error) {
+      console.error('[Monitor] Failed to refresh winners', error);
+    }
   }, []);
 
   const startCountdown = useCallback(() => {
@@ -1130,22 +1165,11 @@ export default function MonitorPage() {
       (p: any) => {
         stopCountdown();
         console.log('[Monitor] draw:completed', { drawId: p?.drawId });
-        // Add winner to list (deduplicate by drawId)
-        if (p?.drawId && p?.participantName) {
-          setWinners((prev) => {
-            if (prev.some((w) => w.drawId === p.drawId)) return prev;
-            const entry: WinnerEntry = {
-              id: p.drawId,
-              drawId: p.drawId,
-              participantName: p.participantName || '',
-              participantCompany: p.participantCompany || '',
-              participantPhotoUrl: p.participantPhotoUrl,
-              prizeName: p.prizeName || '',
-              prizeTier: p.prizeTier || '',
-            };
-            return [entry, ...prev];
-          });
-        }
+        // Refresh winner list from server after draw completes
+        // Small delay ensures the database transaction is finished
+        setTimeout(() => {
+          refreshWinners();
+        }, 300);
         // Update prize stock if available
         if (p?.prizeId != null && p?.remainingStock != null) {
           setPrizes((prev) =>
@@ -1165,7 +1189,7 @@ export default function MonitorPage() {
           completedDrawIdRef.current = null;
         }, 5000);
       },
-      [stopCountdown],
+      [stopCountdown, refreshWinners],
     ),
   );
 

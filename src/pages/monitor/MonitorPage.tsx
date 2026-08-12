@@ -79,6 +79,93 @@ function tier(t: string | null | undefined) {
   return TIER[t?.toLowerCase() ?? ''] ?? TIER.bronze;
 }
 
+// ─── Corporate Confetti (Logo Decoration) ──────────────────────────────
+
+const CONFETTI_COLORS = [
+  '#3b82f6', // blue
+  '#6366f1', // indigo
+  '#8b5cf6', // purple
+  '#a78bfa', // violet
+  '#f59e0b', // amber
+  '#fbbf24', // gold
+  '#06b6d4', // cyan
+  '#e2e8f0', // white-ish
+];
+
+interface ConfettiDot {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+  size: number;
+  duration: number;
+  delay: number;
+  drift: number;
+  rotation: number;
+  shape: 'rect' | 'circle' | 'diamond';
+}
+
+function generateConfetti(count: number, seed: number): ConfettiDot[] {
+  return Array.from({ length: count }, (_, i) => {
+    const r = (s: number) =>
+      (((Math.sin((i + seed) * 127.1 + s * 311.7) * 43758.5453) % 1) + 1) % 1;
+    return {
+      id: i,
+      x: 30 + r(1) * 40,
+      y: 15 + r(2) * 35,
+      color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+      size: 4 + r(3) * 8,
+      duration: 3 + r(4) * 4,
+      delay: r(5) * 2.5,
+      drift: (r(6) - 0.5) * 40,
+      rotation: r(7) * 360 - 180,
+      shape: i % 3 === 0 ? 'circle' : i % 3 === 1 ? 'rect' : 'diamond',
+    };
+  });
+}
+
+function CorporateConfetti({ active, intensity = 1 }: { active: boolean; intensity?: number }) {
+  const [pieces] = useState(() => generateConfetti(30, Date.now() % 1000));
+
+  if (!active) return null;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      {pieces.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute"
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: p.size,
+            height: p.shape === 'diamond' ? p.size * 1.4 : p.size,
+            backgroundColor: p.shape !== 'diamond' ? p.color : 'transparent',
+            borderColor: p.shape === 'diamond' ? p.color : 'transparent',
+            borderWidth: p.shape === 'diamond' ? 1.5 : 0,
+            borderRadius: p.shape === 'circle' ? 9999 : p.shape === 'rect' ? 2 : 0,
+            opacity: 0.35 * intensity,
+          }}
+          animate={{
+            y: [0, -(60 + p.duration * 12), -(80 + p.duration * 14)],
+            x: [0, p.drift * 0.5, p.drift],
+            opacity: [0.35 * intensity, 0.55 * intensity, 0],
+            rotate: p.rotation,
+            scale: [0.8, 1.15, 0.6],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            ease: 'easeOut',
+            repeat: Infinity,
+            repeatDelay: 1 + (p.id % 3) * 0.8,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ─── Animated Background Particles ──────────────────────────────────────
 
 function ParticleField() {
@@ -243,34 +330,61 @@ function CenterPanel({
         {drawState === 'IDLE' && (
           <motion.div
             key="ci"
-            className="flex flex-col items-center gap-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center gap-5 w-full h-full relative"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <motion.div
-              className="pointer-events-none absolute inset-0"
-              animate={{ opacity: [0.08, 0.18, 0.08] }}
-              transition={{ repeat: Infinity, duration: 4 }}
+            {/* Premium radial glow behind logo */}
+            <div
+              className="pointer-events-none absolute inset-0 flex items-center justify-center"
+              aria-hidden="true"
             >
-              <div className="h-full w-full bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.15)_0%,rgba(139,92,246,0.06)_35%,transparent_65%)]" />
-            </motion.div>
-            <p className="text-white/15 text-sm md:text-base font-light tracking-[0.3em] uppercase z-10"></p>
+              <motion.div
+                className="absolute"
+                style={{
+                  width: 'clamp(300px, 40vw, 600px)',
+                  height: 'clamp(300px, 40vw, 600px)',
+                  background:
+                    'radial-gradient(circle, rgba(59,130,246,0.18) 0%, rgba(139,92,246,0.12) 35%, rgba(245,158,11,0.06) 55%, transparent 75%)',
+                  filter: 'blur(20px)',
+                }}
+                animate={{ opacity: [0.6, 0.9, 0.6], scale: [0.95, 1.05, 0.95] }}
+                transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut' }}
+              />
+            </div>
+
+            {/* Corporate Confetti around logo */}
+            <CorporateConfetti active intensity={0.6} />
+
+            {/* Logo — Focal Point */}
             <motion.div
-              initial={{ opacity: 0, y: -12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="z-10 mb-2"
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="z-10 relative"
             >
+              <motion.div
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: 'radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%)',
+                  filter: 'blur(40px)',
+                  transform: 'scale(1.3)',
+                }}
+                animate={{ opacity: [0.4, 0.7, 0.4] }}
+                transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+              />
               <img
                 src={luckyDrawLogo}
-                alt="Lucky Draw"
-                className="w-auto h-20 md:h-24 object-contain drop-shadow-[0_0_40px_rgba(139,92,246,0.35)]"
+                alt="Radiant Group Lucky Draw"
+                className="relative w-auto h-[clamp(140px,20vw,280px)] md:h-[clamp(180px,22vw,340px)] object-contain drop-shadow-[0_0_60px_rgba(139,92,246,0.40)]"
               />
             </motion.div>
+
+            {/* LUCKY DRAW title */}
             <h1
-              className="text-[clamp(2.5rem,6vw,5rem)] font-black tracking-tight text-center leading-none z-10"
+              className="text-[clamp(2rem,5vw,3.5rem)] font-black tracking-tight text-center leading-none z-10"
               style={{
                 backgroundImage: 'linear-gradient(135deg,#3b82f6,#8b5cf6,#f59e0b)',
                 WebkitBackgroundClip: 'text',
@@ -280,9 +394,13 @@ function CenterPanel({
             >
               LUCKY DRAW
             </h1>
+
+            {/* Siap untuk menang */}
             <div className="rounded-full border border-primary-400/15 bg-primary-400/[0.03] px-10 py-4">
               <p className="text-white/50 text-xl font-light tracking-wider">SIAP UNTUK MENANG?</p>
             </div>
+
+            {/* Pulsing dots */}
             <div className="flex gap-4">
               {[0, 1, 2].map((i) => (
                 <motion.div
@@ -293,6 +411,7 @@ function CenterPanel({
                 />
               ))}
             </div>
+
             <p className="text-white/10 text-sm tracking-widest uppercase">DIGITAL BOOTH</p>
           </motion.div>
         )}
@@ -357,6 +476,9 @@ function CenterPanel({
             <p className="text-amber-300/60 text-sm font-bold tracking-[0.35em] uppercase z-10 animate-pulse">
               PEMENANG LUCKY DRAW
             </p>
+
+            {/* Festive confetti during winner reveal */}
+            <CorporateConfetti active intensity={1} />
 
             {/* ── ACTUAL WINNER: Participant Photo + Info (server-authoritative) ── */}
             {drawData && (

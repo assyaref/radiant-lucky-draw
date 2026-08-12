@@ -12,6 +12,7 @@ import type { SocketEventName } from '@services/socket';
 import { env } from '@config/env';
 import { normalizeImageUrl } from '@/utils';
 import { boothApi, type Winner } from '@/api/booth';
+import luckyDrawLogo from '@assets/images/lucky-draw-logo.png';
 
 type DrawState = 'IDLE' | 'COUNTDOWN' | 'SPINNING' | 'REVEALED' | 'COMPLETED';
 interface DrawData {
@@ -256,6 +257,18 @@ function CenterPanel({
               <div className="h-full w-full bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.15)_0%,rgba(139,92,246,0.06)_35%,transparent_65%)]" />
             </motion.div>
             <p className="text-white/15 text-sm md:text-base font-light tracking-[0.3em] uppercase z-10"></p>
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="z-10 mb-2"
+            >
+              <img
+                src={luckyDrawLogo}
+                alt="Lucky Draw"
+                className="w-auto h-20 md:h-24 object-contain drop-shadow-[0_0_40px_rgba(139,92,246,0.35)]"
+              />
+            </motion.div>
             <h1
               className="text-[clamp(2.5rem,6vw,5rem)] font-black tracking-tight text-center leading-none z-10"
               style={{
@@ -1271,7 +1284,17 @@ export default function MonitorPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#070b1a] via-[#020617] to-[#060a18]" />
       <ParticleField />
 
-      <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-6 md:px-10 py-4 border-b border-white/[0.04] bg-gradient-to-b from-[#020617cc] to-transparent">
+      <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-6 md:px-10 py-3 border-b border-white/[0.04] bg-gradient-to-b from-[#020617cc] to-transparent">
+        <div className="flex items-center gap-3">
+          <img
+            src={luckyDrawLogo}
+            alt="Lucky Draw"
+            className="h-8 w-auto object-contain opacity-90 drop-shadow-[0_0_12px_rgba(139,92,246,0.25)]"
+          />
+          <span className="text-white/15 text-[10px] font-mono tracking-[0.2em] hidden sm:block">
+            CORPORATE EVENT
+          </span>
+        </div>
         <div className="flex items-center gap-4 ml-auto">
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${isConnected ? 'bg-success-500/10 text-success-400' : 'bg-danger-500/10 text-danger-400'}`}

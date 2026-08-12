@@ -15,6 +15,7 @@ import {
 } from 'react-icons/hi2';
 import { boothApi, type BoothConfig, type SpinResult } from '@/api/booth';
 import { normalizeImageUrl } from '@/utils';
+import luckyDrawLogo from '@assets/images/lucky-draw-logo.png';
 
 type Step = 'landing' | 'form' | 'camera' | 'preview' | 'ready' | 'spinning' | 'result';
 type CameraFacing = 'user' | 'environment';
@@ -336,11 +337,16 @@ export default function PublicBoothPage() {
             >
               <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 shadow-2xl">
                 <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="text-7xl mb-5"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                  className="mb-5"
                 >
-                  🎰
+                  <img
+                    src={luckyDrawLogo}
+                    alt="Lucky Draw"
+                    className="w-full max-w-[220px] mx-auto object-contain drop-shadow-[0_0_30px_rgba(139,92,246,0.3)]"
+                  />
                 </motion.div>
                 <h2 className="text-2xl font-bold text-white mb-2">Lucky Draw Booth</h2>
                 <p className="text-white/50 text-sm mb-4">

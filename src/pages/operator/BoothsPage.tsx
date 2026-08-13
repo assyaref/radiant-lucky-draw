@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   HiOutlineBuildingStorefront,
   HiOutlinePlus,
-  HiOutlinePencil,
   HiOutlineTrash,
   HiOutlineXMark,
   HiOutlineQrCode,
@@ -206,7 +205,7 @@ export default function BoothsPage() {
                   onClick={() => handleEdit(booth)}
                   className="flex-1 py-2.5 text-sm text-dark-text-secondary hover:text-white hover:bg-dark-surface-tertiary transition-colors flex items-center justify-center gap-1"
                 >
-                  <HiOutlinePencil className="w-4 h-4" /> Edit
+                  Edit
                 </button>
                 <button
                   onClick={() => handleDelete(booth.id)}

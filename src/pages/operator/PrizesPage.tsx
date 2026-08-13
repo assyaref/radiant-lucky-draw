@@ -19,7 +19,6 @@ import {
   HiOutlinePlus,
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
-  HiOutlinePencil,
   HiOutlineTrash,
   HiXMark,
   HiOutlineArrowPath,
@@ -351,10 +350,10 @@ export default function PrizesPage() {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openEdit(p)}
-                          className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-primary-400 hover:bg-dark-surface-tertiary transition-colors"
+                          className="px-2.5 py-1.5 rounded-lg text-xs text-dark-text-tertiary hover:text-primary-400 hover:bg-dark-surface-tertiary transition-colors"
                           title="Edit"
                         >
-                          <HiOutlinePencil className="w-4 h-4" />
+                          Edit
                         </button>
                         <button
                           onClick={() => setDeleteTarget(p)}

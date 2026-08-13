@@ -397,7 +397,6 @@ export default function PublicBoothPage() {
             >
               <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-2xl">
                 <div className="text-center mb-5">
-                  <div className="text-4xl mb-2">✍️</div>
                   <h2 className="text-lg font-bold text-white">Registrasi</h2>
                   <p className="text-white/40 text-xs mt-1">Isi data diri Anda</p>
                 </div>

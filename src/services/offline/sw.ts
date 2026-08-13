@@ -4,7 +4,7 @@
 // It is compiled separately by Vite for the Service Worker context.
 
 const CACHE_NAME = 'radiant-lucky-draw-v1';
-const STATIC_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/icons.svg'];
+const STATIC_ASSETS = ['/', '/index.html', '/manifest.json', '/favicon.svg'];
 
 const API_CACHE_NAME = 'radiant-api-v1';
 const API_CACHE_TTL = 5 * 60 * 1000; // 5 minutes

@@ -20,6 +20,15 @@ export class ParticipantController {
     }
   };
 
+  exportAll = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await this.participantService.listAll();
+      sendSuccess(res, result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   findById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await this.participantService.findById(req.params.id);

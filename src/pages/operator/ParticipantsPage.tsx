@@ -9,9 +9,11 @@ import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
   HiOutlineTrash,
+  HiOutlineArrowDownTray,
   HiXMark,
 } from 'react-icons/hi2';
 import { boothApi, type BoothParticipant } from '@/api/booth';
+import { formatWhatsApp, toWhatsAppLink, buildCsv, downloadCsvFile } from '@/utils';
 
 const statusColors: Record<string, string> = {
   registered: 'bg-primary-500/20 text-primary-400',
@@ -32,6 +34,8 @@ export default function ParticipantsPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [toast, setToast] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [exporting, setExporting] = useState(false);
   const pageSize = 10;
 
   useEffect(() => {
@@ -75,8 +79,7 @@ export default function ParticipantsPage() {
       await boothApi.deleteParticipant(targetId, force);
       setParticipants((prev) => prev.filter((p) => p.id !== targetId));
       setTotal((t) => t - 1);
-      setToast('Participant deleted successfully');
-      setTimeout(() => setToast(''), 3000);
+      showToast('Participant deleted successfully');
     } catch (err: any) {
       if (!force && err?.status === 403) {
         // Winner protection — ask for force delete confirmation
@@ -96,6 +99,46 @@ export default function ParticipantsPage() {
     }
   };
 
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast(message);
+    setToastType(type);
+    window.setTimeout(() => setToast(''), type === 'error' ? 5000 : 3000);
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await boothApi.listAllParticipants();
+      const rows = res.data ?? [];
+      const now = new Date();
+      const date = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, '0'),
+        String(now.getDate()).padStart(2, '0'),
+      ].join('-');
+
+      const csv = buildCsv([
+        ['No', 'Name', 'Company', 'WhatsApp', 'Status', 'Photo', 'Registered At'],
+        ...rows.map((p, i) => [
+          i + 1,
+          p.name,
+          p.company,
+          p.phone ?? '',
+          p.status ?? '',
+          p.photoUrl ?? '',
+          p.registeredAt.slice(0, 10),
+        ]),
+      ]);
+
+      downloadCsvFile(`participants-${date}.csv`, csv);
+      showToast(`Exported ${rows.length} participants`);
+    } catch (err: any) {
+      showToast(err?.message ?? 'Failed to export participants', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const totalPages = Math.ceil(total / pageSize);
 
   return (
@@ -106,7 +149,11 @@ export default function ParticipantsPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg bg-success-500/20 border border-success-500/30 text-success-400 text-sm"
+            className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg border text-sm ${
+              toastType === 'error'
+                ? 'bg-red-500/20 border-red-500/30 text-red-400'
+                : 'bg-success-500/20 border-success-500/30 text-success-400'
+            }`}
           >
             {toast}
           </motion.div>
@@ -235,6 +282,14 @@ export default function ParticipantsPage() {
             className="w-full pl-10 pr-4 py-2 rounded-lg bg-dark-surface-secondary border border-dark-border text-white placeholder-dark-text-tertiary outline-none focus:border-primary-500/50 transition-colors text-sm"
           />
         </div>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <HiOutlineArrowDownTray className="w-4 h-4" />
+          {exporting ? 'Exporting...' : 'Export'}
+        </button>
       </div>
 
       <div className="rounded-xl border border-dark-border bg-dark-surface-secondary overflow-hidden">
@@ -247,6 +302,9 @@ export default function ParticipantsPage() {
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
                   Company
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
+                  WhatsApp
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
                   Status
@@ -266,7 +324,7 @@ export default function ParticipantsPage() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-12 text-center text-sm text-dark-text-tertiary"
                   >
                     Loading...
@@ -274,14 +332,14 @@ export default function ParticipantsPage() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-sm text-red-400">
+                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-red-400">
                     {error}
                   </td>
                 </tr>
               ) : participants.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-12 text-center text-sm text-dark-text-tertiary"
                   >
                     No participants found.
@@ -300,6 +358,20 @@ export default function ParticipantsPage() {
                     <td className="px-4 py-3 text-sm text-dark-text-secondary">
                       {p.company || '\u2014'}
                     </td>
+                    <td className="px-4 py-3 text-sm text-dark-text-secondary">
+                      {p.phone ? (
+                        <a
+                          href={toWhatsAppLink(p.phone) ?? '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-400 hover:underline"
+                        >
+                          {formatWhatsApp(p.phone)}
+                        </a>
+                      ) : (
+                        <span className="text-dark-text-tertiary">-</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[p.status || 'registered'] || statusColors.registered}`}
@@ -308,7 +380,7 @@ export default function ParticipantsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-dark-text-tertiary">
-                      {p.hasPhoto ? '📸' : '\u2014'}
+                      {p.photoUrl ? '📸' : '\u2014'}
                     </td>
                     <td className="px-4 py-3 text-sm text-dark-text-tertiary">
                       {new Date(p.registeredAt).toLocaleDateString()}

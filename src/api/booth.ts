@@ -29,10 +29,11 @@ export interface BoothParticipant {
   name: string;
   company: string;
   whatsapp?: string;
+  phone?: string | null;
   photoUrl?: string;
   status?: string;
   registeredAt: string;
-  hasPhoto: boolean;
+  hasPhoto?: boolean;
 }
 
 export interface UploadPhotoResult {
@@ -122,6 +123,9 @@ export const boothApi = {
     const qs = query.toString();
     return api.get<Paginated<BoothParticipant>>(`/participants${qs ? `?${qs}` : ''}`);
   },
+
+  /** List ALL participants (admin, authenticated) — used for CSV export */
+  listAllParticipants: () => api.get<ApiEnvelope<BoothParticipant[]>>('/participants/export'),
 
   /** Update winner claim status (admin) */
   updateClaimStatus: (id: string, claimStatus: 'unclaimed' | 'claimed') =>

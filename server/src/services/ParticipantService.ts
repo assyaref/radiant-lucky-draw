@@ -31,6 +31,10 @@ export class ParticipantService {
     return this.participantRepository.paginate(page, limit);
   }
 
+  async listAll() {
+    return this.participantRepository.findAll();
+  }
+
   async findById(id: string): Promise<ParticipantResponse> {
     const participant = await this.participantRepository.findById(id);
     if (!participant) throw new NotFoundError('Participant', id);

@@ -82,6 +82,19 @@ export function createParticipantRoutes(
 
   /**
    * @openapi
+   * /api/participants/export:
+   *   get:
+   *     tags: [Participants]
+   *     summary: List all participants for CSV export
+   *     security: [{ bearerAuth: [] }]
+   *     responses:
+   *       200:
+   *         description: List of all participants
+   */
+  router.get('/export', participantController.exportAll);
+
+  /**
+   * @openapi
    * /api/participants/{id}:
    *   get:
    *     tags: [Participants]

@@ -591,13 +591,6 @@ export default function PublicBoothPage() {
               className="w-full max-w-sm text-center"
             >
               <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 shadow-2xl">
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                  className="text-6xl mb-4"
-                >
-                  🎉
-                </motion.div>
                 <h2 className="text-xl font-bold text-white mb-2">Siap!</h2>
                 <p className="text-white/50 text-sm mb-8">
                   Data dan foto Anda sudah tersimpan.
@@ -614,7 +607,7 @@ export default function PublicBoothPage() {
                   disabled={spinning}
                   className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-amber-500/25 transition-all"
                 >
-                  {spinning ? 'Undian sedang berlangsung...' : '🎰 MULAI MEMUTAR UNDIAN'}
+                  {spinning ? 'Undian sedang berlangsung...' : 'MULAI MEMUTAR UNDIAN'}
                 </button>
               </div>
             </motion.div>

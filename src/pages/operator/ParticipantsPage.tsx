@@ -13,7 +13,13 @@ import {
   HiXMark,
 } from 'react-icons/hi2';
 import { boothApi, type BoothParticipant } from '@/api/booth';
-import { formatWhatsApp, toWhatsAppLink, buildCsv, downloadCsvFile } from '@/utils';
+import {
+  formatWhatsApp,
+  toWhatsAppLink,
+  buildCsv,
+  downloadCsvFile,
+  normalizeImageUrl,
+} from '@/utils';
 
 const statusColors: Record<string, string> = {
   registered: 'bg-primary-500/20 text-primary-400',
@@ -36,6 +42,7 @@ export default function ParticipantsPage() {
   const [toast, setToast] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [exporting, setExporting] = useState(false);
+  const [previewPhoto, setPreviewPhoto] = useState<{ url: string; name: string } | null>(null);
   const pageSize = 10;
 
   useEffect(() => {
@@ -69,6 +76,14 @@ export default function ParticipantsPage() {
       cancelled = true;
     };
   }, [page, search]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPreviewPhoto(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const handleDelete = async (force: boolean = false) => {
     const targetId = force ? forceDeleteId : deleteId;
@@ -261,6 +276,41 @@ export default function ParticipantsPage() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {previewPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={() => setPreviewPhoto(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-2xl"
+            >
+              <button
+                onClick={() => setPreviewPhoto(null)}
+                aria-label="Close preview"
+                className="absolute -top-10 right-0 p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <HiXMark className="w-6 h-6" />
+              </button>
+              <img
+                src={normalizeImageUrl(previewPhoto.url)}
+                alt={previewPhoto.name}
+                className="w-full max-h-[80vh] object-contain rounded-2xl border border-white/10 bg-black"
+              />
+              <p className="mt-3 text-center text-sm text-white/70">{previewPhoto.name}</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Participants</h1>
@@ -379,8 +429,22 @@ export default function ParticipantsPage() {
                         {p.status || 'registered'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-dark-text-tertiary">
-                      {p.photoUrl ? '📸' : '\u2014'}
+                    <td className="px-4 py-3">
+                      {p.photoUrl ? (
+                        <button
+                          onClick={() => setPreviewPhoto({ url: p.photoUrl ?? '', name: p.name })}
+                          className="group relative w-10 h-10 rounded-full overflow-hidden border border-dark-border hover:border-primary-500/60 transition-colors"
+                          title={`View ${p.name}'s photo`}
+                        >
+                          <img
+                            src={normalizeImageUrl(p.photoUrl)}
+                            alt={p.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ) : (
+                        <span className="text-dark-text-tertiary text-sm">{'\u2014'}</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-dark-text-tertiary">
                       {new Date(p.registeredAt).toLocaleDateString()}

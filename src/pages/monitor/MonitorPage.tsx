@@ -326,7 +326,11 @@ function CenterPanel({
 
   return (
     <div className="flex flex-col items-center justify-center h-full w-full px-4">
-      <AnimatePresence mode="wait">
+      {/* NOTE: intentionally NOT using mode="wait". With rapid successive draw-state
+          transitions (COUNTDOWN → SPINNING → REVEALED → COMPLETED) across dozens of
+          draws, mode="wait" can get stuck waiting on an exit animation and stop
+          mounting the next state — leaving the center permanently blank. */}
+      <AnimatePresence>
         {drawState === 'IDLE' && (
           <motion.div
             key="ci"

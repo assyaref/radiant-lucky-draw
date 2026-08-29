@@ -1075,6 +1075,7 @@ export default function MonitorPage() {
   const countRef = useRef(3);
   const countTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const completedDrawIdRef = useRef<string | null>(null);
+  const completedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [prizes, setPrizes] = useState<PrizeEntry[]>([]);
@@ -1108,10 +1109,14 @@ export default function MonitorPage() {
       .catch((err) => console.error('[Monitor] Failed to load winners', err));
   }, []);
 
-  // Cleanup mounted flag on unmount
+  // Cleanup mounted flag + pending reset timer on unmount
   useEffect(() => {
     return () => {
       mountedRef.current = false;
+      if (completedResetTimerRef.current) {
+        clearTimeout(completedResetTimerRef.current);
+        completedResetTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -1186,6 +1191,14 @@ export default function MonitorPage() {
     useCallback(
       (p: any) => {
         if (!p) return;
+        // A new draw has started — cancel any pending idle-reset scheduled by a
+        // previous draw so a stale reset can never blank the center during the
+        // new draw's COUNTDOWN / SPINNING / REVEALED sequence.
+        if (completedResetTimerRef.current) {
+          clearTimeout(completedResetTimerRef.current);
+          completedResetTimerRef.current = null;
+        }
+        completedDrawIdRef.current = null;
         console.log('[Monitor] draw:started', {
           drawId: p.drawId,
           participantName: p.participantName,
@@ -1318,14 +1331,22 @@ export default function MonitorPage() {
         const drawId = p?.drawId;
         setDrawState('COMPLETED');
         setHighlightedPrizeId(null);
-        // Guard: only clear if the drawId hasn't changed (no new draw started)
+        // Track this draw as the latest completed, then schedule the auto-reset
+        // back to idle. When a new draw starts before this fires, draw:started
+        // clears the timer so it can never blank the center of the new draw.
         if (drawId) completedDrawIdRef.current = drawId;
-        setTimeout(() => {
+        if (completedResetTimerRef.current) {
+          clearTimeout(completedResetTimerRef.current);
+          completedResetTimerRef.current = null;
+        }
+        completedResetTimerRef.current = setTimeout(() => {
+          // Guard: only reset if no new draw has started since (drawId unchanged).
           if (drawId && completedDrawIdRef.current !== drawId) return;
           setDrawState('IDLE');
           setDrawData(null);
           setHighlightedPrizeId(null);
           completedDrawIdRef.current = null;
+          completedResetTimerRef.current = null;
         }, 5000);
       },
       [stopCountdown, refreshWinners],

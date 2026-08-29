@@ -4,6 +4,7 @@
 
 export interface CreatePrizeRequest {
   name: string;
+  eventId?: string;
   description?: string;
   value: number;
   currency?: string;
@@ -16,6 +17,7 @@ export interface CreatePrizeRequest {
 
 export interface UpdatePrizeRequest {
   name?: string;
+  eventId?: string;
   description?: string;
   value?: number;
   currency?: string;
@@ -29,6 +31,7 @@ export interface UpdatePrizeRequest {
 
 export interface PrizeResponse {
   id: string;
+  eventId?: string | null;
   name: string;
   description: string | null;
   value: number;

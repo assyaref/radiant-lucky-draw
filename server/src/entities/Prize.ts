@@ -4,6 +4,7 @@
 
 export interface Prize {
   id: string;
+  eventId?: string | null;
   name: string;
   description: string | null;
   value: number;

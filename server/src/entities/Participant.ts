@@ -4,6 +4,7 @@
 
 export interface Participant {
   id: string;
+  eventId?: string | null;
   name: string;
   email: string;
   phone: string | null;

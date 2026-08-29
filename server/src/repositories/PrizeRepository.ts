@@ -22,6 +22,7 @@ export class PrizeRepository extends PrismaRepository<Prize> {
 
     return {
       id: record.id,
+      eventId: record.eventId ?? null,
       name: record.name ?? 'Unknown Prize',
       description: record.description ?? '',
       value: record.value ?? 0,
@@ -40,6 +41,7 @@ export class PrizeRepository extends PrismaRepository<Prize> {
 
   protected toPrisma(data: any): any {
     const prismaData: any = {};
+    if (data.eventId !== undefined) prismaData.eventId = data.eventId;
     if (data.name !== undefined) prismaData.name = data.name;
     if (data.description !== undefined) prismaData.description = data.description;
     if (data.value !== undefined) prismaData.value = data.value;
@@ -54,11 +56,10 @@ export class PrizeRepository extends PrismaRepository<Prize> {
     return prismaData;
   }
 
-  async findActive(): Promise<Prize[]> {
-    const records = await this.model.findMany({
-      where: { isActive: true, remaining: { gt: 0 }, deletedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findActive(eventId?: string | null): Promise<Prize[]> {
+    const where: any = { isActive: true, remaining: { gt: 0 }, deletedAt: null };
+    if (eventId !== undefined) where.eventId = eventId ?? null;
+    const records = await this.model.findMany({ where, orderBy: { createdAt: 'desc' } });
     return records.map((r: any) => this.toEntity(r));
   }
 

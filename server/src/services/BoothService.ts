@@ -49,7 +49,7 @@ export class BoothService {
    *   a valid 200 response with sensible defaults (never a 500).
    * - Only truly fatal errors (e.g. OOM, process signal) propagate.
    */
-  async getBoothConfig(): Promise<BoothConfigResponse> {
+  async getBoothConfig(eventId?: string | null): Promise<BoothConfigResponse> {
     // ── Helper: extract structured diagnostics from any error ───
     const errMeta = (err: unknown, label: string) => {
       const e = err as any;
@@ -78,7 +78,7 @@ export class BoothService {
 
     const safePrizes = async () => {
       try {
-        return await this.prizeRepository.findActive();
+        return await this.prizeRepository.findActive(eventId);
       } catch (err) {
         logger.error(
           'BoothService.getBoothConfig: prizeRepository.findActive() FAILED',
@@ -90,7 +90,7 @@ export class BoothService {
 
     const safeCount = async () => {
       try {
-        return await this.participantRepository.count();
+        return await this.participantRepository.count(eventId);
       } catch (err) {
         logger.error(
           'BoothService.getBoothConfig: participantRepository.count() FAILED',
@@ -159,13 +159,15 @@ export class BoothService {
       }
     }
 
-    const queueNumber = await this.participantRepository.getNextQueueNumber();
+    const eventId = data.eventId ?? null;
+    const queueNumber = await this.participantRepository.getNextQueueNumber(eventId);
     try {
       const participant = await this.participantRepository.create({
         name: data.name,
         email: '',
         phone: normalizedPhone,
         company: data.company,
+        eventId,
         queueNumber,
         status: 'registered',
         claimStatus: 'unclaimed',
@@ -262,7 +264,12 @@ export class BoothService {
       const result = await prisma.$transaction(async (tx) => {
         // 1. Fetch all eligible prizes (active, in stock) inside the transaction.
         const eligiblePrizes = await tx.prize.findMany({
-          where: { isActive: true, remaining: { gt: 0 }, deletedAt: null },
+          where: {
+            isActive: true,
+            remaining: { gt: 0 },
+            deletedAt: null,
+            eventId: participant.eventId ?? null,
+          },
         });
         if (eligiblePrizes.length === 0) {
           throw new ValidationError('Tidak ada hadiah yang tersedia');
@@ -290,6 +297,7 @@ export class BoothService {
         const draw = await tx.draw.create({
           data: {
             name: `Booth Draw - ${participant.name}`,
+            eventId: participant.eventId ?? null,
             prizeId: prizeRecord.id,
             prizeName: prizeRecord.name,
             status: 'completed',
@@ -304,6 +312,7 @@ export class BoothService {
         await tx.winner.create({
           data: {
             drawId: draw.id,
+            eventId: participant.eventId ?? null,
             participantId: participant.id,
             prizeId: prizeRecord.id,
             prizeTier: prizeRecord.tier,

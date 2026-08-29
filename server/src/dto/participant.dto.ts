@@ -7,6 +7,7 @@ export interface CreateParticipantRequest {
   email?: string;
   phone: string;
   company: string;
+  eventId?: string;
 }
 
 export interface UpdateParticipantRequest {
@@ -22,6 +23,7 @@ export interface UpdateParticipantRequest {
 
 export interface ParticipantResponse {
   id: string;
+  eventId?: string | null;
   name: string;
   email: string;
   phone: string | null;

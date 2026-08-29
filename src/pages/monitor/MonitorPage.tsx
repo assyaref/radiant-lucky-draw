@@ -79,6 +79,16 @@ function tier(t: string | null | undefined) {
   return TIER[t?.toLowerCase() ?? ''] ?? TIER.bronze;
 }
 
+// Monotonic order of draw states — used to discard stale/duplicated state
+// messages so the center can never regress or blank mid-animation.
+const STATE_RANK: Record<DrawState, number> = {
+  IDLE: 0,
+  COUNTDOWN: 1,
+  SPINNING: 2,
+  REVEALED: 3,
+  COMPLETED: 4,
+};
+
 // ─── Corporate Confetti (Logo Decoration) ──────────────────────────────
 
 const CONFETTI_COLORS = [
@@ -325,16 +335,18 @@ function CenterPanel({
   const t = tier(drawData?.prizeTier);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full px-4">
+    <div className="relative h-full w-full">
       {/* NOTE: intentionally NOT using mode="wait". With rapid successive draw-state
           transitions (COUNTDOWN → SPINNING → REVEALED → COMPLETED) across dozens of
           draws, mode="wait" can get stuck waiting on an exit animation and stop
-          mounting the next state — leaving the center permanently blank. */}
+          mounting the next state — leaving the center permanently blank.
+          Children are absolutely positioned so an exiting child never distorts
+          the layout of the entering child (each fills the same column). */}
       <AnimatePresence>
         {drawState === 'IDLE' && (
           <motion.div
             key="ci"
-            className="flex flex-col items-center justify-center gap-5 w-full h-full relative"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-5 w-full h-full"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -422,7 +434,7 @@ function CenterPanel({
         {drawState === 'COUNTDOWN' && (
           <motion.div
             key="cc"
-            className="w-full h-full flex items-center justify-center"
+            className="absolute inset-0 flex items-center justify-center"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -434,7 +446,7 @@ function CenterPanel({
         {drawState === 'SPINNING' && (
           <motion.div
             key="cs"
-            className="w-full h-full"
+            className="absolute inset-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -447,7 +459,7 @@ function CenterPanel({
         {(drawState === 'REVEALED' || drawState === 'COMPLETED') && (
           <motion.div
             key="cw"
-            className="flex flex-col items-center gap-5"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-5"
             initial={{ opacity: 0, y: -30, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0 }}
@@ -1081,6 +1093,10 @@ export default function MonitorPage() {
   const completedDrawIdRef = useRef<string | null>(null);
   const completedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
+  // Refs mirroring the current state/data so stable callbacks (e.g. the HTTP
+  // poll loop) can read the latest values without being re-created each render.
+  const drawStateRef = useRef<DrawState>('IDLE');
+  const drawDataRef = useRef<DrawData | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [prizes, setPrizes] = useState<PrizeEntry[]>([]);
   const [winners, setWinners] = useState<WinnerEntry[]>([]);
@@ -1174,6 +1190,74 @@ export default function MonitorPage() {
       countTimerRef.current = null;
     }
   }, []);
+
+  // Keep refs in sync so stable callbacks can read current state/data.
+  useEffect(() => {
+    drawStateRef.current = drawState;
+  }, [drawState]);
+  useEffect(() => {
+    drawDataRef.current = drawData;
+  }, [drawData]);
+
+  // ─── Shared server-state application (socket + HTTP fallback) ──────
+  // Applies a server-authoritative state ONLY when it represents forward
+  // progress in the current draw or a brand-new draw. Stale/out-of-order
+  // messages are ignored so the center animation can never be blanked or
+  // regressed when events arrive twice, out of order, or via overlapping
+  // socket + HTTP deliveries.
+  const applyServerState = useCallback(
+    (st: DrawState, data?: Record<string, unknown> | null) => {
+      const newDrawId = (data?.drawId as string) ?? null;
+      const current = drawDataRef.current;
+      const currentState = drawStateRef.current;
+      const sameDraw = !!(current?.drawId && newDrawId && current.drawId === newDrawId);
+
+      // No-op when this exact state is already active for the same draw
+      // (e.g. a redundant draw:state-sync or HTTP poll) — especially so the
+      // countdown is never restarted mid-sequence by a duplicate message.
+      if (st === currentState && sameDraw) return;
+      // Same draw reported — only accept forward progress.
+      if (sameDraw && STATE_RANK[st] < STATE_RANK[currentState]) {
+        return;
+      }
+
+      // A brand-new draw must cancel any stale idle-reset scheduled by a
+      // previous draw so a stale reset can never blank the center of the
+      // new draw's sequence (whatever state it joins at).
+      if (current?.drawId && newDrawId && current.drawId !== newDrawId) {
+        if (completedResetTimerRef.current) {
+          clearTimeout(completedResetTimerRef.current);
+          completedResetTimerRef.current = null;
+        }
+        completedDrawIdRef.current = null;
+      }
+
+      setDrawState(st);
+      if (data) {
+        setDrawData((prev) => ({
+          state: st,
+          drawId: (data.drawId as string) ?? prev?.drawId ?? null,
+          participantId: (data.participantId as string) ?? prev?.participantId ?? null,
+          participantName: (data.participantName as string) ?? prev?.participantName ?? null,
+          participantCompany: (data.participantCompany as string) ?? prev?.participantCompany ?? null,
+          participantPhotoUrl: (data.participantPhotoUrl as string) ?? prev?.participantPhotoUrl ?? null,
+          prizeId: (data.prizeId as string) ?? prev?.prizeId ?? null,
+          prizeName: (data.prizeName as string) ?? prev?.prizeName ?? null,
+          prizeTier: (data.prizeTier as string) ?? prev?.prizeTier ?? null,
+          prizeImageUrl: (data.prizeImageUrl as string) ?? prev?.prizeImageUrl ?? null,
+          remainingStock: (data.remainingStock as number | null) ?? prev?.remainingStock ?? null,
+          startedAt: (data.startedAt as string) ?? prev?.startedAt ?? null,
+        }));
+      }
+
+      if (st === 'COUNTDOWN') {
+        startCountdown();
+      } else if (st !== 'IDLE') {
+        stopCountdown();
+      }
+    },
+    [startCountdown, stopCountdown],
+  );
 
   // ─── Socket connection diagnostics ──────────────────────────────────
   useEffect(() => {
@@ -1372,40 +1456,35 @@ export default function MonitorPage() {
           prizeName: st?.prizeName,
         });
         if (!st?.state || st.state === 'IDLE') return;
-        setDrawData({
-          state: st.state ?? 'IDLE',
-          drawId: st.drawId ?? null,
-          participantId: st.participantId ?? null,
-          participantName: st.participantName ?? null,
-          participantCompany: st.participantCompany ?? null,
-          participantPhotoUrl: st.participantPhotoUrl ?? null,
-          prizeId: st.prizeId ?? null,
-          prizeName: st.prizeName ?? null,
-          prizeTier: st.prizeTier ?? null,
-          prizeImageUrl: st.prizeImageUrl ?? null,
-          remainingStock: st.remainingStock ?? null,
-          startedAt: st.startedAt ?? null,
-        });
-        setDrawState(st.state);
-        if (st.state === 'COUNTDOWN') startCountdown();
+        applyServerState(st.state, st);
       },
-      [startCountdown],
+      [applyServerState],
     ),
   );
 
-  // ─── HTTP fallback ──────────────────────────────────────────────────
+  // ─── HTTP state reconciliation (fallback for lost/out-of-order events) ──
+  // Polls /booth/draw-state every 3s so the center can NEVER stay stuck IDLE
+  // while the server is mid-draw — even if a socket event is missed, reordered,
+  // or arrives during a connection/reconnection window. The monotonic guard in
+  // applyServerState prevents a stale poll from regressing an in-flight
+  // animation, and duplicate socket+poll updates are harmless.
   useEffect(() => {
-    if (isConnected) return;
-    fetch(`${env.API_BASE_URL}/booth/draw-state`)
-      .then((r) => r.json())
-      .then((j) => {
-        if (j?.data?.state && j.data.state !== 'IDLE') {
-          setDrawState(j.data.state);
-          setDrawData(j.data);
+    const poll = async () => {
+      try {
+        const res = await fetch(`${env.API_BASE_URL}/booth/draw-state`);
+        const j = await res.json();
+        const s = j?.data?.state as DrawState | undefined;
+        if (s && s !== 'IDLE') {
+          applyServerState(s, j.data);
         }
-      })
-      .catch(() => {});
-  }, [isConnected]);
+      } catch {
+        /* ignore transient network errors; next poll will retry */
+      }
+    };
+    poll();
+    const t = setInterval(poll, 3000);
+    return () => clearInterval(t);
+  }, [applyServerState]);
 
   // ─── Fullscreen ─────────────────────────────────────────────────────
   const toggleFullscreen = useCallback(() => {

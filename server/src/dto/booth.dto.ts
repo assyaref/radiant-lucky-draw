@@ -52,6 +52,7 @@ export interface CreateBoothParticipantRequest {
   name: string;
   company: string;
   whatsapp?: string;
+  eventId?: string;
 }
 
 export interface BoothParticipantResponse {

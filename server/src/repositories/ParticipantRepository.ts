@@ -18,6 +18,7 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
   protected toEntity(record: any): Participant {
     return {
       id: record.id,
+      eventId: record.eventId ?? null,
       name: record.name,
       email: record.email ?? '',
       phone: record.phone ?? null,
@@ -39,6 +40,7 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
 
   protected toPrisma(data: any): any {
     const prismaData: any = {};
+    if (data.eventId !== undefined) prismaData.eventId = data.eventId;
     if (data.name !== undefined) prismaData.name = data.name;
     if (data.email !== undefined) prismaData.email = data.email;
     if (data.phone !== undefined) prismaData.phone = data.phone;
@@ -85,8 +87,30 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
     return record ? this.toEntity(record) : null;
   }
 
-  async count(): Promise<number> {
-    return this.model.count({ where: { deletedAt: null } });
+  async count(eventId?: string | null): Promise<number> {
+    return this.model.count({ where: { deletedAt: null, eventId: eventId ?? null } });
+  }
+
+  async findAll(eventId?: string | null): Promise<Participant[]> {
+    const where: any = { deletedAt: null };
+    if (eventId !== undefined) where.eventId = eventId ?? null;
+    const records = await this.model.findMany({ where, orderBy: { createdAt: 'desc' } });
+    return records.map((r: any) => this.toEntity(r));
+  }
+
+  async paginate(
+    page: number,
+    limit: number,
+    eventId?: string | null,
+  ): Promise<{ data: Participant[]; total: number }> {
+    const skip = (page - 1) * limit;
+    const where: any = { deletedAt: null };
+    if (eventId !== undefined) where.eventId = eventId ?? null;
+    const [records, total] = await Promise.all([
+      this.model.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limit }),
+      this.model.count({ where }),
+    ]);
+    return { data: records.map((r: any) => this.toEntity(r)), total };
   }
 
   /**
@@ -214,9 +238,9 @@ export class ParticipantRepository extends PrismaRepository<Participant> {
       });
   }
 
-  async getNextQueueNumber(): Promise<string> {
+  async getNextQueueNumber(eventId?: string | null): Promise<string> {
     const records = await this.model.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, eventId: eventId ?? null },
       select: { queueNumber: true },
     });
     const max = records.reduce((max: number, r: any) => {

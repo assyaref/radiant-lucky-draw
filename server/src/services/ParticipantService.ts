@@ -27,12 +27,12 @@ export class ParticipantService {
     private winnerRepository: WinnerRepository,
   ) {}
 
-  async findAll(page: number = 1, limit: number = 20) {
-    return this.participantRepository.paginate(page, limit);
+  async findAll(page: number = 1, limit: number = 20, eventId?: string | null) {
+    return this.participantRepository.paginate(page, limit, eventId);
   }
 
-  async listAll() {
-    return this.participantRepository.findAll();
+  async listAll(eventId?: string | null) {
+    return this.participantRepository.findAll(eventId);
   }
 
   async findById(id: string): Promise<ParticipantResponse> {
@@ -51,15 +51,17 @@ export class ParticipantService {
       throw new ConflictError('This phone number is already registered');
     }
 
-    // Validate max participants / queue capacity
-    const count = await this.participantRepository.count();
+    // Validate max participants / queue capacity (per event)
+    const eventId = data.eventId ?? null;
+    const count = await this.participantRepository.count(eventId);
     if (count >= MAX_QUEUE_NUMBER) {
       throw new ValidationError('Registration is full. Maximum participants reached.');
     }
 
-    const queueNumber = await this.participantRepository.getNextQueueNumber();
+    const queueNumber = await this.participantRepository.getNextQueueNumber(eventId);
     const participant = await this.participantRepository.create({
       ...data,
+      eventId,
       email: data.email ?? '',
       queueNumber,
       status: 'registered',
@@ -195,6 +197,7 @@ export class ParticipantService {
 
     return {
       id: p.id,
+      eventId: p.eventId ?? null,
       name: p.name,
       email: p.email,
       phone: p.phone,

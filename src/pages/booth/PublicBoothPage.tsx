@@ -5,6 +5,7 @@
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
 import {
@@ -21,6 +22,8 @@ type Step = 'landing' | 'form' | 'camera' | 'preview' | 'ready' | 'spinning' | '
 type CameraFacing = 'user' | 'environment';
 
 export default function PublicBoothPage() {
+  const [searchParams] = useSearchParams();
+  const eventId = searchParams.get('event') || undefined;
   const [config, setConfig] = useState<BoothConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -90,7 +93,7 @@ export default function PublicBoothPage() {
     };
     window.addEventListener('resize', h);
     boothApi
-      .getConfig()
+      .getConfig(eventId)
       .then((configRes) => {
         if (!c) {
           setConfig(configRes.data);
@@ -108,7 +111,7 @@ export default function PublicBoothPage() {
       c = true;
       window.removeEventListener('resize', h);
     };
-  }, []);
+  }, [eventId]);
 
   useEffect(
     () => () => {
@@ -138,6 +141,7 @@ export default function PublicBoothPage() {
           name: name.trim(),
           company: company.trim(),
           whatsapp: whatsapp.trim() || undefined,
+          eventId,
         });
         setParticipantId(r.data.id);
         setStep('camera');
@@ -166,7 +170,7 @@ export default function PublicBoothPage() {
         setSubmitting(false);
       }
     },
-    [name, company, whatsapp],
+    [name, company, whatsapp, eventId],
   );
 
   const startCamera = useCallback(async (facing: CameraFacing = 'user') => {

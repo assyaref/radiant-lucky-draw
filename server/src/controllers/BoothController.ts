@@ -13,7 +13,9 @@ export class BoothController {
 
   getConfig = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await this.boothService.getBoothConfig();
+      const raw = req.query.eventId as string | undefined;
+      const eventId = raw && raw !== 'none' ? raw : null;
+      const result = await this.boothService.getBoothConfig(eventId);
       sendSuccess(res, result);
     } catch (error) {
       next(error);

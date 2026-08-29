@@ -13,6 +13,7 @@ import {
   HiXMark,
 } from 'react-icons/hi2';
 import { boothApi, type BoothParticipant } from '@/api/booth';
+import { eventApi, type EventData } from '@/api/event';
 import {
   formatWhatsApp,
   toWhatsAppLink,
@@ -43,6 +44,8 @@ export default function ParticipantsPage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [exporting, setExporting] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState<{ url: string; name: string } | null>(null);
+  const [eventFilter, setEventFilter] = useState('');
+  const [events, setEvents] = useState<EventData[]>([]);
   const pageSize = 10;
 
   useEffect(() => {
@@ -56,6 +59,7 @@ export default function ParticipantsPage() {
           page,
           limit: pageSize,
           search: search || undefined,
+          eventId: eventFilter || undefined,
         });
         if (!cancelled) {
           setParticipants(res.data || []);
@@ -75,7 +79,7 @@ export default function ParticipantsPage() {
     return () => {
       cancelled = true;
     };
-  }, [page, search]);
+  }, [page, search, eventFilter]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -83,6 +87,22 @@ export default function ParticipantsPage() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadEvents = async () => {
+      try {
+        const res = await eventApi.list({ page: 1, limit: 100 });
+        if (!cancelled) setEvents(res.data ?? []);
+      } catch {
+        // Event filter is optional — ignore failures.
+      }
+    };
+    loadEvents();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleDelete = async (force: boolean = false) => {
@@ -123,7 +143,7 @@ export default function ParticipantsPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await boothApi.listAllParticipants();
+      const res = await boothApi.listAllParticipants(eventFilter || undefined);
       const rows = res.data ?? [];
       const now = new Date();
       const date = [
@@ -319,6 +339,22 @@ export default function ParticipantsPage() {
       </div>
 
       <div className="flex items-center gap-3">
+        <select
+          value={eventFilter}
+          onChange={(e) => {
+            setEventFilter(e.target.value);
+            setPage(1);
+          }}
+          className="px-3 py-2 rounded-lg bg-dark-surface-secondary border border-dark-border text-white text-sm outline-none focus:border-primary-500/50 transition-colors"
+        >
+          <option value="">All events</option>
+          <option value="none">Radiant Group (default)</option>
+          {events.map((ev) => (
+            <option key={ev.id} value={ev.id}>
+              {ev.name}
+            </option>
+          ))}
+        </select>
         <div className="relative flex-1 max-w-md">
           <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-text-tertiary" />
           <input

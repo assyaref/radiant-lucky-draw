@@ -52,6 +52,7 @@ export class PrizeService {
   private toResponse(p: any): PrizeResponse {
     return {
       id: p.id,
+      eventId: p.eventId ?? null,
       name: p.name,
       description: p.description,
       value: p.value,

@@ -6,6 +6,18 @@ import { Request, Response, NextFunction } from 'express';
 import { ParticipantService } from '../services';
 import { sendSuccess, sendPaginated, logger } from '../utils';
 
+/**
+ * Parse the `eventId` query param.
+ * - absent / empty -> undefined (no filter / all events)
+ * - 'none'         -> null (legacy event: eventId IS NULL)
+ * - otherwise      -> the event id string
+ */
+const parseEventId = (value: unknown): string | null | undefined => {
+  if (typeof value !== 'string' || value === '') return undefined;
+  if (value === 'none') return null;
+  return value;
+};
+
 export class ParticipantController {
   constructor(private participantService: ParticipantService) {}
 
@@ -13,16 +25,18 @@ export class ParticipantController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
-      const result = await this.participantService.findAll(page, limit);
+      const eventId = parseEventId(req.query.eventId);
+      const result = await this.participantService.findAll(page, limit, eventId);
       sendPaginated(res, result.data, page, limit, result.total);
     } catch (error) {
       next(error);
     }
   };
 
-  exportAll = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  exportAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await this.participantService.listAll();
+      const eventId = parseEventId(req.query.eventId);
+      const result = await this.participantService.listAll(eventId);
       sendSuccess(res, result);
     } catch (error) {
       next(error);

@@ -89,12 +89,19 @@ export interface ApiEnvelope<T> {
 }
 
 export const boothApi = {
-  /** Get public booth configuration + active prizes */
-  getConfig: () => api.get<ApiEnvelope<BoothConfig>>('/booth/config'),
+  /** Get public booth configuration + active prizes (optionally scoped to an event) */
+  getConfig: (eventId?: string) => {
+    const q = eventId ? `?eventId=${encodeURIComponent(eventId)}` : '';
+    return api.get<ApiEnvelope<BoothConfig>>(`/booth/config${q}`);
+  },
 
   /** Register a new booth participant */
-  registerParticipant: (payload: { name: string; company: string; whatsapp?: string }) =>
-    api.post<ApiEnvelope<BoothParticipant>>('/booth/participants', payload),
+  registerParticipant: (payload: {
+    name: string;
+    company: string;
+    whatsapp?: string;
+    eventId?: string;
+  }) => api.post<ApiEnvelope<BoothParticipant>>('/booth/participants', payload),
 
   /** Upload participant face photo (base64 data URL) */
   uploadPhoto: (payload: { participantId: string; photo: string }) =>
@@ -115,17 +122,26 @@ export const boothApi = {
   },
 
   /** List participants (admin, authenticated) */
-  listParticipants: (params?: { page?: number; limit?: number; search?: string }) => {
+  listParticipants: (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    eventId?: string;
+  }) => {
     const query = new URLSearchParams();
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.search) query.set('search', params.search);
+    if (params?.eventId !== undefined) query.set('eventId', params.eventId);
     const qs = query.toString();
     return api.get<Paginated<BoothParticipant>>(`/participants${qs ? `?${qs}` : ''}`);
   },
 
   /** List ALL participants (admin, authenticated) — used for CSV export */
-  listAllParticipants: () => api.get<ApiEnvelope<BoothParticipant[]>>('/participants/export'),
+  listAllParticipants: (eventId?: string) => {
+    const q = eventId !== undefined ? `?eventId=${encodeURIComponent(eventId)}` : '';
+    return api.get<ApiEnvelope<BoothParticipant[]>>(`/participants/export${q}`);
+  },
 
   /** Update winner claim status (admin) */
   updateClaimStatus: (id: string, claimStatus: 'unclaimed' | 'claimed') =>

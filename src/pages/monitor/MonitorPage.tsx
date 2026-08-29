@@ -1239,8 +1239,10 @@ export default function MonitorPage() {
           drawId: (data.drawId as string) ?? prev?.drawId ?? null,
           participantId: (data.participantId as string) ?? prev?.participantId ?? null,
           participantName: (data.participantName as string) ?? prev?.participantName ?? null,
-          participantCompany: (data.participantCompany as string) ?? prev?.participantCompany ?? null,
-          participantPhotoUrl: (data.participantPhotoUrl as string) ?? prev?.participantPhotoUrl ?? null,
+          participantCompany:
+            (data.participantCompany as string) ?? prev?.participantCompany ?? null,
+          participantPhotoUrl:
+            (data.participantPhotoUrl as string) ?? prev?.participantPhotoUrl ?? null,
           prizeId: (data.prizeId as string) ?? prev?.prizeId ?? null,
           prizeName: (data.prizeName as string) ?? prev?.prizeName ?? null,
           prizeTier: (data.prizeTier as string) ?? prev?.prizeTier ?? null,

@@ -1,97 +1,89 @@
-# Migrasi Database ke Supabase
+# Radiant Lucky Draw di Supabase
 
-Mulai sekarang database Radiant Lucky Draw (development & production) berjalan di
-**Supabase Postgres**. Backend Express + Prisma, auth JWT, dan Socket.IO **tidak berubah** —
-yang berubah hanya lokasi database.
+Sejak November 2026 seluruh backend berjalan di **Supabase**. Railway (Express + Postgres) tidak dipakai lagi.
 
 ```
-Vercel (frontend) ──/api, /socket.io──▶ Railway (Express + Prisma) ──▶ Supabase Postgres
+Browser ──▶ Vercel (frontend React)
+              │  /api/*  ──rewrite──▶  Supabase Edge Function `api`  ──▶  Supabase Postgres
+              │                          (Express app dari server/src)
+              └─ WebSocket ───────────▶  Supabase Realtime (channel `radiant`)
 ```
 
-## 1. Ringkasan perubahan kode
-
-| File | Perubahan |
-|---|---|
-| `server/prisma/schema.prisma` | `directUrl = env("DIRECT_URL")` — migrasi lewat koneksi session, query runtime lewat pooler |
-| `server/prisma/migrations/20261113000000_supabase_enable_rls` | Mengaktifkan **Row Level Security** di semua tabel `public` (lihat §5) |
-| `server/Dockerfile` | `DIRECT_URL` otomatis = `DATABASE_URL` jika tidak di-set |
-| `server/src/config/env.ts` | Mengenali `DIRECT_URL` |
-| `.env.example` | Default ke connection string Supabase |
-| `docker-compose.yml` | Postgres lokal tetap ada sebagai opsi offline, ditambah `DIRECT_URL` |
-| `scripts/migrate-railway-to-supabase.sh` | Skrip pindah data Railway → Supabase dengan verifikasi jumlah baris |
-
-## 2. Siapkan project Supabase
-
-Buat **dua project**: `radiant-lucky-draw-dev` dan `radiant-lucky-draw-prod`
-(pilih region terdekat, mis. *Southeast Asia (Singapore)*). Simpan password database.
-
-Ambil connection string: **Dashboard → Connect → ORMs → Prisma**.
-
-| Variabel | Dipakai untuk | Bentuk |
+| Bagian | Dulu | Sekarang |
 |---|---|---|
-| `DATABASE_URL` | Query runtime | Transaction pooler, port **6543**, `?pgbouncer=true&connection_limit=5` |
-| `DIRECT_URL` | `prisma migrate` | Session pooler, port **5432** |
+| API | Express di Railway | Express yang sama, dijalankan sebagai Edge Function `api` |
+| Database | Postgres Railway + Prisma | Supabase Postgres + klien kompatibel-Prisma (`server/src/lib/prisma.ts`) |
+| Realtime | Socket.IO | Supabase Realtime broadcast, channel `radiant`, nama event sama |
+| State undian | memori server | tabel `draw_state` (kunci + waktu mulai) |
+| Login admin | JWT sendiri | tetap sama (bcrypt + JWT); secret diturunkan dari service role key |
 
-```env
-DATABASE_URL="postgresql://postgres.[REF]:[PWD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5"
-DIRECT_URL="postgresql://postgres.[REF]:[PWD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
+Project Supabase: **radiant-lucky-draw** (`emwmnghbxsoudfxxltna`, region Singapore).
+
+## Struktur repo
+
+```
+server/src/                  kode backend (Express, service, repository)
+server/src/edge.ts           entry Edge Function
+server/src/lib/prisma.ts     pengganti Prisma Client (subset API yang dipakai) di atas postgres.js
+server/src/lib/db-meta.ts    metadata model — DIGENERATE dari server/prisma/schema.prisma
+server/scripts/build-edge.ts membundel server/src → supabase/functions/api/app.bundle.js
+supabase/migrations/         skema database (sumber kebenaran)
+supabase/functions/api/      Edge Function yang di-deploy
 ```
 
-> Pakai pooler (bukan `db.[REF].supabase.co`) karena koneksi direct Supabase hanya IPv6,
-> sedangkan Railway keluar lewat IPv4. Jika password mengandung karakter khusus, URL-encode dulu.
+`server/prisma/schema.prisma` tetap menjadi deskripsi model untuk kode backend.
+Perubahan skema dilakukan lewat file SQL di `supabase/migrations/`, lalu
+`schema.prisma` disesuaikan dan `bun scripts/gen-db-meta.ts` dijalankan.
 
-## 3. Development sehari-hari
+## Alur kerja development
 
 ```bash
-cp .env.example .env          # isi DATABASE_URL & DIRECT_URL project DEV
+npm install && npm run dev          # frontend; /api diproksikan ke Edge Function Supabase
+```
+
+Mengubah backend:
+
+```bash
 cd server
-npm install
-npx prisma migrate deploy     # terapkan migrasi ke Supabase dev
-npm run dev
+bun scripts/build-edge.ts           # regenerasi db-meta + bundle
+supabase functions deploy api --no-verify-jwt --project-ref emwmnghbxsoudfxxltna
 ```
 
-Membuat perubahan skema baru:
+Menambah tabel/kolom:
 
 ```bash
-npx prisma migrate dev --name nama_perubahan   # jalankan terhadap project DEV, jangan PROD
+supabase migration new nama_perubahan   # tulis SQL-nya
+supabase db push --project-ref emwmnghbxsoudfxxltna
 ```
 
-Setiap **tabel baru** wajib ditambah `ALTER TABLE "nama_tabel" ENABLE ROW LEVEL SECURITY;`
-di file migration-nya (lihat §5).
+Setiap tabel baru **wajib** `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;` (lihat Keamanan).
 
-Kalau butuh kerja offline, Postgres lokal via `docker compose up postgres` masih bisa dipakai —
-ganti `DATABASE_URL`/`DIRECT_URL` ke baris lokal yang dikomentari di `.env.example`.
+## Konfigurasi
 
-## 4. Pindah production (Railway DB → Supabase)
+Tidak ada secret yang wajib di-set: Supabase otomatis menyediakan `SUPABASE_URL`,
+`SUPABASE_DB_URL`, dan `SUPABASE_SERVICE_ROLE_KEY` untuk Edge Function.
+Opsional (Dashboard → Edge Functions → Secrets): `JWT_SECRET`, `JWT_REFRESH_SECRET`,
+`JWT_EXPIRES_IN`, `RATE_LIMIT_MAX`, `CORS_ORIGIN`.
 
-Butuh `pg_dump`/`psql` dengan versi ≥ versi Postgres Railway, dan `npm install` di `server/`.
+Frontend memakai URL dan anon key Supabase (nilai publik, sudah ada default di
+`src/config/env.ts`; bisa ditimpa `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`).
 
-1. **Maintenance**: hentikan undian/registrasi sementara agar tidak ada data baru masuk.
-2. **Jalankan skrip** (dari root repo):
-   ```bash
-   SOURCE_DATABASE_URL="<DATABASE_URL Railway lama>" \
-   SUPABASE_DIRECT_URL="<DIRECT_URL Supabase PROD>" \
-   ./scripts/migrate-railway-to-supabase.sh
-   ```
-   Skrip akan: cek Railway sudah di migrasi terbaru → `prisma migrate deploy` ke Supabase →
-   menolak jalan jika tabel Supabase sudah berisi → dump data saja → restore dalam satu
-   transaksi → membandingkan jumlah baris per tabel.
-3. **Ganti env di Railway** (service backend): set `DATABASE_URL` dan `DIRECT_URL` ke URL
-   Supabase PROD, lalu redeploy. Saat start, container menjalankan `prisma migrate deploy`
-   (no-op karena sudah up to date).
-4. **Verifikasi**: `GET /api/health`, login admin, cek data peserta/hadiah/pemenang di app.
-5. **Simpan service Postgres Railway** beberapa hari sebagai cadangan sebelum dihapus.
+Akun admin awal dibuat otomatis: `admin@radiantgroup.com` / `Admin123!` — **segera ganti passwordnya.**
 
-**Rollback**: kembalikan `DATABASE_URL` Railway ke URL Postgres Railway lama dan redeploy
-(data baru yang masuk ke Supabase setelah cutover tidak ikut kembali).
+## Keamanan
 
-## 5. Keamanan: Row Level Security
+- **RLS aktif di semua tabel tanpa policy** → API REST/GraphQL Supabase (anon key)
+  tidak bisa membaca/menulis data apa pun. Semua akses data lewat Edge Function,
+  yang terhubung sebagai role `postgres`.
+- Anon key di frontend hanya dipakai untuk berlangganan broadcast Realtime.
 
-Supabase otomatis membuka schema `public` lewat REST/GraphQL API dengan *anon key*. Tanpa RLS,
-siapa pun yang memegang anon key bisa membaca tabel `users` (hash password) dan `sessions`
-(refresh token). Migration `20261113000000_supabase_enable_rls` mengaktifkan RLS **tanpa policy**
-di semua tabel, sehingga akses lewat API Supabase ditolak total. Backend tetap normal karena
-Prisma terhubung sebagai role `postgres` (pemilik tabel, BYPASSRLS).
+## Catatan teknis
 
-Jangan bagikan connection string / password database; frontend tidak membutuhkan
-anon key Supabase karena semua akses data tetap lewat backend.
+- **Timeline undian booth**: server hanya mem-broadcast `draw:started` (berisi
+  `phaseOffsetsMs`); klien menjadwalkan `draw:spinning` (4 dtk), `draw:winner`
+  (8 dtk), `draw:completed` (14 dtk). `GET /api/booth/draw-state` menghitung fase
+  dari `draw_state.started_at`, dan Monitor tetap mem-polling-nya tiap 3 detik.
+- **Kunci undian** (`draw_state.locked_until`) kedaluwarsa sendiri setelah 19 detik,
+  jadi booth tidak bisa macet terkunci.
+- **Rate limit** disimpan di memori per instance Edge Function (perkiraan, bukan global).
+- Ekstensi `pg_net` aktif dan dipakai untuk smoke test HTTP dari SQL.

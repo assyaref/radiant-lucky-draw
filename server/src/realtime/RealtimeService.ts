@@ -12,8 +12,8 @@
  *   table (one row), because separate requests may hit separate isolates.
  *   The current draw phase is derived from the time elapsed since the draw
  *   started, so any instance returns the same state.
- * - The timed broadcasts (spinning → winner → completed) run in the
- *   background with EdgeRuntime.waitUntil when available.
+ * - Only `draw:started` is broadcast for booth spins; clients derive the
+ *   follow-up phases from it (see startDrawSequence).
  *
  * Events: queue:created/updated/called/completed/skipped/cancelled,
  *         draw:started/spinning/winner/completed
@@ -179,11 +179,25 @@ function envVar(name: string): string | undefined {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Keep background work alive after the HTTP response (Supabase Edge Runtime). */
+const pending = new Set<Promise<unknown>>();
+
+/**
+ * Track a broadcast started inside a request. The edge entry (src/edge.ts)
+ * awaits flushPendingBroadcasts() before sending each response, so events are
+ * delivered even though the isolate may be suspended once the response is out.
+ */
 function runInBackground(p: Promise<unknown>): void {
+  const guarded = p.catch((e) => logger.error('[Realtime] broadcast task failed', { error: String(e) }));
+  pending.add(guarded);
+  guarded.finally(() => pending.delete(guarded));
   const er = (globalThis as any).EdgeRuntime;
-  const guarded = p.catch((e) => logger.error('[Realtime] background task failed', { error: String(e) }));
   if (er?.waitUntil) er.waitUntil(guarded);
+}
+
+/** Wait for all broadcasts started so far (bounded, never throws). */
+export async function flushPendingBroadcasts(timeoutMs = 3000): Promise<void> {
+  if (pending.size === 0) return;
+  await Promise.race([Promise.allSettled([...pending]), sleep(timeoutMs)]);
 }
 
 // ─── RealtimeService ────────────────────────────────────────────────────
@@ -313,9 +327,14 @@ export class RealtimeService {
   }
 
   /**
-   * Start a sequenced draw lifecycle with timed broadcasts.
-   * Winner data is provided upfront (already determined by the server).
-   * COUNTDOWN (0s) → SPINNING (4s) → REVEALED (8s) → COMPLETED (14s) → IDLE (19s)
+   * Start a draw lifecycle.
+   * The sequence COUNTDOWN (0s) → SPINNING (4s) → REVEALED (8s) → COMPLETED (14s)
+   * → IDLE (19s) is anchored on draw_state.started_at:
+   *  - GET /booth/draw-state derives the current phase from elapsed time;
+   *  - only `draw:started` is broadcast (inside the request, reliably);
+   *    clients schedule the follow-up phase events locally from it
+   *    (src/services/socket/SocketService.ts), keeping the same timeline
+   *    without relying on timers in a suspended edge isolate.
    */
   async startDrawSequence(winnerData: DrawSequenceData): Promise<void> {
     const rows = await prisma.$queryRawUnsafe(
@@ -331,63 +350,15 @@ export class RealtimeService {
     );
     const startedAt = rows[0]?.started_at ? new Date(rows[0].started_at).toISOString() : new Date().toISOString();
 
-    // Step 1: COUNTDOWN (immediate)
     await this.send(DRAW_EVENTS.STARTED, {
       type: DRAW_EVENTS.STARTED,
       ...winnerData,
+      startedAt,
+      phaseOffsetsMs: { spinning: T_SPINNING, winner: T_REVEALED, completed: T_COMPLETED },
       timestamp: startedAt,
     });
-
-    const sequence = async () => {
-      await sleep(T_SPINNING);
-      if (!(await this.isCurrentDraw(winnerData.drawId))) return;
-      await this.send(DRAW_EVENTS.SPINNING, {
-        type: DRAW_EVENTS.SPINNING,
-        drawId: winnerData.drawId,
-        participantId: winnerData.participantId,
-        participantName: winnerData.participantName,
-        participantPhotoUrl: winnerData.participantPhotoUrl ?? null,
-        prizeId: winnerData.prizeId,
-        prizeName: winnerData.prizeName,
-        prizeTier: winnerData.prizeTier,
-        prizeImageUrl: winnerData.prizeImageUrl ?? null,
-        timestamp: new Date().toISOString(),
-      });
-
-      await sleep(T_REVEALED - T_SPINNING);
-      if (!(await this.isCurrentDraw(winnerData.drawId))) return;
-      await this.send(DRAW_EVENTS.WINNER, {
-        type: DRAW_EVENTS.WINNER,
-        ...winnerData,
-        probability: 0,
-        timestamp: new Date().toISOString(),
-      });
-
-      await sleep(T_COMPLETED - T_REVEALED);
-      if (!(await this.isCurrentDraw(winnerData.drawId))) return;
-      await this.send(DRAW_EVENTS.COMPLETED, {
-        type: DRAW_EVENTS.COMPLETED,
-        drawId: winnerData.drawId,
-        participantId: winnerData.participantId,
-        prizeId: winnerData.prizeId,
-        prizeName: winnerData.prizeName,
-        remainingStock: winnerData.remainingStock,
-        totalWinners: 0,
-        drawCount: 0,
-        timestamp: new Date().toISOString(),
-      });
-      // The lock expires on its own at T_IDLE (locked_until), so a crashed
-      // isolate can never leave the booth stuck.
-    };
-
-    runInBackground(sequence());
+    // The lock expires on its own at T_IDLE (locked_until), so a crashed
+    // isolate can never leave the booth stuck.
     logger.info('[Realtime] Draw sequence started', { drawId: winnerData.drawId });
-  }
-
-  private async isCurrentDraw(drawId: string): Promise<boolean> {
-    const rows = await prisma.$queryRawUnsafe(
-      `SELECT data->>'drawId' AS draw_id FROM draw_state WHERE id = 1`,
-    );
-    return rows[0]?.draw_id === drawId;
   }
 }

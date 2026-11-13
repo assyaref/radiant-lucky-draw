@@ -1,29 +1,31 @@
 /**
  * SocketService
  *
- * Core Socket.IO service with:
- * - Typed event definitions
+ * Realtime client built on Supabase Realtime (Phoenix channels over a plain
+ * WebSocket — no extra dependency). It keeps the public API of the former
+ * Socket.IO service, so every hook and page works unchanged:
+ * - Typed event definitions, connection status tracking, heartbeat
  * - Reconnect logic with exponential backoff
- * - Heartbeat mechanism
- * - Auto retry for failed emissions
- * - Connection status tracking
- * - Offline detection
- * - Error handling
- * - Acknowledgement support
- * - Message queue for offline messages
- * - Event versioning
+ * - Message queue for offline messages, acknowledgement support
+ *
+ * Transport:
+ * - Server events arrive as Broadcast messages on the `radiant` channel with
+ *   the same event names and flat payloads the Socket.IO server emitted.
+ * - `draw:get-state` is answered from GET /booth/draw-state and delivered
+ *   locally as `draw:state-sync` (same contract as before).
+ * - Booth spins only broadcast `draw:started` (with phaseOffsetsMs); this
+ *   client schedules `draw:spinning`, `draw:winner` and `draw:completed`
+ *   locally on the same timeline the server used (4s / 8s / 14s).
  *
  * Usage:
  * ```ts
- * const socket = new SocketService(env.SOCKET_URL);
+ * const socket = new SocketService({ url: env.SUPABASE_URL });
  * socket.connect();
- *
- * socket.emit('participant:join', payload, (ack) => { ... });
- * socket.on('draw:countdown', (payload) => { ... });
+ * socket.on('draw:started', (payload) => { ... });
  * ```
  */
 
-import { io, Socket } from 'socket.io-client';
+import { env } from '@/config/env';
 
 import {
   type SocketEventName,
@@ -33,12 +35,23 @@ import {
   EVENT_VERSIONS,
 } from './types';
 
+const CHANNEL = 'radiant';
+const TOPIC = `realtime:${CHANNEL}`;
+
+interface PhoenixMessage {
+  topic: string;
+  event: string;
+  payload: any;
+  ref: string | null;
+  join_ref?: string | null;
+}
+
 // ─── Configuration ──────────────────────────────────────────────────────
 
 export interface SocketServiceConfig {
-  /** Server URL */
+  /** Supabase project URL (https://<ref>.supabase.co) */
   url: string;
-  /** Connection options passed to Socket.IO */
+  /** Extra options (apiKey: Supabase anon/publishable key) */
   options?: Record<string, unknown>;
   /** Heartbeat interval in ms (default: 25000) */
   heartbeatInterval?: number;
@@ -65,7 +78,14 @@ interface QueuedMessage {
 // ─── SocketService ──────────────────────────────────────────────────────
 
 export class SocketService {
-  private socket: Socket | null = null;
+  private ws: WebSocket | null = null;
+  private joined = false;
+  private refCounter = 0;
+  private joinRef: string | null = null;
+  private pendingPings = new Map<string, number>();
+  private manualClose = false;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private phaseTimers: ReturnType<typeof setTimeout>[] = [];
   private config: Required<SocketServiceConfig>;
   private status: ConnectionStatus = 'disconnected';
   private lastConnected: number | null = null;
@@ -97,66 +117,104 @@ export class SocketService {
 
   // ─── Connection Management ──────────────────────────────────────────
 
-  /** Connect to the server */
+  /** Connect to Supabase Realtime and join the broadcast channel */
   connect(): void {
-    if (this.socket?.connected) {
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
       this.log('[Socket] Already connected');
       return;
     }
+    if (typeof WebSocket === 'undefined') {
+      this.setStatus('error');
+      return;
+    }
 
+    this.manualClose = false;
     this.setStatus('connecting');
 
-    this.socket = io(this.config.url, {
-      reconnection: false, // We handle reconnection ourselves
-      timeout: 10000,
-      transports: ['websocket', 'polling'],
-      ...this.config.options,
-    });
+    const apiKey = String(this.config.options.apiKey ?? env.SUPABASE_ANON_KEY);
+    const base = this.config.url.replace(/\/+$/, '').replace(/^http/, 'ws');
+    const url = `${base}/realtime/v1/websocket?apikey=${encodeURIComponent(apiKey)}&vsn=1.0.0`;
 
-    this.socket.on('connect', () => {
-      this.log('[Socket] Connected');
-      this.reconnectAttempts = 0;
-      this.lastConnected = Date.now();
-      this.setStatus('connected');
-      this.startHeartbeat();
-      this.flushMessageQueue();
-    });
-
-    this.socket.on('disconnect', (reason) => {
-      this.log(`[Socket] Disconnected: ${reason}`);
-      this.stopHeartbeat();
-      this.setStatus('disconnected');
-      this.handleReconnect();
-    });
-
-    this.socket.on('connect_error', (error) => {
-      this.log(`[Socket] Connection error: ${error.message}`);
-      this.emitError(error);
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(url);
+    } catch (error) {
+      this.emitError(error as Error);
       this.setStatus('error');
       this.handleReconnect();
-    });
+      return;
+    }
+    this.ws = ws;
+    this.joined = false;
 
-    // Wire up all registered listeners
-    this.listeners.forEach((callbacks, event) => {
-      callbacks.forEach((cb) => {
-        this.socket?.on(event, cb as (...args: unknown[]) => void);
+    ws.onopen = () => {
+      this.log('[Socket] WebSocket open, joining channel');
+      this.joinRef = this.nextRef();
+      this.sendRaw({
+        topic: TOPIC,
+        event: 'phx_join',
+        payload: {
+          config: {
+            broadcast: { self: false, ack: false },
+            presence: { key: '' },
+            postgres_changes: [],
+            private: false,
+          },
+          access_token: apiKey,
+        },
+        ref: this.joinRef,
+        join_ref: this.joinRef,
       });
-    });
+    };
+
+    ws.onmessage = (ev) => {
+      let msg: PhoenixMessage;
+      try {
+        msg = JSON.parse(String(ev.data));
+      } catch {
+        return;
+      }
+      this.handleMessage(msg);
+    };
+
+    ws.onerror = () => {
+      this.log('[Socket] Connection error');
+      this.emitError(new Error('Realtime connection error'));
+    };
+
+    ws.onclose = () => {
+      if (this.ws !== ws) return;
+      this.log('[Socket] Disconnected');
+      this.ws = null;
+      this.joined = false;
+      this.stopHeartbeat();
+      this.setStatus('disconnected');
+      if (!this.manualClose) this.handleReconnect();
+    };
   }
 
   /** Disconnect from the server */
   disconnect(): void {
     this.log('[Socket] Disconnecting...');
+    this.manualClose = true;
     this.stopHeartbeat();
+    this.clearPhaseTimers();
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
     this.reconnectAttempts = 0;
     this.messageQueue = [];
 
-    if (this.socket) {
-      this.socket.removeAllListeners();
-      this.socket.disconnect();
-      this.socket = null;
+    if (this.ws) {
+      const ws = this.ws;
+      this.ws = null;
+      try {
+        if (this.joined) this.sendRawOn(ws, { topic: TOPIC, event: 'phx_leave', payload: {}, ref: this.nextRef() });
+        ws.close();
+      } catch {
+        /* ignore */
+      }
     }
-
+    this.joined = false;
     this.setStatus('disconnected');
   }
 
@@ -177,7 +235,7 @@ export class SocketService {
 
   /** Check if connected */
   isConnected(): boolean {
-    return this.status === 'connected' && this.socket?.connected === true;
+    return this.status === 'connected' && this.joined && this.ws?.readyState === WebSocket.OPEN;
   }
 
   // ─── Event Emission ─────────────────────────────────────────────────
@@ -212,14 +270,7 @@ export class SocketService {
     }
 
     this.log(`[Socket] Emitting: ${event}`);
-
-    if (ack) {
-      this.socket!.emit(event, envelope, (response: R) => {
-        ack(response);
-      });
-    } else {
-      this.socket!.emit(event, envelope);
-    }
+    this.deliver(event, envelope, ack as ((response: unknown) => void) | undefined);
   }
 
   /**
@@ -277,14 +328,8 @@ export class SocketService {
 
     this.listeners.get(event)!.add(wrappedCallback as (...args: unknown[]) => void);
 
-    // If socket is already connected, wire it up
-    if (this.socket) {
-      this.socket.on(event, wrappedCallback as (...args: unknown[]) => void);
-    }
-
     return () => {
       this.listeners.get(event)?.delete(wrappedCallback as (...args: unknown[]) => void);
-      this.socket?.off(event, wrappedCallback as (...args: unknown[]) => void);
     };
   }
 
@@ -303,7 +348,6 @@ export class SocketService {
    */
   off(event: SocketEventName): void {
     this.listeners.delete(event);
-    this.socket?.off(event);
   }
 
   /**
@@ -311,7 +355,6 @@ export class SocketService {
    */
   removeAllListeners(): void {
     this.listeners.clear();
-    this.socket?.removeAllListeners();
   }
 
   // ─── Status Callbacks ───────────────────────────────────────────────
@@ -381,7 +424,9 @@ export class SocketService {
       `[Socket] Reconnecting in ${Math.round(totalDelay)}ms (attempt ${this.reconnectAttempts})`,
     );
 
-    setTimeout(() => {
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
       this.connect();
     }, totalDelay);
   }
@@ -391,13 +436,10 @@ export class SocketService {
     this.stopHeartbeat();
 
     this.heartbeatTimer = setInterval(() => {
-      if (!this.socket?.connected) return;
-
-      const start = performance.now();
-      this.socket.emit('ping', () => {
-        this.latency = Math.round(performance.now() - start);
-        this.notifyConnectionInfo();
-      });
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+      const ref = this.nextRef();
+      this.pendingPings.set(ref, performance.now());
+      this.sendRaw({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref });
     }, this.config.heartbeatInterval);
   }
 
@@ -421,13 +463,7 @@ export class SocketService {
 
     for (const msg of queue) {
       try {
-        if (msg.ack) {
-          this.socket!.emit(msg.event, msg.payload, (response: unknown) => {
-            msg.ack!(response);
-          });
-        } else {
-          this.socket!.emit(msg.event, msg.payload);
-        }
+        this.deliver(msg.event, msg.payload as SocketEventEnvelope<unknown>, msg.ack);
         // Small delay between flushes to avoid overwhelming the server
         await new Promise((resolve) => setTimeout(resolve, 50));
       } catch {
@@ -474,6 +510,159 @@ export class SocketService {
         this.log(`[Socket] Error in error callback: ${callbackError}`);
       }
     });
+  }
+
+  private nextRef(): string {
+    this.refCounter += 1;
+    return String(this.refCounter);
+  }
+
+  private sendRaw(msg: PhoenixMessage): void {
+    if (this.ws) this.sendRawOn(this.ws, msg);
+  }
+
+  private sendRawOn(ws: WebSocket, msg: PhoenixMessage): void {
+    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+  }
+
+  /** Handle an incoming Phoenix message */
+  private handleMessage(msg: PhoenixMessage): void {
+    if (msg.topic === 'phoenix' && msg.event === 'phx_reply' && msg.ref) {
+      const start = this.pendingPings.get(msg.ref);
+      if (start !== undefined) {
+        this.pendingPings.delete(msg.ref);
+        this.latency = Math.round(performance.now() - start);
+        this.notifyConnectionInfo();
+      }
+      return;
+    }
+    if (msg.topic !== TOPIC) return;
+
+    switch (msg.event) {
+      case 'phx_reply':
+        if (msg.ref === this.joinRef) {
+          if (msg.payload?.status === 'ok') {
+            this.log('[Socket] Connected');
+            this.joined = true;
+            this.reconnectAttempts = 0;
+            this.lastConnected = Date.now();
+            this.setStatus('connected');
+            this.startHeartbeat();
+            this.flushMessageQueue();
+          } else {
+            this.emitError(new Error(`Realtime join failed: ${JSON.stringify(msg.payload?.response ?? {})}`));
+            this.setStatus('error');
+            this.ws?.close();
+          }
+        }
+        return;
+      case 'phx_error':
+      case 'phx_close':
+        this.log(`[Socket] Channel ${msg.event}`);
+        this.ws?.close();
+        return;
+      case 'broadcast': {
+        const event = msg.payload?.event as SocketEventName | undefined;
+        if (!event) return;
+        this.dispatch(event, msg.payload?.payload);
+        return;
+      }
+      default:
+        return;
+    }
+  }
+
+  /** Deliver an event to local listeners */
+  private dispatch(event: SocketEventName, payload: unknown): void {
+    if (event === ('draw:started' as SocketEventName)) this.scheduleDrawPhases(payload);
+    const callbacks = this.listeners.get(event);
+    if (!callbacks) return;
+    [...callbacks].forEach((cb) => {
+      try {
+        cb(payload);
+      } catch (error) {
+        this.log(`[Socket] Error in listener for ${event}: ${error}`);
+      }
+    });
+  }
+
+  /**
+   * Booth spins broadcast only `draw:started` (with phaseOffsetsMs). Recreate
+   * the follow-up phase events locally on the server's timeline.
+   */
+  private scheduleDrawPhases(raw: unknown): void {
+    const d = raw as Record<string, any> | null;
+    const offsets = d?.phaseOffsetsMs as { spinning: number; winner: number; completed: number } | undefined;
+    if (!d || !offsets) return;
+    this.clearPhaseTimers();
+    const startedAt = d.startedAt ? Date.parse(d.startedAt) : NaN;
+    // Align to the server start time when clocks agree; never trust a wildly skewed clock.
+    const elapsed = Number.isFinite(startedAt) ? Date.now() - startedAt : 0;
+    const shift = elapsed > 0 && elapsed < 3000 ? elapsed : 0;
+    const at = (ms: number, event: string, payload: Record<string, unknown>) =>
+      this.phaseTimers.push(
+        setTimeout(
+          () => this.dispatch(event as SocketEventName, { type: event, ...payload, timestamp: new Date().toISOString() }),
+          Math.max(0, ms - shift),
+        ),
+      );
+    at(offsets.spinning, 'draw:spinning', {
+      drawId: d.drawId,
+      participantId: d.participantId,
+      participantName: d.participantName,
+      participantPhotoUrl: d.participantPhotoUrl ?? null,
+      prizeId: d.prizeId,
+      prizeName: d.prizeName,
+      prizeTier: d.prizeTier,
+      prizeImageUrl: d.prizeImageUrl ?? null,
+    });
+    const winner: Record<string, unknown> = { ...d };
+    for (const k of ['phaseOffsetsMs', 'startedAt', 'type', 'timestamp']) delete winner[k];
+    at(offsets.winner, 'draw:winner', { ...winner, probability: 0 });
+    at(offsets.completed, 'draw:completed', {
+      drawId: d.drawId,
+      participantId: d.participantId,
+      prizeId: d.prizeId,
+      prizeName: d.prizeName,
+      remainingStock: d.remainingStock,
+      totalWinners: 0,
+      drawCount: 0,
+    });
+  }
+
+  private clearPhaseTimers(): void {
+    this.phaseTimers.forEach((t) => clearTimeout(t));
+    this.phaseTimers = [];
+  }
+
+  /** Send a client event: request/response helpers or a channel broadcast */
+  private deliver(
+    event: SocketEventName,
+    envelope: SocketEventEnvelope<unknown>,
+    ack?: (response: unknown) => void,
+  ): void {
+    if (event === ('draw:get-state' as SocketEventName)) {
+      fetch(`${env.API_BASE_URL}/booth/draw-state`)
+        .then((r) => r.json())
+        .then((j) => {
+          if (j?.data) this.dispatch('draw:state-sync' as SocketEventName, j.data);
+          ack?.({ success: true, data: j?.data });
+        })
+        .catch((error) => ack?.({ success: false, error: String(error) }));
+      return;
+    }
+    if (event === ('ping' as SocketEventName)) {
+      ack?.({ success: true });
+      return;
+    }
+    this.sendRaw({
+      topic: TOPIC,
+      event: 'broadcast',
+      payload: { type: 'broadcast', event, payload: envelope },
+      ref: this.nextRef(),
+      join_ref: this.joinRef,
+    });
+    ack?.({ success: true });
   }
 
   /** Generate a unique event ID */

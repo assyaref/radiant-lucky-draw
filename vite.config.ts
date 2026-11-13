@@ -39,14 +39,15 @@ export default defineConfig({
     port: 3000,
     open: true,
     proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
-      '/socket.io': {
-        target: 'http://localhost:3001',
-        ws: true,
-      },
+      // Local dev talks to the Supabase Edge Function `api` (same as production).
+      // Set VITE_DEV_API_TARGET=http://localhost:3001 to use a local Node server instead.
+      '/api': process.env.VITE_DEV_API_TARGET
+        ? { target: process.env.VITE_DEV_API_TARGET, changeOrigin: true }
+        : {
+            target: 'https://emwmnghbxsoudfxxltna.supabase.co',
+            changeOrigin: true,
+            rewrite: (p: string) => `/functions/v1${p}`,
+          },
     },
   },
   build: {

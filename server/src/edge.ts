@@ -13,6 +13,7 @@
 import express from 'express';
 import { createApp } from './app';
 import { logger } from './utils';
+import { flushPendingBroadcasts } from './realtime';
 import { ensureAdminUser, ensureDefaultSettings, ensureDefaultPrizes } from './bootstrap';
 
 const { app } = createApp();
@@ -35,8 +36,15 @@ function ensureBootstrapped(): Promise<void> {
 
 const server = express();
 server.disable('x-powered-by');
-server.use(async (_req, _res, next) => {
+server.use(async (_req, res, next) => {
   await ensureBootstrapped();
+  // Deliver realtime broadcasts triggered by this request before responding:
+  // the edge isolate may be suspended as soon as the response is sent.
+  const send = res.send.bind(res);
+  res.send = ((body?: unknown) => {
+    flushPendingBroadcasts().finally(() => send(body as any));
+    return res;
+  }) as typeof res.send;
   next();
 });
 server.use(app);

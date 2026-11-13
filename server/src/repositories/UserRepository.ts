@@ -47,6 +47,20 @@ export class UserRepository extends PrismaRepository<User> {
     return record ? this.toEntity(record) : null;
   }
 
+  /**
+   * Login lookup: by email (contains "@") or username, case-insensitive,
+   * ignoring surrounding spaces.
+   */
+  async findByLogin(identifier: string): Promise<User | null> {
+    const value = identifier.trim();
+    if (!value) return null;
+    const field = value.includes('@') ? 'email' : 'username';
+    const record = await this.model.findFirst({
+      where: { [field]: { equals: value, mode: 'insensitive' }, deletedAt: null },
+    });
+    return record ? this.toEntity(record) : null;
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     const record = await this.model.findFirst({
       where: { email, deletedAt: null },

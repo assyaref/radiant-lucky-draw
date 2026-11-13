@@ -217,11 +217,12 @@ export class UserService {
 
   private async assertUnique(username?: string, email?: string, exceptId?: string): Promise<void> {
     if (username) {
-      const u = await this.userRepository.findByUsername(username);
+      // Case-insensitive: usernames are also used to log in.
+      const u = await this.userRepository.findByLogin(username);
       if (u && u.id !== exceptId) throw new ConflictError('Username sudah dipakai');
     }
     if (email) {
-      const u = await this.userRepository.findByEmail(email);
+      const u = await this.userRepository.findByLogin(email);
       if (u && u.id !== exceptId) throw new ConflictError('Email sudah dipakai');
     }
   }

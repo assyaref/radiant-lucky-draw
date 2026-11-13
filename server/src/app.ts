@@ -81,6 +81,7 @@ import {
 } from './repositories';
 
 import { RealtimeService } from './realtime';
+import { createAuditLogRoutes } from './routes/auditLog.routes';
 
 export interface AppInstance {
   app: express.Express;
@@ -244,6 +245,7 @@ export function createApp(): AppInstance {
   app.use('/api/users', createUserRoutes(userController, tokenService));
   app.use('/api/name-spin', createNameSpinRoutes(nameSpinController, tokenService));
   app.use('/api/monitor', createMonitorRoutes(monitorController, tokenService));
+  app.use('/api/audit-logs', createAuditLogRoutes(tokenService));
 
   // =========================================================
   // Root Route

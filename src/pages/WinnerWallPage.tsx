@@ -1,9 +1,9 @@
 ﻿// ============================================================
 // Winner Wall Page - Gallery of all winners with search & filter
-// Real-time updates via Socket.IO
+// Live data from /api/booth/winners-public; refreshes on new winners
 // ============================================================
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   HiOutlineMagnifyingGlass,
@@ -13,6 +13,7 @@ import {
 } from 'react-icons/hi2';
 import { useSocketEvent, SOCKET_EVENTS } from '@services/socket';
 import { normalizeImageUrl } from '@/utils';
+import { boothApi } from '@api/booth';
 
 interface Winner {
   id: string;
@@ -42,98 +43,45 @@ const tierLabels: Record<string, string> = {
   special: 'Special',
 };
 
-const mockWinners: Winner[] = [
-  {
-    id: '1',
-    participantName: 'Budi Santoso',
-    participantCompany: 'PT Teknologi Maju',
-    prizeName: 'Motor Listrik',
-    prizeTier: 'grand',
-    prizeValue: 50000000,
-    announcedAt: new Date(Date.now() - 60000).toISOString(),
-  },
-  {
-    id: '2',
-    participantName: 'Siti Nurhaliza',
-    participantCompany: 'CV Kreatif Digital',
-    prizeName: 'Smartphone Premium',
-    prizeTier: 'gold',
-    prizeValue: 15000000,
-    announcedAt: new Date(Date.now() - 300000).toISOString(),
-  },
-  {
-    id: '3',
-    participantName: 'Ahmad Rizki',
-    participantCompany: 'PT Bangun Persada',
-    prizeName: 'Smartwatch',
-    prizeTier: 'silver',
-    prizeValue: 5000000,
-    announcedAt: new Date(Date.now() - 600000).toISOString(),
-  },
-  {
-    id: '4',
-    participantName: 'Dewi Lestari',
-    participantCompany: 'PT Mega Finance',
-    prizeName: 'Headphone Wireless',
-    prizeTier: 'bronze',
-    prizeValue: 2000000,
-    announcedAt: new Date(Date.now() - 900000).toISOString(),
-  },
-  {
-    id: '5',
-    participantName: 'Rudi Hermawan',
-    participantCompany: 'PT Indo Teknologi',
-    prizeName: 'Voucher Belanja 1 Juta',
-    prizeTier: 'special',
-    prizeValue: 1000000,
-    announcedAt: new Date(Date.now() - 1200000).toISOString(),
-  },
-  {
-    id: '6',
-    participantName: 'Fitri Wulandari',
-    participantCompany: 'PT Kreasi Nusantara',
-    prizeName: 'Tablet Premium',
-    prizeTier: 'gold',
-    prizeValue: 8000000,
-    announcedAt: new Date(Date.now() - 1800000).toISOString(),
-  },
-  {
-    id: '7',
-    participantName: 'Hendra Gunawan',
-    participantCompany: 'CV Solusi Digital',
-    prizeName: 'Speaker Bluetooth',
-    prizeTier: 'bronze',
-    prizeValue: 1500000,
-    announcedAt: new Date(Date.now() - 2400000).toISOString(),
-  },
-  {
-    id: '8',
-    participantName: 'Ratna Sari',
-    participantCompany: 'PT Bina Karya',
-    prizeName: 'Power Bank 20000mAh',
-    prizeTier: 'silver',
-    prizeValue: 500000,
-    announcedAt: new Date(Date.now() - 3000000).toISOString(),
-  },
-];
-
 export default function WinnerWallPage() {
-  const [winners, setWinners] = useState<Winner[]>(mockWinners);
+  const [winners, setWinners] = useState<Winner[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
 
-  const handleDrawWinner = useCallback((payload: any) => {
-    const newWinner: Winner = {
-      id: payload.drawId || Date.now().toString(),
-      participantName: payload.participantName || 'Unknown',
-      participantCompany: payload.participantCompany || '',
-      prizeName: payload.prizeName || 'Unknown Prize',
-      prizeTier: payload.prizeTier || 'special',
-      prizeValue: 0,
-      announcedAt: payload.timestamp || new Date().toISOString(),
-    };
-    setWinners((prev) => [newWinner, ...prev]);
+  const load = useCallback(async () => {
+    try {
+      const res = await boothApi.getPublicWinners(500);
+      setWinners(
+        (res.data ?? []).map((w) => ({
+          id: w.id,
+          participantName: w.participantName ?? '',
+          participantCompany: w.participantCompany ?? '',
+          participantPhotoUrl: w.participantPhotoUrl,
+          prizeName: w.prizeName ?? '',
+          prizeImageUrl: w.prizeImageUrl,
+          prizeTier: w.prizeTier ?? 'special',
+          prizeValue: Number(w.prizeValue) || 0,
+          announcedAt: w.announcedAt,
+        })),
+      );
+    } catch {
+      // Keep the last list on a transient error; the poll retries.
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+    const t = setInterval(() => void load(), 30_000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  // A new winner was revealed: re-read the list from the database.
+  const handleDrawWinner = useCallback(() => {
+    setTimeout(() => void load(), 1500);
+  }, [load]);
 
   useSocketEvent(SOCKET_EVENTS.DRAW_WINNER as any, handleDrawWinner);
 
@@ -167,7 +115,9 @@ export default function WinnerWallPage() {
                 <HiOutlineTrophy className="w-8 h-8 text-amber-400" />
                 Winner Wall
               </h1>
-              <p className="text-dark-text-tertiary mt-2">{winners.length} winners announced</p>
+              <p className="text-dark-text-tertiary mt-2">
+                {loading ? 'Memuat pemenang…' : `${winners.length} pemenang diumumkan`}
+              </p>
             </div>
           </div>
         </div>

@@ -10,6 +10,14 @@ import { DrawRepository, ParticipantRepository, PrizeRepository } from '../repos
 import { prisma } from '../lib/prisma';
 import type { DrawAnalytics, DashboardStats } from '../entities';
 
+/** Start of the current calendar day in Asia/Jakarta (UTC+7), as a UTC Date. */
+function startOfJakartaDay(now: Date = new Date()): Date {
+  const OFFSET_MS = 7 * 60 * 60 * 1000;
+  const local = new Date(now.getTime() + OFFSET_MS);
+  local.setUTCHours(0, 0, 0, 0);
+  return new Date(local.getTime() - OFFSET_MS);
+}
+
 export class AnalyticsService {
   constructor(
     private drawRepository: DrawRepository,
@@ -28,9 +36,8 @@ export class AnalyticsService {
     // Real queue length = participants still waiting or currently called.
     const queueLength = registered + called;
 
-    // Real draws completed today.
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    // "Today" in the event's timezone (Asia/Jakarta, UTC+7), not the server's.
+    const startOfDay = startOfJakartaDay();
     const drawsToday = await prisma.draw.count({
       where: { status: 'completed', completedAt: { gte: startOfDay }, deletedAt: null },
     });
@@ -41,6 +48,31 @@ export class AnalyticsService {
     // Real active socket connections.
     const activeConnections = this.getActiveConnections();
 
+    const [
+      totalParticipants,
+      registeredToday,
+      prizeRows,
+      queueWaiting,
+      queueReady,
+      queueServed,
+      winnersToday,
+      winnersClaimed,
+    ] = await Promise.all([
+      prisma.participant.count({ where: { deletedAt: null } }),
+      prisma.participant.count({ where: { deletedAt: null, registeredAt: { gte: startOfDay } } }),
+      prisma.prize.findMany({
+        where: { deletedAt: null },
+        select: { quantity: true, remaining: true },
+      }),
+      prisma.queueEntry.count({ where: { status: 'waiting', deletedAt: null } }),
+      prisma.queueEntry.count({ where: { status: 'called', deletedAt: null } }),
+      prisma.queueEntry.count({ where: { status: 'completed', deletedAt: null } }),
+      prisma.winner.count({ where: { deletedAt: null, announcedAt: { gte: startOfDay } } }),
+      prisma.winner.count({ where: { deletedAt: null, claimStatus: 'claimed' } }),
+    ]);
+    const prizeTotal = prizeRows.reduce((n: number, p: any) => n + (p.quantity || 0), 0);
+    const prizeAvailable = prizeRows.reduce((n: number, p: any) => n + (p.remaining || 0), 0);
+
     return {
       activeParticipants: registered + called + completed,
       queueLength,
@@ -49,6 +81,20 @@ export class AnalyticsService {
       prizesAwarded,
       systemUptime: process.uptime(),
       activeConnections,
+      breakdown: {
+        participants: {
+          total: totalParticipants,
+          registeredToday,
+          active: queueLength,
+        },
+        prizes: { total: prizeTotal, available: prizeAvailable, claimed: Math.max(0, prizeTotal - prizeAvailable) },
+        queue: { waiting: queueWaiting, ready: queueReady, served: queueServed },
+        winners: {
+          today: winnersToday,
+          claimed: winnersClaimed,
+          pending: Math.max(0, prizesAwarded - winnersClaimed),
+        },
+      },
     };
   }
 

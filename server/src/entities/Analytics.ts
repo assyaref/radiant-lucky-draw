@@ -21,4 +21,11 @@ export interface DashboardStats {
   prizesAwarded: number;
   systemUptime: number;
   activeConnections: number;
+  /** Figures for the dashboard widgets ("today" = Asia/Jakarta calendar day). */
+  breakdown: {
+    participants: { total: number; registeredToday: number; active: number };
+    prizes: { total: number; available: number; claimed: number };
+    queue: { waiting: number; ready: number; served: number };
+    winners: { today: number; claimed: number; pending: number };
+  };
 }

@@ -33,12 +33,14 @@ class SpinAudioEngine {
     const Ctor =
       (window as any).AudioContext ?? ((window as any).webkitAudioContext as typeof AudioContext);
     if (!Ctor) return null;
-    this.ctx = new Ctor();
-    this.master = this.ctx.createGain();
-    this.master.gain.value = 0.9;
-    this.master.connect(this.ctx.destination);
-    this.ctx.onstatechange = () => this.emit();
-    return this.ctx;
+    const ctx: AudioContext = new Ctor();
+    const master = ctx.createGain();
+    master.gain.value = 0.9;
+    master.connect(ctx.destination);
+    ctx.onstatechange = () => this.emit();
+    this.ctx = ctx;
+    this.master = master;
+    return ctx;
   }
 
   get locked(): boolean {

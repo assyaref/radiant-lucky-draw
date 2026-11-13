@@ -1536,9 +1536,7 @@ export default function MonitorPage() {
         {(nameSpinMode || nameSpin) && (
           <motion.div
             key={nameSpinMode ? 'namespin-mode' : `namespin-${nameSpin?.spinId}`}
-            className={`fixed inset-0 flex items-center justify-center px-6 pt-16 pb-6 ${
-              nameSpinMode ? 'z-20 bg-[#020617]' : 'z-40 bg-[#020617]/95'
-            }`}
+            className="fixed inset-0 z-40 bg-[#080d33]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1551,7 +1549,8 @@ export default function MonitorPage() {
               prizeName={monitorState?.wheel.prizeName}
               prizeImageUrl={monitorState?.wheel.prizeImageUrl}
               spin={nameSpin}
-              size="lg"
+              theme={monitorState?.theme}
+              variant="screen"
             />
           </motion.div>
         )}
@@ -1560,7 +1559,12 @@ export default function MonitorPage() {
       <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-6 md:px-10 py-3 border-b border-white/[0.04] bg-gradient-to-b from-[#020617cc] to-transparent">
         <div className="flex items-center gap-3">
           <img
-            src={luckyDrawLogo}
+            src={monitorState?.theme?.logoUrl || luckyDrawLogo}
+            onError={(e) => {
+              if (e.currentTarget.dataset.fallback) return;
+              e.currentTarget.dataset.fallback = '1';
+              e.currentTarget.src = luckyDrawLogo;
+            }}
             alt="Lucky Draw"
             className="h-8 w-auto object-contain opacity-90 drop-shadow-[0_0_12px_rgba(139,92,246,0.25)]"
           />

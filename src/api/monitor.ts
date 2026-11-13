@@ -16,9 +16,27 @@ export interface WheelDisplay {
   prizeImageUrl: string | null;
 }
 
+/** Per-event look & sound of the Spin Nama screen. */
+export interface MonitorTheme {
+  logoUrl: string | null;
+  eventLabel: string | null;
+  spinSoundUrl: string | null;
+  winSoundUrl: string | null;
+  soundEnabled: boolean;
+}
+
+export const DEFAULT_THEME: MonitorTheme = {
+  logoUrl: null,
+  eventLabel: null,
+  spinSoundUrl: null,
+  winSoundUrl: null,
+  soundEnabled: true,
+};
+
 export interface MonitorState {
   mode: MonitorMode;
   wheel: WheelDisplay;
+  theme?: MonitorTheme;
   updatedAt: string;
 }
 
@@ -30,6 +48,13 @@ export interface UpdateMonitorStatePayload {
     prizeId?: string | null;
     prizeName?: string | null;
   };
+  theme?: Partial<MonitorTheme>;
+}
+
+export interface UploadedAsset {
+  url: string;
+  contentType: string;
+  size: number;
 }
 
 type Envelope<T> = { success: boolean; data: T };
@@ -38,6 +63,9 @@ export const monitorApi = {
   get: () => api.get<Envelope<MonitorState>>('/monitor/state'),
   update: (payload: UpdateMonitorStatePayload) =>
     api.put<Envelope<MonitorState>>('/monitor/state', payload),
+  /** Upload a logo image or a sound file; returns its public URL. */
+  uploadAsset: (kind: 'logo' | 'sound', dataUrl: string, fileName?: string) =>
+    api.post<Envelope<UploadedAsset>>('/monitor/assets', { kind, dataUrl, fileName }),
 };
 
 /** Same evenly spaced sample the server uses for the wheel (max 60 segments). */

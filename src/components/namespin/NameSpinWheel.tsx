@@ -25,18 +25,25 @@ interface Props {
   /** Segment to highlight after the spin (usually the winner). */
   highlight?: number | null;
   onSpinEnd?: (spinId: string) => void;
+  /** A segment passed the pointer while spinning (for tick sounds). */
+  onTick?: (segment: number) => void;
+  /** Segment under the pointer changed (any time). */
+  onPointerSegment?: (segment: number) => void;
   className?: string;
 }
 
-const PALETTE = [
-  '#2563eb', // blue
-  '#7c3aed', // violet
-  '#0891b2', // cyan
-  '#4f46e5', // indigo
-  '#9333ea', // purple
-  '#0ea5e9', // sky
+/** Segment colours: [light, dark] for a soft radial gradient. */
+const PALETTE: Array<[string, string]> = [
+  ['#5b4cf0', '#3423b8'], // indigo
+  ['#0ea5e9', '#0369a1'], // sky
+  ['#2563eb', '#1e3a8a'], // blue
+  ['#a855f7', '#6d28d9'], // violet
+  ['#14b8a6', '#0f766e'], // teal
+  ['#6366f1', '#3730a3'], // indigo 2
+  ['#06b6d4', '#0e7490'], // cyan
+  ['#8b5cf6', '#5b21b6'], // purple
 ];
-const GOLD = '#f59e0b';
+const WINNER: [string, string] = ['#fde047', '#f59e0b'];
 const TAU = Math.PI * 2;
 const POINTER = -Math.PI / 2; // top
 const IDLE_SPEED = 0.12; // rad/s
@@ -91,52 +98,77 @@ export function drawWheel(
   highlight: number | null,
 ): void {
   const n = names.length;
-  const r = size / 2 - 6;
   const cx = size / 2;
   const cy = size / 2;
+  const outer = size / 2 - size * 0.035; // room for the glow
+  const rim = Math.max(6, outer * 0.055);
+  const r = outer - rim; // face radius
   ctx.clearRect(0, 0, size, size);
 
-  // Outer ring
+  // Gold rim with glow
+  ctx.save();
+  ctx.shadowColor = 'rgba(251,191,36,0.75)';
+  ctx.shadowBlur = size * 0.045;
+  const rimGrad = ctx.createLinearGradient(cx - outer, cy - outer, cx + outer, cy + outer);
+  rimGrad.addColorStop(0, '#fff3b0');
+  rimGrad.addColorStop(0.25, '#fbbf24');
+  rimGrad.addColorStop(0.5, '#b45309');
+  rimGrad.addColorStop(0.75, '#fcd34d');
+  rimGrad.addColorStop(1, '#d97706');
   ctx.beginPath();
-  ctx.arc(cx, cy, r + 4, 0, TAU);
-  ctx.fillStyle = '#0b1229';
+  ctx.arc(cx, cy, outer, 0, TAU);
+  ctx.fillStyle = rimGrad;
   ctx.fill();
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = 'rgba(245,158,11,0.75)';
-  ctx.stroke();
+  ctx.restore();
+
+  // Dark inner edge between rim and face
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + 1.5, 0, TAU);
+  ctx.fillStyle = '#1a1033';
+  ctx.fill();
 
   if (n === 0) {
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.font = `600 ${Math.max(14, size * 0.04)}px Inter, system-ui, sans-serif`;
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, '#312e81');
+    g.addColorStop(1, '#1e1b4b');
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, TAU);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = `700 ${Math.max(14, size * 0.04)}px Poppins, Inter, system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Belum ada nama', cx, cy);
+    ctx.fillText('Belum ada nama', cx, cy + r * 0.3);
   } else {
     const seg = TAU / n;
-    const fontSize = Math.max(9, Math.min(r * 0.075, seg * r * 0.55));
-    ctx.font = `700 ${fontSize}px Inter, system-ui, sans-serif`;
+    const fontSize = Math.max(9, Math.min(r * 0.085, seg * r * 0.5));
+    ctx.font = `800 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'right';
-    const maxText = r * 0.66;
+    const maxText = r * 0.62;
 
     for (let i = 0; i < n; i++) {
       const a0 = rotation + i * seg;
       const isHi = highlight === i;
+      const [light, dark] = isHi ? WINNER : PALETTE[i % PALETTE.length];
+      const g = ctx.createRadialGradient(cx, cy, r * 0.1, cx, cy, r);
+      g.addColorStop(0, dark);
+      g.addColorStop(0.55, light);
+      g.addColorStop(1, dark);
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, r, a0, a0 + seg);
       ctx.closePath();
-      ctx.fillStyle = isHi ? GOLD : PALETTE[i % PALETTE.length];
-      ctx.globalAlpha = isHi || highlight === null ? 1 : 0.55;
+      ctx.fillStyle = g;
       ctx.fill();
-      ctx.globalAlpha = 1;
       if (n <= 120) {
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(2,6,23,0.55)';
+        ctx.lineWidth = Math.max(1, size * 0.002);
+        ctx.strokeStyle = 'rgba(15,10,40,0.55)';
         ctx.stroke();
       }
 
-      // Label, along the segment's centre line, right-aligned near the rim
+      // Label along the segment's centre line, near the rim
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(a0 + seg / 2);
@@ -147,27 +179,57 @@ export function drawWheel(
         }
         label = `${label}…`;
       }
-      ctx.fillStyle = isHi ? '#111827' : 'rgba(255,255,255,0.95)';
-      ctx.fillText(label, r - 12, 0);
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 1;
+      ctx.fillStyle = isHi ? '#1f1300' : '#ffffff';
+      ctx.fillText(label, r * 0.88, 0);
       ctx.restore();
     }
+
+    // Soft inner vignette for depth
+    const v = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r);
+    v.addColorStop(0, 'rgba(0,0,0,0)');
+    v.addColorStop(1, 'rgba(0,0,0,0.25)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, TAU);
+    ctx.fillStyle = v;
+    ctx.fill();
   }
 
-  // Hub
-  const hub = Math.max(18, r * 0.14);
-  const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, hub);
-  g.addColorStop(0, '#fde68a');
-  g.addColorStop(1, '#d97706');
+  // Gold hub orb
+  const hub = Math.max(16, r * 0.15);
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = hub * 0.5;
+  const ring = ctx.createLinearGradient(cx - hub, cy - hub, cx + hub, cy + hub);
+  ring.addColorStop(0, '#fff7c2');
+  ring.addColorStop(0.5, '#d97706');
+  ring.addColorStop(1, '#fde68a');
   ctx.beginPath();
   ctx.arc(cx, cy, hub, 0, TAU);
-  ctx.fillStyle = g;
+  ctx.fillStyle = ring;
   ctx.fill();
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = '#0b1229';
-  ctx.stroke();
+  ctx.restore();
+  const orb = ctx.createRadialGradient(cx - hub * 0.3, cy - hub * 0.35, hub * 0.05, cx, cy, hub * 0.85);
+  orb.addColorStop(0, '#fffbe6');
+  orb.addColorStop(0.35, '#fcd34d');
+  orb.addColorStop(1, '#c2410c');
+  ctx.beginPath();
+  ctx.arc(cx, cy, hub * 0.8, 0, TAU);
+  ctx.fillStyle = orb;
+  ctx.fill();
 }
 
-export function NameSpinWheel({ segments, spin, highlight = null, onSpinEnd, className }: Props) {
+export function NameSpinWheel({
+  segments,
+  spin,
+  highlight = null,
+  onSpinEnd,
+  onTick,
+  onPointerSegment,
+  className,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const rotation = useRef(Math.random() * TAU);
@@ -182,6 +244,11 @@ export function NameSpinWheel({ segments, spin, highlight = null, onSpinEnd, cla
     done: boolean;
   } | null>(null);
   const onEndRef = useRef(onSpinEnd);
+  const onTickRef = useRef(onTick);
+  const onPointerRef = useRef(onPointerSegment);
+  const lastSeg = useRef(-1);
+  onTickRef.current = onTick;
+  onPointerRef.current = onPointerSegment;
 
   segRef.current = segments;
   highlightRef.current = highlight;
@@ -246,6 +313,16 @@ export function NameSpinWheel({ segments, spin, highlight = null, onSpinEnd, cla
         rotation.current += IDLE_SPEED * dt;
       }
 
+      const count = segRef.current.length;
+      if (count > 0) {
+        const cur = segmentAtPointer(rotation.current, count);
+        if (cur !== lastSeg.current) {
+          lastSeg.current = cur;
+          onPointerRef.current?.(cur);
+          if (s && !s.done) onTickRef.current?.(cur);
+        }
+      }
+
       drawWheel(ctx, size, segRef.current, rotation.current, highlightRef.current);
 
       raf = requestAnimationFrame(draw);
@@ -262,18 +339,22 @@ export function NameSpinWheel({ segments, spin, highlight = null, onSpinEnd, cla
     <div ref={wrapRef} className={`relative aspect-square w-full ${className ?? ''}`}>
       <canvas ref={canvasRef} className="absolute inset-0 m-auto" aria-hidden="true" />
       {/* Pointer */}
-      <div
-        className="absolute left-1/2 -translate-x-1/2 -top-1 z-10"
-        style={{
-          width: 0,
-          height: 0,
-          borderLeft: '18px solid transparent',
-          borderRight: '18px solid transparent',
-          borderTop: '34px solid #fbbf24',
-          filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))',
-        }}
+      <svg
+        viewBox="0 0 40 40"
+        className="absolute left-1/2 -translate-x-1/2 top-0 z-10 w-[9%] max-w-[64px] min-w-[26px]"
+        style={{ filter: 'drop-shadow(0 0 10px rgba(251,191,36,0.85)) drop-shadow(0 4px 4px rgba(0,0,0,0.5))' }}
         aria-hidden="true"
-      />
+      >
+        <defs>
+          <linearGradient id="nsw-pointer" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fff3b0" />
+            <stop offset="0.5" stopColor="#fbbf24" />
+            <stop offset="1" stopColor="#d97706" />
+          </linearGradient>
+        </defs>
+        <path d="M4 4 H36 Q38 4 36.8 6 L21.5 34 Q20 36.5 18.5 34 L3.2 6 Q2 4 4 4 Z" fill="url(#nsw-pointer)" stroke="#92400e" strokeWidth="1.2" />
+        <path d="M9 7.5 H31 L20 27 Z" fill="rgba(255,255,255,0.25)" />
+      </svg>
     </div>
   );
 }

@@ -28,7 +28,7 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      await login({ email, password, rememberMe });
+      await login({ email: email.trim(), password, rememberMe });
       navigate('/dashboard', { replace: true });
     } catch (err) {
       if (err instanceof ApiClientError) {
@@ -85,17 +85,20 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-300">
-                  Email
+                  Email atau username
                 </label>
                 <input
                   id="email"
-                  type="email"
+                  type="text"
                   required
-                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/30"
-                  placeholder="you@company.com"
+                  placeholder="nama@perusahaan.com atau username"
                 />
               </div>
 

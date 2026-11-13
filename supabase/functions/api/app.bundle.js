@@ -3,7 +3,7 @@
 import Rr from "npm:express@^4.21.0";
 
 // src/app.ts
-import fi from "npm:express@^4.21.0";
+import yi from "npm:express@^4.21.0";
 import mr from "npm:cors@^2.8.5";
 import fr from "npm:helmet@^7.1.0";
 import yr from "npm:cookie-parser@^1.4.7";
@@ -16,7 +16,7 @@ function b(e) {
 let i = globalThis.Deno?.env?.get?.(e) ?? (typeof process < "u" ? process.env[e] : void 0);
 return i === "" ? void 0 : i;
 }
-function hi(e) {
+function wi(e) {
 let t = b("SUPABASE_SERVICE_ROLE_KEY") || b("SUPABASE_DB_URL");
 if (!t)
 return "";
@@ -38,9 +38,9 @@ PORT: parseInt(b("PORT") || "3001", 10),
 NODE_ENV: le,
 DATABASE_URL: b("DATABASE_URL") || b("SUPABASE_DB_URL") || "",
 DIRECT_URL: b("DIRECT_URL") || b("DATABASE_URL") || b("SUPABASE_DB_URL") || "",
-JWT_SECRET: b("JWT_SECRET") || hi("access"),
+JWT_SECRET: b("JWT_SECRET") || wi("access"),
 JWT_EXPIRES_IN: b("JWT_EXPIRES_IN") || "15m",
-JWT_REFRESH_SECRET: b("JWT_REFRESH_SECRET") || hi("refresh"),
+JWT_REFRESH_SECRET: b("JWT_REFRESH_SECRET") || wi("refresh"),
 JWT_REFRESH_EXPIRES_IN: b("JWT_REFRESH_EXPIRES_IN") || "7d",
 COOKIE_NAME: b("COOKIE_NAME") || "radiant_refresh",
 COOKIE_SECURE: b("COOKIE_SECURE") ? b("COOKIE_SECURE") === "true" : wt,
@@ -170,7 +170,7 @@ this.name = "ForbiddenError";
 }
 }
 
-class B extends K {
+class L extends K {
 constructor(e) {
 super(409, "CONFLICT", e);
 this.name = "ConflictError";
@@ -294,7 +294,7 @@ throw new _("Invalid or expired token");
 }
 };
 }
-function L(...e) {
+function B(...e) {
 return (t, i, n) => {
 if (!t.user)
 throw new _("Authentication required");
@@ -366,8 +366,8 @@ import { Router as bn } from "npm:express@^4.21.0";
 import { z } from "npm:zod@^3.23.8";
 var Et = z.object({
 body: z.object({
-email: z.string().email("Invalid email format"),
-password: z.string().min(6, "Password must be at least 6 characters"),
+email: z.string().trim().min(1, "Email atau username wajib diisi").max(255),
+password: z.string().min(1, "Password wajib diisi").max(200),
 rememberMe: z.boolean().optional()
 })
 }), bt = z.object({
@@ -404,7 +404,7 @@ status: q.enum(["registered", "called", "completed", "cancelled"]).optional()
 });
 // src/validators/prize.validator.ts
 import { z as N } from "npm:zod@^3.23.8";
-var wi = N.enum(["doorprize", "bronze", "silver", "gold", "platinum", "diamond", "grand"]), Nt = N.object({
+var Si = N.enum(["doorprize", "bronze", "silver", "gold", "platinum", "diamond", "grand"]), Nt = N.object({
 body: N.object({
 name: N.string().min(1, "Name is required"),
 description: N.string().optional(),
@@ -413,7 +413,7 @@ currency: N.string().length(3).optional(),
 quantity: N.number().int().positive("Quantity must be positive"),
 imageUrl: N.string().optional(),
 sponsor: N.string().optional(),
-tier: wi,
+tier: Si,
 probability: N.number().min(0).optional()
 })
 }), Tt = N.object({
@@ -425,7 +425,7 @@ currency: N.string().length(3).optional(),
 quantity: N.number().int().positive().optional(),
 imageUrl: N.string().optional(),
 sponsor: N.string().optional(),
-tier: wi.optional(),
+tier: Si.optional(),
 probability: N.number().min(0).optional(),
 isActive: N.boolean().optional()
 })
@@ -493,7 +493,7 @@ claimStatus: O.enum(["unclaimed", "claimed"])
 });
 // src/validators/user.validator.ts
 import { z as P } from "npm:zod@^3.23.8";
-var Mt = P.enum(de), Bt = P.string().min(8, "Password minimal 8 karakter").max(128, "Password maksimal 128 karakter").regex(/[A-Za-z]/, "Password harus mengandung huruf").regex(/\d/, "Password harus mengandung angka"), Si = P.string().trim().min(3, "Username minimal 3 karakter").max(50, "Username maksimal 50 karakter").regex(/^[a-zA-Z0-9._-]+$/, "Username hanya boleh huruf, angka, titik, garis bawah, atau strip"), Ri = P.string().trim().toLowerCase().email("Format email tidak valid").max(255), Lt = P.object({
+var Mt = P.enum(de), Lt = P.string().min(8, "Password minimal 8 karakter").max(128, "Password maksimal 128 karakter").regex(/[A-Za-z]/, "Password harus mengandung huruf").regex(/\d/, "Password harus mengandung angka").refine((e) => e === e.trim(), "Password tidak boleh diawali atau diakhiri spasi"), Ri = P.string().trim().min(3, "Username minimal 3 karakter").max(50, "Username maksimal 50 karakter").regex(/^[a-zA-Z0-9._-]+$/, "Username hanya boleh huruf, angka, titik, garis bawah, atau strip"), Ai = P.string().trim().toLowerCase().email("Format email tidak valid").max(255), Bt = P.object({
 query: P.object({
 page: P.coerce.number().int().min(1).optional(),
 limit: P.coerce.number().int().min(1).max(100).optional(),
@@ -503,32 +503,32 @@ status: P.enum(["active", "inactive"]).optional()
 })
 }), qt = P.object({
 body: P.object({
-username: Si,
-email: Ri,
-password: Bt,
+username: Ri,
+email: Ai,
+password: Lt,
 role: Mt,
 isActive: P.boolean().optional()
 })
 }), Ft = P.object({
 body: P.object({
-username: Si.optional(),
-email: Ri.optional(),
+username: Ri.optional(),
+email: Ai.optional(),
 role: Mt.optional(),
 isActive: P.boolean().optional()
 }).refine((e) => Object.values(e).some((t) => t !== void 0), "Tidak ada perubahan")
 }), Wt = P.object({
-body: P.object({ password: Bt })
+body: P.object({ password: Lt })
 }), $t = P.object({
 body: P.object({
 currentPassword: P.string().min(1, "Password lama wajib diisi"),
-newPassword: Bt
+newPassword: Lt
 })
 }), jt = P.object({
 params: P.object({ id: P.string().uuid("ID pengguna tidak valid") })
 });
 // src/validators/nameSpin.validator.ts
 import { z as ie } from "npm:zod@^3.23.8";
-var Vt = ie.object({
+var Qt = ie.object({
 body: ie.object({
 names: ie.array(ie.string().max(100, "Nama maksimal 100 karakter")).min(2, "Masukkan minimal 2 nama").max(5000, "Maksimal 5000 nama"),
 prizeId: ie.string().uuid("ID hadiah tidak valid").optional(),
@@ -538,7 +538,7 @@ title: ie.string().trim().max(120).optional()
 });
 // src/validators/monitor.validator.ts
 import { z as k } from "npm:zod@^3.23.8";
-var Qt = k.string().trim().max(2000).refine((e) => e === "" || /^https?:\/\/\S+$/i.test(e), "Link harus diawali http:// atau https://"), Ht = k.object({
+var Vt = k.string().trim().max(2000).refine((e) => e === "" || /^https?:\/\/\S+$/i.test(e), "Link harus diawali http:// atau https://"), Ht = k.object({
 body: k.object({
 mode: k.enum(["event", "namespin"]).optional(),
 wheel: k.object({
@@ -548,10 +548,10 @@ prizeId: k.string().uuid().nullable().optional(),
 prizeName: k.string().trim().max(200).nullable().optional()
 }).optional(),
 theme: k.object({
-logoUrl: Qt.nullable().optional(),
+logoUrl: Vt.nullable().optional(),
 eventLabel: k.string().trim().max(60).nullable().optional(),
-spinSoundUrl: Qt.nullable().optional(),
-winSoundUrl: Qt.nullable().optional(),
+spinSoundUrl: Vt.nullable().optional(),
+winSoundUrl: Vt.nullable().optional(),
 soundEnabled: k.boolean().optional()
 }).optional()
 }).refine((e) => e.mode !== void 0 || e.wheel !== void 0 || e.theme !== void 0, "Tidak ada perubahan")
@@ -565,7 +565,7 @@ dataUrl: k.string().max(8000000).regex(/^data:[\w.+-]+\/[\w.+-]+;base64,/, "Form
 // src/routes/auth.routes.ts
 function Xt(e, t) {
 let i = bn(), n = I(t);
-return i.post("/login", A({ body: Et.shape.body }), e.login), i.post("/refresh", e.refresh), i.post("/logout", e.logout), i.get("/me", n, e.me), i.get("/sessions", n, e.listSessions), i.delete("/sessions/:sessionId", n, A({ params: Pt.shape.params }), e.revokeSession), i.post("/register", n, L(f.USER_WRITE), A({ body: bt.shape.body }), e.register), i;
+return i.post("/login", A({ body: Et.shape.body }), e.login), i.post("/refresh", e.refresh), i.post("/logout", e.logout), i.get("/me", n, e.me), i.get("/sessions", n, e.listSessions), i.delete("/sessions/:sessionId", n, A({ params: Pt.shape.params }), e.revokeSession), i.post("/register", n, B(f.USER_WRITE), A({ body: bt.shape.body }), e.register), i;
 }
 // src/routes/participant.routes.ts
 import { Router as Pn } from "npm:express@^4.21.0";
@@ -632,20 +632,20 @@ import { Router as Cn } from "npm:express@^4.21.0";
 function ai(e, t) {
 let i = Cn();
 i.use(I(t));
-let n = L(f.USER_READ), r = L(f.USER_WRITE), o = L(f.USER_DELETE), a = A({ params: jt.shape.params });
-return i.post("/me/password", A({ body: $t.shape.body }), e.changeOwnPassword), i.get("/", n, A({ query: Lt.shape.query }), e.list), i.get("/:id", n, a, e.getById), i.post("/", r, A({ body: qt.shape.body }), e.create), i.put("/:id", r, a, A({ body: Ft.shape.body }), e.update), i.post("/:id/reset-password", r, a, A({ body: Wt.shape.body }), e.resetPassword), i.delete("/:id", o, a, e.remove), i;
+let n = B(f.USER_READ), r = B(f.USER_WRITE), o = B(f.USER_DELETE), a = A({ params: jt.shape.params });
+return i.post("/me/password", A({ body: $t.shape.body }), e.changeOwnPassword), i.get("/", n, A({ query: Bt.shape.query }), e.list), i.get("/:id", n, a, e.getById), i.post("/", r, A({ body: qt.shape.body }), e.create), i.put("/:id", r, a, A({ body: Ft.shape.body }), e.update), i.post("/:id/reset-password", r, a, A({ body: Wt.shape.body }), e.resetPassword), i.delete("/:id", o, a, e.remove), i;
 }
 // src/routes/nameSpin.routes.ts
 import { Router as Mn } from "npm:express@^4.21.0";
 function si(e, t) {
 let i = Mn();
-return i.use(I(t)), i.post("/", L(f.DRAW_EXECUTE), A({ body: Vt.shape.body }), e.spin), i;
+return i.use(I(t)), i.post("/", B(f.DRAW_EXECUTE), A({ body: Qt.shape.body }), e.spin), i;
 }
 // src/routes/monitor.routes.ts
 import { Router as qn } from "npm:express@^4.21.0";
 
 // src/services/AssetStorageService.ts
-var Ai = "branding", Bn = {
+var vi = "branding", Ln = {
 logo: {
 types: {
 "image/png": "png",
@@ -673,10 +673,10 @@ maxBytes: 5242880,
 label: "Suara (MP3/WAV/OGG/M4A, maks 5 MB)"
 }
 };
-function vi(e) {
+function Ii(e) {
 return globalThis.Deno?.env?.get?.(e) ?? (typeof process < "u" ? process.env[e] : void 0);
 }
-function Ln(e) {
+function Bn(e) {
 let t = globalThis;
 if (typeof t.Buffer < "u")
 return new Uint8Array(t.Buffer.from(e, "base64"));
@@ -688,21 +688,21 @@ return n;
 
 class ci {
 async upload(e, t) {
-let i = Bn[e], n = /^data:([\w.+-]+\/[\w.+-]+);base64,(.*)$/s.exec(t);
+let i = Ln[e], n = /^data:([\w.+-]+\/[\w.+-]+);base64,(.*)$/s.exec(t);
 if (!n)
 throw new R("Format file tidak valid");
 let r = n[1].toLowerCase(), o = i.types[r];
 if (!o)
 throw new R(`Jenis file tidak didukung. ${i.label}`);
-let a = Ln(n[2]);
+let a = Bn(n[2]);
 if (a.length === 0)
 throw new R("File kosong");
 if (a.length > i.maxBytes)
 throw new R(`File terlalu besar. ${i.label}`);
-let s = vi("SUPABASE_URL"), c = vi("SUPABASE_SERVICE_ROLE_KEY");
+let s = Ii("SUPABASE_URL"), c = Ii("SUPABASE_SERVICE_ROLE_KEY");
 if (!s || !c)
 throw Error("Penyimpanan file belum dikonfigurasi");
-let h = `${e}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${o}`, l = await fetch(`${s}/storage/v1/object/${Ai}/${h}`, {
+let h = `${e}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${o}`, l = await fetch(`${s}/storage/v1/object/${vi}/${h}`, {
 method: "POST",
 headers: {
 Authorization: `Bearer ${c}`,
@@ -718,7 +718,7 @@ let m = await l.text().catch(() => "");
 throw Error(`Upload gagal (${l.status}) ${m.slice(0, 200)}`);
 }
 return {
-url: `${s}/storage/v1/object/public/${Ai}/${h}`,
+url: `${s}/storage/v1/object/public/${vi}/${h}`,
 contentType: r,
 size: a.length
 };
@@ -728,9 +728,9 @@ size: a.length
 // src/routes/monitor.routes.ts
 function di(e, t) {
 let i = qn();
-i.get("/state", e.get), i.put("/state", I(t), L(f.DRAW_EXECUTE), A({ body: Ht.shape.body }), e.update);
+i.get("/state", e.get), i.put("/state", I(t), B(f.DRAW_EXECUTE), A({ body: Ht.shape.body }), e.update);
 let n = new ci;
-return i.post("/assets", I(t), L(f.DRAW_EXECUTE), A({ body: Gt.shape.body }), (r, o, a) => {
+return i.post("/assets", I(t), B(f.DRAW_EXECUTE), A({ body: Gt.shape.body }), (r, o, a) => {
 n.upload(r.body.kind, r.body.dataUrl).then((s) => d(o, s, void 0, 201)).catch(a);
 }), i;
 }
@@ -741,7 +741,7 @@ ipAddress: e.ip || e.socket?.remoteAddress || "",
 userAgent: e.headers["user-agent"] || ""
 };
 }
-function Ii(e) {
+function Ei(e) {
 return e.cookies?.[v.COOKIE_NAME] ?? "";
 }
 function Fn(e, t) {
@@ -781,7 +781,7 @@ i(n);
 };
 refresh = async (e, t, i) => {
 try {
-let n = Ii(e), r = await this.authService.refresh(n, he(e));
+let n = Ei(e), r = await this.authService.refresh(n, he(e));
 d(t, r);
 } catch (n) {
 i(n);
@@ -789,7 +789,7 @@ i(n);
 };
 logout = async (e, t, i) => {
 try {
-let n = Ii(e), r = await this.authService.logout(n, he(e));
+let n = Ei(e), r = await this.authService.logout(n, he(e));
 Wn(t), d(t, r);
 } catch (n) {
 i(n);
@@ -829,7 +829,7 @@ i(n);
 };
 }
 // src/controllers/ParticipantController.ts
-var Ei = (e) => {
+var bi = (e) => {
 if (typeof e !== "string" || e === "")
 return;
 if (e === "none")
@@ -844,7 +844,7 @@ this.participantService = e;
 }
 findAll = async (e, t, i) => {
 try {
-let n = parseInt(e.query.page) || 1, r = parseInt(e.query.limit) || 20, o = Ei(e.query.eventId), a = await this.participantService.findAll(n, r, o);
+let n = parseInt(e.query.page) || 1, r = parseInt(e.query.limit) || 20, o = bi(e.query.eventId), a = await this.participantService.findAll(n, r, o);
 M(t, a.data, n, r, a.total);
 } catch (n) {
 i(n);
@@ -852,7 +852,7 @@ i(n);
 };
 exportAll = async (e, t, i) => {
 try {
-let n = Ei(e.query.eventId), r = await this.participantService.listAll(n);
+let n = bi(e.query.eventId), r = await this.participantService.listAll(n);
 d(t, r);
 } catch (n) {
 i(n);
@@ -1116,10 +1116,10 @@ i(n);
 import $n from "npm:postgres@^3.4.5";
 
 // src/lib/db-meta.ts
-var bi = JSON.parse('{"User":{"table":"users","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"username":{"column":"username","type":"String","optional":false},"email":{"column":"email","type":"String","optional":false},"password":{"column":"password","type":"String","optional":false},"role":{"column":"role","type":"String","optional":false},"isActive":{"column":"isActive","type":"Boolean","optional":false},"lastLoginAt":{"column":"last_login_at","type":"DateTime","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"auditLogs":{"model":"AuditLog","list":true,"foreignFields":["userId"],"foreignReferences":["id"]},"announcements":{"model":"Announcement","list":true,"foreignFields":["createdBy"],"foreignReferences":["id"]},"sessions":{"model":"Session","list":true,"foreignFields":["userId"],"foreignReferences":["id"]},"events":{"model":"Event","list":true,"name":"EventCreator","foreignFields":["createdBy"],"foreignReferences":["id"]},"operatedBooths":{"model":"Booth","list":true,"name":"BoothOperator","foreignFields":["operatorId"],"foreignReferences":["id"]}}},"Session":{"table":"sessions","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"userId":{"column":"user_id","type":"String","optional":false},"refreshToken":{"column":"refresh_token","type":"String","optional":false},"userAgent":{"column":"user_agent","type":"String","optional":true},"ipAddress":{"column":"ip_address","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"expiresAt":{"column":"expires_at","type":"DateTime","optional":false},"lastUsedAt":{"column":"last_used_at","type":"DateTime","optional":false,"defaultNow":true},"revokedAt":{"column":"revoked_at","type":"DateTime","optional":true},"revokedReason":{"column":"revoked_reason","type":"String","optional":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"user":{"model":"User","list":false,"fields":["userId"],"references":["id"]}}},"Participant":{"table":"participants","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"eventId":{"column":"event_id","type":"String","optional":true},"name":{"column":"name","type":"String","optional":false},"email":{"column":"email","type":"String","optional":true},"phone":{"column":"phone","type":"String","optional":true},"company":{"column":"company","type":"String","optional":true},"queueNumber":{"column":"queueNumber","type":"String","optional":true},"status":{"column":"status","type":"String","optional":false},"registeredAt":{"column":"registered_at","type":"DateTime","optional":false,"defaultNow":true},"calledAt":{"column":"called_at","type":"DateTime","optional":true},"completedAt":{"column":"completed_at","type":"DateTime","optional":true},"photoUrl":{"column":"photo_url","type":"String","optional":true},"prizeId":{"column":"prize_id","type":"String","optional":true},"claimStatus":{"column":"claim_status","type":"String","optional":false},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"event":{"model":"Event","list":false,"fields":["eventId"],"references":["id"]},"queueEntries":{"model":"QueueEntry","list":true,"foreignFields":["participantId"],"foreignReferences":["id"]},"draws":{"model":"DrawParticipant","list":true,"foreignFields":["participantId"],"foreignReferences":["id"]},"winners":{"model":"Winner","list":true,"foreignFields":["participantId"],"foreignReferences":["id"]}}},"Prize":{"table":"prizes","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"eventId":{"column":"event_id","type":"String","optional":true},"name":{"column":"name","type":"String","optional":false},"description":{"column":"description","type":"String","optional":true},"value":{"column":"value","type":"Float","optional":false},"currency":{"column":"currency","type":"String","optional":false},"quantity":{"column":"quantity","type":"Int","optional":false},"remaining":{"column":"remaining","type":"Int","optional":false},"imageUrl":{"column":"image_url","type":"String","optional":true},"sponsor":{"column":"sponsor","type":"String","optional":true},"tier":{"column":"tier","type":"String","optional":false},"probability":{"column":"probability","type":"Float","optional":false},"isActive":{"column":"is_active","type":"Boolean","optional":false},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"event":{"model":"Event","list":false,"fields":["eventId"],"references":["id"]},"draws":{"model":"Draw","list":true,"foreignFields":["prizeId"],"foreignReferences":["id"]},"awards":{"model":"Winner","list":true,"foreignFields":["prizeId"],"foreignReferences":["id"]}}},"Draw":{"table":"draws","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"eventId":{"column":"event_id","type":"String","optional":true},"name":{"column":"name","type":"String","optional":false},"prizeId":{"column":"prize_id","type":"String","optional":false},"prizeName":{"column":"prize_name","type":"String","optional":false},"status":{"column":"status","type":"String","optional":false},"winnerId":{"column":"winner_id","type":"String","optional":true},"winnerName":{"column":"winner_name","type":"String","optional":true},"startedAt":{"column":"started_at","type":"DateTime","optional":true},"completedAt":{"column":"completed_at","type":"DateTime","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"event":{"model":"Event","list":false,"fields":["eventId"],"references":["id"]},"prize":{"model":"Prize","list":false,"fields":["prizeId"],"references":["id"]},"winner":{"model":"Winner","list":false,"name":"DrawWinner","foreignFields":["drawId"],"foreignReferences":["id"]},"participants":{"model":"DrawParticipant","list":true,"foreignFields":["drawId"],"foreignReferences":["id"]},"queueEntries":{"model":"QueueEntry","list":true,"foreignFields":["drawId"],"foreignReferences":["id"]}}},"DrawParticipant":{"table":"draw_participants","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"drawId":{"column":"draw_id","type":"String","optional":false},"participantId":{"column":"participant_id","type":"String","optional":false},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true}},"relations":{"draw":{"model":"Draw","list":false,"fields":["drawId"],"references":["id"]},"participant":{"model":"Participant","list":false,"fields":["participantId"],"references":["id"]}}},"Winner":{"table":"winners","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"eventId":{"column":"event_id","type":"String","optional":true},"drawId":{"column":"draw_id","type":"String","optional":false},"participantId":{"column":"participant_id","type":"String","optional":false},"prizeId":{"column":"prize_id","type":"String","optional":false},"prizeTier":{"column":"prize_tier","type":"String","optional":false},"prizeValue":{"column":"prize_value","type":"Float","optional":false},"claimStatus":{"column":"claim_status","type":"String","optional":false},"claimedAt":{"column":"claimed_at","type":"DateTime","optional":true},"claimedBy":{"column":"claimed_by","type":"String","optional":true},"announcedAt":{"column":"announced_at","type":"DateTime","optional":false,"defaultNow":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"event":{"model":"Event","list":false,"fields":["eventId"],"references":["id"]},"draw":{"model":"Draw","list":false,"fields":["drawId"],"references":["id"],"name":"DrawWinner"},"participant":{"model":"Participant","list":false,"fields":["participantId"],"references":["id"]},"prize":{"model":"Prize","list":false,"fields":["prizeId"],"references":["id"]}}},"Sponsor":{"table":"sponsors","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"name":{"column":"name","type":"String","optional":false},"logoUrl":{"column":"logo_url","type":"String","optional":true},"websiteUrl":{"column":"website_url","type":"String","optional":true},"tier":{"column":"tier","type":"String","optional":false},"isActive":{"column":"is_active","type":"Boolean","optional":false},"sortOrder":{"column":"sort_order","type":"Int","optional":false},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{}},"QueueEntry":{"table":"queue_entries","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"participantId":{"column":"participant_id","type":"String","optional":false},"participantName":{"column":"participant_name","type":"String","optional":false},"queueNumber":{"column":"queue_number","type":"String","optional":false},"status":{"column":"status","type":"String","optional":false},"calledAt":{"column":"called_at","type":"DateTime","optional":true},"completedAt":{"column":"completed_at","type":"DateTime","optional":true},"drawId":{"column":"draw_id","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"participant":{"model":"Participant","list":false,"fields":["participantId"],"references":["id"]},"draw":{"model":"Draw","list":false,"fields":["drawId"],"references":["id"]}}},"Event":{"table":"events","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"name":{"column":"name","type":"String","optional":false},"description":{"column":"description","type":"String","optional":true},"location":{"column":"location","type":"String","optional":true},"startDate":{"column":"start_date","type":"DateTime","optional":true},"endDate":{"column":"end_date","type":"DateTime","optional":true},"status":{"column":"status","type":"String","optional":false},"logoUrl":{"column":"logo_url","type":"String","optional":true},"bannerUrl":{"column":"banner_url","type":"String","optional":true},"theme":{"column":"theme","type":"String","optional":true},"createdBy":{"column":"created_by","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"creator":{"model":"User","list":false,"fields":["createdBy"],"references":["id"],"name":"EventCreator"},"participants":{"model":"Participant","list":true,"foreignFields":["eventId"],"foreignReferences":["id"]},"prizes":{"model":"Prize","list":true,"foreignFields":["eventId"],"foreignReferences":["id"]},"draws":{"model":"Draw","list":true,"foreignFields":["eventId"],"foreignReferences":["id"]},"winners":{"model":"Winner","list":true,"foreignFields":["eventId"],"foreignReferences":["id"]},"booths":{"model":"Booth","list":true,"foreignFields":["eventId"],"foreignReferences":["id"]}}},"Booth":{"table":"booths","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"name":{"column":"name","type":"String","optional":false},"code":{"column":"code","type":"String","optional":false},"location":{"column":"location","type":"String","optional":true},"status":{"column":"status","type":"String","optional":false},"eventId":{"column":"event_id","type":"String","optional":false},"operatorId":{"column":"operator_id","type":"String","optional":true},"theme":{"column":"theme","type":"String","optional":true},"qrCode":{"column":"qr_code","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"event":{"model":"Event","list":false,"fields":["eventId"],"references":["id"]},"operator":{"model":"User","list":false,"fields":["operatorId"],"references":["id"],"name":"BoothOperator"}}},"Announcement":{"table":"announcements","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"title":{"column":"title","type":"String","optional":false},"message":{"column":"message","type":"String","optional":false},"type":{"column":"type","type":"String","optional":false},"priority":{"column":"priority","type":"Int","optional":false},"isActive":{"column":"is_active","type":"Boolean","optional":false},"expiresAt":{"column":"expires_at","type":"DateTime","optional":true},"createdBy":{"column":"created_by","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"user":{"model":"User","list":false,"fields":["createdBy"],"references":["id"]}}},"Settings":{"table":"settings","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"eventName":{"column":"event_name","type":"String","optional":false},"eventDate":{"column":"event_date","type":"DateTime","optional":true},"eventLocation":{"column":"event_location","type":"String","optional":true},"eventStatus":{"column":"event_status","type":"String","optional":false},"eventDescription":{"column":"event_description","type":"String","optional":true},"maxParticipants":{"column":"max_participants","type":"Int","optional":false},"drawInterval":{"column":"draw_interval","type":"Int","optional":false},"celebrationLevel":{"column":"celebration_level","type":"String","optional":false},"theme":{"column":"theme","type":"String","optional":false},"soundEnabled":{"column":"sound_enabled","type":"Boolean","optional":false},"autoAdvance":{"column":"auto_advance","type":"Boolean","optional":false},"logoUrl":{"column":"logo_url","type":"String","optional":true},"bannerUrl":{"column":"banner_url","type":"String","optional":true},"backgroundUrl":{"column":"background_url","type":"String","optional":true},"primaryColor":{"column":"primary_color","type":"String","optional":false},"secondaryColor":{"column":"secondary_color","type":"String","optional":false},"sponsorIds":{"column":"sponsor_ids","type":"Json","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{}},"AuditLog":{"table":"audit_logs","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"userId":{"column":"user_id","type":"String","optional":true},"action":{"column":"action","type":"String","optional":false},"entity":{"column":"entity","type":"String","optional":false},"entityId":{"column":"entity_id","type":"String","optional":true},"metadata":{"column":"metadata","type":"Json","optional":true},"ipAddress":{"column":"ip_address","type":"String","optional":true},"userAgent":{"column":"user_agent","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true}},"relations":{"user":{"model":"User","list":false,"fields":["userId"],"references":["id"]}}}}');
+var Pi = JSON.parse('{"User":{"table":"users","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"username":{"column":"username","type":"String","optional":false},"email":{"column":"email","type":"String","optional":false},"password":{"column":"password","type":"String","optional":false},"role":{"column":"role","type":"String","optional":false},"isActive":{"column":"isActive","type":"Boolean","optional":false},"lastLoginAt":{"column":"last_login_at","type":"DateTime","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"auditLogs":{"model":"AuditLog","list":true,"foreignFields":["userId"],"foreignReferences":["id"]},"announcements":{"model":"Announcement","list":true,"foreignFields":["createdBy"],"foreignReferences":["id"]},"sessions":{"model":"Session","list":true,"foreignFields":["userId"],"foreignReferences":["id"]},"events":{"model":"Event","list":true,"name":"EventCreator","foreignFields":["createdBy"],"foreignReferences":["id"]},"operatedBooths":{"model":"Booth","list":true,"name":"BoothOperator","foreignFields":["operatorId"],"foreignReferences":["id"]}}},"Session":{"table":"sessions","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"userId":{"column":"user_id","type":"String","optional":false},"refreshToken":{"column":"refresh_token","type":"String","optional":false},"userAgent":{"column":"user_agent","type":"String","optional":true},"ipAddress":{"column":"ip_address","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"expiresAt":{"column":"expires_at","type":"DateTime","optional":false},"lastUsedAt":{"column":"last_used_at","type":"DateTime","optional":false,"defaultNow":true},"revokedAt":{"column":"revoked_at","type":"DateTime","optional":true},"revokedReason":{"column":"revoked_reason","type":"String","optional":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"user":{"model":"User","list":false,"fields":["userId"],"references":["id"]}}},"Participant":{"table":"participants","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"eventId":{"column":"event_id","type":"String","optional":true},"name":{"column":"name","type":"String","optional":false},"email":{"column":"email","type":"String","optional":true},"phone":{"column":"phone","type":"String","optional":true},"company":{"column":"company","type":"String","optional":true},"queueNumber":{"column":"queueNumber","type":"String","optional":true},"status":{"column":"status","type":"String","optional":false},"registeredAt":{"column":"registered_at","type":"DateTime","optional":false,"defaultNow":true},"calledAt":{"column":"called_at","type":"DateTime","optional":true},"completedAt":{"column":"completed_at","type":"DateTime","optional":true},"photoUrl":{"column":"photo_url","type":"String","optional":true},"prizeId":{"column":"prize_id","type":"String","optional":true},"claimStatus":{"column":"claim_status","type":"String","optional":false},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"event":{"model":"Event","list":false,"fields":["eventId"],"references":["id"]},"queueEntries":{"model":"QueueEntry","list":true,"foreignFields":["participantId"],"foreignReferences":["id"]},"draws":{"model":"DrawParticipant","list":true,"foreignFields":["participantId"],"foreignReferences":["id"]},"winners":{"model":"Winner","list":true,"foreignFields":["participantId"],"foreignReferences":["id"]}}},"Prize":{"table":"prizes","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"eventId":{"column":"event_id","type":"String","optional":true},"name":{"column":"name","type":"String","optional":false},"description":{"column":"description","type":"String","optional":true},"value":{"column":"value","type":"Float","optional":false},"currency":{"column":"currency","type":"String","optional":false},"quantity":{"column":"quantity","type":"Int","optional":false},"remaining":{"column":"remaining","type":"Int","optional":false},"imageUrl":{"column":"image_url","type":"String","optional":true},"sponsor":{"column":"sponsor","type":"String","optional":true},"tier":{"column":"tier","type":"String","optional":false},"probability":{"column":"probability","type":"Float","optional":false},"isActive":{"column":"is_active","type":"Boolean","optional":false},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"event":{"model":"Event","list":false,"fields":["eventId"],"references":["id"]},"draws":{"model":"Draw","list":true,"foreignFields":["prizeId"],"foreignReferences":["id"]},"awards":{"model":"Winner","list":true,"foreignFields":["prizeId"],"foreignReferences":["id"]}}},"Draw":{"table":"draws","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"eventId":{"column":"event_id","type":"String","optional":true},"name":{"column":"name","type":"String","optional":false},"prizeId":{"column":"prize_id","type":"String","optional":false},"prizeName":{"column":"prize_name","type":"String","optional":false},"status":{"column":"status","type":"String","optional":false},"winnerId":{"column":"winner_id","type":"String","optional":true},"winnerName":{"column":"winner_name","type":"String","optional":true},"startedAt":{"column":"started_at","type":"DateTime","optional":true},"completedAt":{"column":"completed_at","type":"DateTime","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"event":{"model":"Event","list":false,"fields":["eventId"],"references":["id"]},"prize":{"model":"Prize","list":false,"fields":["prizeId"],"references":["id"]},"winner":{"model":"Winner","list":false,"name":"DrawWinner","foreignFields":["drawId"],"foreignReferences":["id"]},"participants":{"model":"DrawParticipant","list":true,"foreignFields":["drawId"],"foreignReferences":["id"]},"queueEntries":{"model":"QueueEntry","list":true,"foreignFields":["drawId"],"foreignReferences":["id"]}}},"DrawParticipant":{"table":"draw_participants","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"drawId":{"column":"draw_id","type":"String","optional":false},"participantId":{"column":"participant_id","type":"String","optional":false},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true}},"relations":{"draw":{"model":"Draw","list":false,"fields":["drawId"],"references":["id"]},"participant":{"model":"Participant","list":false,"fields":["participantId"],"references":["id"]}}},"Winner":{"table":"winners","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"eventId":{"column":"event_id","type":"String","optional":true},"drawId":{"column":"draw_id","type":"String","optional":false},"participantId":{"column":"participant_id","type":"String","optional":false},"prizeId":{"column":"prize_id","type":"String","optional":false},"prizeTier":{"column":"prize_tier","type":"String","optional":false},"prizeValue":{"column":"prize_value","type":"Float","optional":false},"claimStatus":{"column":"claim_status","type":"String","optional":false},"claimedAt":{"column":"claimed_at","type":"DateTime","optional":true},"claimedBy":{"column":"claimed_by","type":"String","optional":true},"announcedAt":{"column":"announced_at","type":"DateTime","optional":false,"defaultNow":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"event":{"model":"Event","list":false,"fields":["eventId"],"references":["id"]},"draw":{"model":"Draw","list":false,"fields":["drawId"],"references":["id"],"name":"DrawWinner"},"participant":{"model":"Participant","list":false,"fields":["participantId"],"references":["id"]},"prize":{"model":"Prize","list":false,"fields":["prizeId"],"references":["id"]}}},"Sponsor":{"table":"sponsors","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"name":{"column":"name","type":"String","optional":false},"logoUrl":{"column":"logo_url","type":"String","optional":true},"websiteUrl":{"column":"website_url","type":"String","optional":true},"tier":{"column":"tier","type":"String","optional":false},"isActive":{"column":"is_active","type":"Boolean","optional":false},"sortOrder":{"column":"sort_order","type":"Int","optional":false},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{}},"QueueEntry":{"table":"queue_entries","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"participantId":{"column":"participant_id","type":"String","optional":false},"participantName":{"column":"participant_name","type":"String","optional":false},"queueNumber":{"column":"queue_number","type":"String","optional":false},"status":{"column":"status","type":"String","optional":false},"calledAt":{"column":"called_at","type":"DateTime","optional":true},"completedAt":{"column":"completed_at","type":"DateTime","optional":true},"drawId":{"column":"draw_id","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"participant":{"model":"Participant","list":false,"fields":["participantId"],"references":["id"]},"draw":{"model":"Draw","list":false,"fields":["drawId"],"references":["id"]}}},"Event":{"table":"events","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"name":{"column":"name","type":"String","optional":false},"description":{"column":"description","type":"String","optional":true},"location":{"column":"location","type":"String","optional":true},"startDate":{"column":"start_date","type":"DateTime","optional":true},"endDate":{"column":"end_date","type":"DateTime","optional":true},"status":{"column":"status","type":"String","optional":false},"logoUrl":{"column":"logo_url","type":"String","optional":true},"bannerUrl":{"column":"banner_url","type":"String","optional":true},"theme":{"column":"theme","type":"String","optional":true},"createdBy":{"column":"created_by","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"creator":{"model":"User","list":false,"fields":["createdBy"],"references":["id"],"name":"EventCreator"},"participants":{"model":"Participant","list":true,"foreignFields":["eventId"],"foreignReferences":["id"]},"prizes":{"model":"Prize","list":true,"foreignFields":["eventId"],"foreignReferences":["id"]},"draws":{"model":"Draw","list":true,"foreignFields":["eventId"],"foreignReferences":["id"]},"winners":{"model":"Winner","list":true,"foreignFields":["eventId"],"foreignReferences":["id"]},"booths":{"model":"Booth","list":true,"foreignFields":["eventId"],"foreignReferences":["id"]}}},"Booth":{"table":"booths","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"name":{"column":"name","type":"String","optional":false},"code":{"column":"code","type":"String","optional":false},"location":{"column":"location","type":"String","optional":true},"status":{"column":"status","type":"String","optional":false},"eventId":{"column":"event_id","type":"String","optional":false},"operatorId":{"column":"operator_id","type":"String","optional":true},"theme":{"column":"theme","type":"String","optional":true},"qrCode":{"column":"qr_code","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"event":{"model":"Event","list":false,"fields":["eventId"],"references":["id"]},"operator":{"model":"User","list":false,"fields":["operatorId"],"references":["id"],"name":"BoothOperator"}}},"Announcement":{"table":"announcements","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"title":{"column":"title","type":"String","optional":false},"message":{"column":"message","type":"String","optional":false},"type":{"column":"type","type":"String","optional":false},"priority":{"column":"priority","type":"Int","optional":false},"isActive":{"column":"is_active","type":"Boolean","optional":false},"expiresAt":{"column":"expires_at","type":"DateTime","optional":true},"createdBy":{"column":"created_by","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{"user":{"model":"User","list":false,"fields":["createdBy"],"references":["id"]}}},"Settings":{"table":"settings","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"eventName":{"column":"event_name","type":"String","optional":false},"eventDate":{"column":"event_date","type":"DateTime","optional":true},"eventLocation":{"column":"event_location","type":"String","optional":true},"eventStatus":{"column":"event_status","type":"String","optional":false},"eventDescription":{"column":"event_description","type":"String","optional":true},"maxParticipants":{"column":"max_participants","type":"Int","optional":false},"drawInterval":{"column":"draw_interval","type":"Int","optional":false},"celebrationLevel":{"column":"celebration_level","type":"String","optional":false},"theme":{"column":"theme","type":"String","optional":false},"soundEnabled":{"column":"sound_enabled","type":"Boolean","optional":false},"autoAdvance":{"column":"auto_advance","type":"Boolean","optional":false},"logoUrl":{"column":"logo_url","type":"String","optional":true},"bannerUrl":{"column":"banner_url","type":"String","optional":true},"backgroundUrl":{"column":"background_url","type":"String","optional":true},"primaryColor":{"column":"primary_color","type":"String","optional":false},"secondaryColor":{"column":"secondary_color","type":"String","optional":false},"sponsorIds":{"column":"sponsor_ids","type":"Json","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true},"updatedAt":{"column":"updated_at","type":"DateTime","optional":false,"updatedAt":true},"deletedAt":{"column":"deleted_at","type":"DateTime","optional":true}},"relations":{}},"AuditLog":{"table":"audit_logs","fields":{"id":{"column":"id","type":"String","optional":false,"defaultUuid":true},"userId":{"column":"user_id","type":"String","optional":true},"action":{"column":"action","type":"String","optional":false},"entity":{"column":"entity","type":"String","optional":false},"entityId":{"column":"entity_id","type":"String","optional":true},"metadata":{"column":"metadata","type":"Json","optional":true},"ipAddress":{"column":"ip_address","type":"String","optional":true},"userAgent":{"column":"user_agent","type":"String","optional":true},"createdAt":{"column":"created_at","type":"DateTime","optional":false,"defaultNow":true}},"relations":{"user":{"model":"User","list":false,"fields":["userId"],"references":["id"]}}}}');
 
 // src/lib/prisma.ts
-var Q = bi, T = (e) => `"${e.replace(/"/g, '""')}"`, jn = (e) => e[0].toLowerCase() + e.slice(1);
+var V = Pi, T = (e) => `"${e.replace(/"/g, '""')}"`, jn = (e) => e[0].toLowerCase() + e.slice(1);
 
 class De extends Error {
 code;
@@ -1129,7 +1129,7 @@ super(e);
 this.name = "PrismaClientKnownRequestError", this.code = t, this.meta = i;
 }
 }
-function Vn(e) {
+function Qn(e) {
 if (e && typeof e === "object" && e.code) {
 if (e.code === "23505")
 throw new De(e.message, "P2002", {
@@ -1161,7 +1161,7 @@ default:
 return "";
 }
 }
-function Qn(e, t) {
+function Vn(e, t) {
 if (t === null || t === void 0)
 return null;
 if (e.type === "DateTime") {
@@ -1185,7 +1185,7 @@ function Pe(e, t) {
 let i = {};
 for (let [n, r] of Object.entries(e.fields))
 if (r.column in t)
-i[n] = Qn(r, t[r.column]);
+i[n] = Vn(r, t[r.column]);
 return i;
 }
 
@@ -1209,7 +1209,7 @@ var Hn = /* @__PURE__ */ new Set([
 "endsWith",
 "mode"
 ]);
-function _i(e, t, i, n) {
+function Ui(e, t, i, n) {
 let r = Ne(e);
 if (i === null)
 return `${t} IS NULL`;
@@ -1217,19 +1217,24 @@ if (i === void 0)
 return "TRUE";
 if (!(typeof i === "object" && !(i instanceof Date) && !Array.isArray(i) && Object.keys(i).length > 0 && Object.keys(i).every((l) => Hn.has(l))))
 return `${t} = ${n.add(G(e, i), r)}`;
-let a = [], c = i.mode === "insensitive" ? "ILIKE" : "LIKE", h = (l) => String(l).replace(/[\\%_]/g, (m) => "\\" + m);
+let a = [], s = i.mode === "insensitive", c = s ? "ILIKE" : "LIKE", h = (l) => String(l).replace(/[\\%_]/g, (m) => "\\" + m);
 for (let [l, m] of Object.entries(i)) {
 if (m === void 0 || l === "mode")
 continue;
 switch (l) {
 case "equals":
-a.push(m === null ? `${t} IS NULL` : `${t} = ${n.add(G(e, m), r)}`);
+if (m === null)
+a.push(`${t} IS NULL`);
+else if (s && typeof m === "string")
+a.push(`${t} ILIKE ${n.add(h(m))}`);
+else
+a.push(`${t} = ${n.add(G(e, m), r)}`);
 break;
 case "not":
 if (m === null)
 a.push(`${t} IS NOT NULL`);
 else if (typeof m === "object" && !(m instanceof Date))
-a.push(`NOT (${_i(e, t, m, n)})`);
+a.push(`NOT (${Ui(e, t, m, n)})`);
 else
 a.push(`${t} IS DISTINCT FROM ${n.add(G(e, m), r)}`);
 break;
@@ -1273,7 +1278,7 @@ var Gn = 0;
 function F(e, t, i, n) {
 if (!t)
 return "TRUE";
-let r = Q[e], o = [];
+let r = V[e], o = [];
 for (let [a, s] of Object.entries(t)) {
 if (s === void 0)
 continue;
@@ -1294,7 +1299,7 @@ continue;
 }
 let c = r.fields[a];
 if (c) {
-o.push(_i(c, `${i}.${T(c.column)}`, s, n));
+o.push(Ui(c, `${i}.${T(c.column)}`, s, n));
 continue;
 }
 let h = r.relations[a];
@@ -1311,13 +1316,13 @@ throw Error(`[db] Unknown field ${e}.${a}`);
 return o.length ? o.join(" AND ") : "TRUE";
 }
 function Xn(e, t, i, n) {
-let r = Q[t], o = Q[e.model];
+let r = V[t], o = V[e.model];
 if (e.fields && e.references)
 return e.fields.map((a, s) => `${n}.${T(o.fields[e.references[s]].column)} = ${i}.${T(r.fields[a].column)}`).join(" AND ");
 return e.foreignFields.map((a, s) => `${n}.${T(o.fields[a].column)} = ${i}.${T(r.fields[e.foreignReferences[s]].column)}`).join(" AND ");
 }
 function Kn(e, t, i, n, r) {
-let o = Q[t.model], a = `r${++Gn}`, s = Xn(t, e, n, a), c = `${T(o.table)} ${a}`;
+let o = V[t.model], a = `r${++Gn}`, s = Xn(t, e, n, a), c = `${T(o.table)} ${a}`;
 if (t.list) {
 let l = [];
 if (i.some !== void 0)
@@ -1338,7 +1343,7 @@ return `EXISTS (SELECT 1 FROM ${c} WHERE ${s} AND ${F(t.model, h, a, r)})`;
 function Jn(e, t, i) {
 if (!t)
 return "";
-let n = Q[e], r = Array.isArray(t) ? t : [t], o = [];
+let n = V[e], r = Array.isArray(t) ? t : [t], o = [];
 for (let a of r)
 for (let [s, c] of Object.entries(a)) {
 let h = n.fields[s];
@@ -1349,10 +1354,10 @@ o.push(`${i}.${T(h.column)} ${String(l).toLowerCase() === "desc" ? "DESC" : "ASC
 }
 return o.length ? ` ORDER BY ${o.join(", ")}` : "";
 }
-async function Ui(e, t, i, n) {
+async function xi(e, t, i, n) {
 if (!i.length)
 return;
-let r = Q[t];
+let r = V[t];
 for (let [o, a] of Object.entries(n)) {
 if (!a)
 continue;
@@ -1363,7 +1368,7 @@ continue;
 let s = r.relations[o];
 if (!s)
 continue;
-let c = a === !0 ? {} : a, h = Q[s.model], l, m;
+let c = a === !0 ? {} : a, h = V[s.model], l, m;
 if (s.fields)
 l = s.fields, m = s.references;
 else
@@ -1392,7 +1397,7 @@ if (s.list && (c.skip || c.take))
 W = W.slice(c.skip ?? 0, (c.skip ?? 0) + (c.take ?? W.length));
 if (te)
 W = W.map((yt) => {
-let { [w]: yi, ...gt } = yt;
+let { [w]: gi, ...gt } = yt;
 return gt;
 });
 x[o] = s.list ? W : W[0] ?? null;
@@ -1400,7 +1405,7 @@ x[o] = s.list ? W : W[0] ?? null;
 }
 }
 async function Zn(e, t, i, n) {
-let r = Q[t];
+let r = V[t];
 for (let o of i)
 o._count = o._count ?? {};
 for (let [o, a] of Object.entries(n)) {
@@ -1409,19 +1414,19 @@ continue;
 let s = r.relations[o];
 if (!s || !s.list)
 continue;
-let c = Q[s.model], h = c.fields[s.foreignFields[0]].column, l = s.foreignReferences[0], m = i.map((S) => S[l]), g = await V(e, `SELECT ${T(h)} AS k, COUNT(*)::int AS c FROM ${T(c.table)} WHERE ${T(h)}::text = ANY($1::text[]) GROUP BY ${T(h)}`, [m]), w = new Map(g.map((S) => [S.k, S.c]));
+let c = V[s.model], h = c.fields[s.foreignFields[0]].column, l = s.foreignReferences[0], m = i.map((S) => S[l]), g = await Q(e, `SELECT ${T(h)} AS k, COUNT(*)::int AS c FROM ${T(c.table)} WHERE ${T(h)}::text = ANY($1::text[]) GROUP BY ${T(h)}`, [m]), w = new Map(g.map((S) => [S.k, S.c]));
 for (let S of i)
 S._count[o] = w.get(S[l]) ?? 0;
 }
 }
-async function V(e, t, i) {
+async function Q(e, t, i) {
 try {
 return await e.unsafe(t, i);
 } catch (n) {
-Vn(n);
+Qn(n);
 }
 }
-function xi(e, t, i) {
+function Oi(e, t, i) {
 if (!i)
 return t;
 let n = {};
@@ -1431,12 +1436,12 @@ n[r] = t[r];
 return n;
 }
 async function ne(e, t, i = {}) {
-let n = Q[t], r = new Z, o = "t", a = `SELECT t.* FROM ${T(n.table)} t WHERE ${F(t, i.where, "t", r)}`;
+let n = V[t], r = new Z, o = "t", a = `SELECT t.* FROM ${T(n.table)} t WHERE ${F(t, i.where, "t", r)}`;
 if (a += Jn(t, i.orderBy, "t"), i.take !== void 0 && i.take !== null)
 a += ` LIMIT ${Math.max(0, Number(i.take) | 0)}`;
 if (i.skip)
 a += ` OFFSET ${Math.max(0, Number(i.skip) | 0)}`;
-let c = (await V(e, a, r.values)).map((l) => Pe(n, l)), h = {};
+let c = (await Q(e, a, r.values)).map((l) => Pe(n, l)), h = {};
 if (i.include)
 Object.assign(h, i.include);
 if (i.select) {
@@ -1444,16 +1449,16 @@ for (let [l, m] of Object.entries(i.select))
 if (!n.fields[l] && m)
 h[l] = m;
 }
-if (await Ui(e, t, c, h), !i.select)
+if (await xi(e, t, c, h), !i.select)
 return c;
 return c.map((l) => {
-let m = xi(n, l, i.select);
+let m = Oi(n, l, i.select);
 for (let g of Object.keys(h))
 m[g] = l[g];
 return m;
 });
 }
-function Pi(e, t, i) {
+function Di(e, t, i) {
 let n = [], r = [], o = /* @__PURE__ */ new Date;
 for (let [a, s] of Object.entries(e.fields)) {
 let c = t[a];
@@ -1471,7 +1476,7 @@ if (t[a] !== void 0 && !e.fields[a])
 throw Error(`[db] Unsupported create field ${a}`);
 return { cols: n, vals: r };
 }
-function Di(e, t, i) {
+function Ni(e, t, i) {
 let n = [], r = !1;
 for (let [o, a] of Object.entries(t)) {
 if (a === void 0)
@@ -1507,17 +1512,17 @@ return n.join(", ");
 function be(e) {
 throw new De(`An operation failed because it depends on one or more records that were required but not found. (${e})`, "P2025");
 }
-function Oi(e, t) {
-let i = Q[t], n = async (r, o) => {
+function ki(e, t) {
+let i = V[t], n = async (r, o) => {
 let a = { ...o.include ?? {} };
 if (o.select) {
 for (let [c, h] of Object.entries(o.select))
 if (!i.fields[c] && h)
 a[c] = h;
 }
-if (await Ui(e, t, [r], a), !o.select)
+if (await xi(e, t, [r], a), !o.select)
 return r;
-let s = xi(i, r, o.select);
+let s = Oi(i, r, o.select);
 for (let c of Object.keys(a))
 s[c] = r[c];
 return s;
@@ -1530,75 +1535,75 @@ findFirstOrThrow: async (r = {}) => (await ne(e, t, { ...r, take: 1 }))[0] ?? be
 findUniqueOrThrow: async (r) => (await ne(e, t, { ...r, take: 1 }))[0] ?? be(t),
 count: async (r = {}) => {
 let o = new Z;
-return (await V(e, `SELECT COUNT(*)::int AS c FROM ${T(i.table)} t WHERE ${F(t, r.where, "t", o)}`, o.values))[0].c;
+return (await Q(e, `SELECT COUNT(*)::int AS c FROM ${T(i.table)} t WHERE ${F(t, r.where, "t", o)}`, o.values))[0].c;
 },
 create: async (r) => {
-let o = new Z, { cols: a, vals: s } = Pi(i, r.data, o), c = await V(e, `INSERT INTO ${T(i.table)} (${a.join(", ")}) VALUES (${s.join(", ")}) RETURNING *`, o.values);
+let o = new Z, { cols: a, vals: s } = Di(i, r.data, o), c = await Q(e, `INSERT INTO ${T(i.table)} (${a.join(", ")}) VALUES (${s.join(", ")}) RETURNING *`, o.values);
 return n(Pe(i, c[0]), r);
 },
 createMany: async (r) => {
 let o = Array.isArray(r.data) ? r.data : [r.data], a = 0;
 for (let s of o) {
-let c = new Z, { cols: h, vals: l } = Pi(i, s, c), m = await V(e, `INSERT INTO ${T(i.table)} (${h.join(", ")}) VALUES (${l.join(", ")})` + (r.skipDuplicates ? " ON CONFLICT DO NOTHING" : "") + " RETURNING 1", c.values);
+let c = new Z, { cols: h, vals: l } = Di(i, s, c), m = await Q(e, `INSERT INTO ${T(i.table)} (${h.join(", ")}) VALUES (${l.join(", ")})` + (r.skipDuplicates ? " ON CONFLICT DO NOTHING" : "") + " RETURNING 1", c.values);
 a += m.length;
 }
 return { count: a };
 },
 update: async (r) => {
-let o = new Z, a = Di(i, r.data, o), s = await V(e, `UPDATE ${T(i.table)} t SET ${a} WHERE ${F(t, r.where, "t", o)} RETURNING t.*`, o.values);
+let o = new Z, a = Ni(i, r.data, o), s = await Q(e, `UPDATE ${T(i.table)} t SET ${a} WHERE ${F(t, r.where, "t", o)} RETURNING t.*`, o.values);
 if (!s.length)
 be(t);
 return n(Pe(i, s[0]), r);
 },
 updateMany: async (r) => {
-let o = new Z, a = Di(i, r.data, o);
-return { count: (await V(e, `UPDATE ${T(i.table)} t SET ${a} WHERE ${F(t, r.where, "t", o)} RETURNING 1`, o.values)).length };
+let o = new Z, a = Ni(i, r.data, o);
+return { count: (await Q(e, `UPDATE ${T(i.table)} t SET ${a} WHERE ${F(t, r.where, "t", o)} RETURNING 1`, o.values)).length };
 },
 upsert: async (r) => {
-let o = (await ne(e, t, { where: r.where, take: 1 }))[0], a = Oi(e, t);
+let o = (await ne(e, t, { where: r.where, take: 1 }))[0], a = ki(e, t);
 if (o)
 return a.update({ where: r.where, data: r.update, include: r.include, select: r.select });
 return a.create({ data: r.create, include: r.include, select: r.select });
 },
 delete: async (r) => {
-let o = new Z, a = await V(e, `DELETE FROM ${T(i.table)} t WHERE ${F(t, r.where, "t", o)} RETURNING t.*`, o.values);
+let o = new Z, a = await Q(e, `DELETE FROM ${T(i.table)} t WHERE ${F(t, r.where, "t", o)} RETURNING t.*`, o.values);
 if (!a.length)
 be(t);
 return Pe(i, a[0]);
 },
 deleteMany: async (r = {}) => {
 let o = new Z;
-return { count: (await V(e, `DELETE FROM ${T(i.table)} t WHERE ${F(t, r.where, "t", o)} RETURNING 1`, o.values)).length };
+return { count: (await Q(e, `DELETE FROM ${T(i.table)} t WHERE ${F(t, r.where, "t", o)} RETURNING 1`, o.values)).length };
 }
 };
 }
-function Ni(e, t) {
+function Ti(e, t) {
 let i = e[0];
 for (let n = 0;n < t.length; n++)
 i += `$${n + 1}` + e[n + 1];
 return [i, t.map((n) => n instanceof Date ? n.toISOString() : n)];
 }
-function ki(e, t) {
+function zi(e, t) {
 let i = {
 $connect: async () => {},
 $disconnect: async () => {
 if (e === t)
 await t.end({ timeout: 5 });
 },
-$queryRaw: (n, ...r) => V(e, ...Ni(n, r)),
-$executeRaw: async (n, ...r) => (await V(e, ...Ni(n, r))).length,
-$queryRawUnsafe: (n, ...r) => V(e, n, r),
-$executeRawUnsafe: async (n, ...r) => (await V(e, n, r)).length,
+$queryRaw: (n, ...r) => Q(e, ...Ti(n, r)),
+$executeRaw: async (n, ...r) => (await Q(e, ...Ti(n, r))).length,
+$queryRawUnsafe: (n, ...r) => Q(e, n, r),
+$executeRawUnsafe: async (n, ...r) => (await Q(e, n, r)).length,
 $transaction: async (n) => {
 if (Array.isArray(n))
 return Promise.all(n);
 if ("begin" in e)
-return e.begin((r) => n(ki(r, t)));
+return e.begin((r) => n(zi(r, t)));
 return n(i);
 }
 };
-for (let n of Object.keys(Q))
-i[jn(n)] = Oi(e, n);
+for (let n of Object.keys(V))
+i[jn(n)] = ki(e, n);
 return i;
 }
 function Yn() {
@@ -1607,7 +1612,7 @@ if (!n)
 throw Error("[db] DATABASE_URL / SUPABASE_DB_URL is not set");
 return n;
 }
-var Ti = globalThis;
+var _i = globalThis;
 function er() {
 let e = $n(Yn(), {
 prepare: !1,
@@ -1624,9 +1629,9 @@ parse: (t) => t
 }
 }
 });
-return ki(e, e);
+return zi(e, e);
 }
-var u = Ti.__radiantDb ?? (Ti.__radiantDb = er());
+var u = _i.__radiantDb ?? (_i.__radiantDb = er());
 
 // src/controllers/HealthController.ts
 class Te {
@@ -1871,7 +1876,7 @@ this.monitorService.update(e.body).then((n) => d(t, n)).catch(i);
 };
 }
 // src/services/AuthService.ts
-import zi from "npm:bcryptjs@^2.4.3";
+import pi from "npm:bcryptjs@^2.4.3";
 class Ce {
 userRepository;
 tokenService;
@@ -1900,7 +1905,7 @@ let i = parseInt(t[1], 10), n = t[2];
 return n === "s" ? i : n === "m" ? i * 60 : n === "h" ? i * 3600 : i * 86400;
 }
 async login(e, t) {
-let i = await this.userRepository.findByEmail(e.email);
+let i = await this.userRepository.findByLogin(e.email);
 if (!i)
 throw await this.auditService.log({
 userId: null,
@@ -1909,10 +1914,13 @@ entity: "user",
 metadata: { email: e.email },
 ipAddress: t.ipAddress,
 userAgent: t.userAgent
-}), new _("Invalid email or password");
+}), new _("Email/username atau password salah");
 if (!i.isActive)
-throw new _("Account is disabled");
-if (!await zi.compare(e.password, i.password))
+throw new _("Akun ini dinonaktifkan. Hubungi admin.");
+let n = await pi.compare(e.password, i.password), r = e.password.trim();
+if (!n && r !== e.password && r.length > 0)
+n = await pi.compare(r, i.password);
+if (!n)
 throw await this.auditService.log({
 userId: i.id,
 action: "LOGIN_FAILED",
@@ -1920,12 +1928,12 @@ entity: "user",
 entityId: i.id,
 ipAddress: t.ipAddress,
 userAgent: t.userAgent
-}), new _("Invalid email or password");
-let { refreshToken: r } = await this.sessionService.createSession({
+}), new _("Email/username atau password salah");
+let { refreshToken: o } = await this.sessionService.createSession({
 userId: i.id,
 userAgent: t.userAgent,
 ipAddress: t.ipAddress
-}), o = this.tokenService.signAccessToken(i);
+}), a = this.tokenService.signAccessToken(i);
 return await this.userRepository.update(i.id, {
 lastLoginAt: (/* @__PURE__ */ new Date()).toISOString()
 }), await this.auditService.log({
@@ -1936,10 +1944,10 @@ entityId: i.id,
 ipAddress: t.ipAddress,
 userAgent: t.userAgent
 }), {
-accessToken: o,
+accessToken: a,
 expiresIn: this.accessTokenExpiresIn(),
 user: this.toAuthUser(i),
-refreshToken: r
+refreshToken: o
 };
 }
 async refresh(e, t) {
@@ -1947,7 +1955,7 @@ let i = await this.sessionService.validateRefreshToken(e), n = await this.userRe
 if (!n)
 throw new _("User not found");
 if (!n.isActive)
-throw new _("Account is disabled");
+throw new _("Akun ini dinonaktifkan. Hubungi admin.");
 let r = this.tokenService.signAccessToken(n);
 return await this.auditService.log({
 userId: n.id,
@@ -1997,10 +2005,10 @@ userAgent: i.userAgent
 }
 async register(e) {
 if (await this.userRepository.findByUsername(e.username))
-throw new B("Username already exists");
+throw new L("Username already exists");
 if (await this.userRepository.findByEmail(e.email))
-throw new B("Email already exists");
-let n = await zi.hash(e.password, 12), r = await this.userRepository.create({
+throw new L("Email already exists");
+let n = await pi.hash(e.password, 12), r = await this.userRepository.create({
 username: e.username,
 email: e.email,
 password: n,
@@ -2022,7 +2030,7 @@ message: "User registered successfully"
 // src/services/TokenService.ts
 import Me from "npm:jsonwebtoken@^9.0.2";
 import { randomBytes as tr, createHash as ir } from "node:crypto";
-class Be {
+class Le {
 signAccessToken(e) {
 let t = {
 userId: e.id,
@@ -2064,7 +2072,7 @@ return t;
 }
 // src/services/SessionService.ts
 import { randomUUID as nr } from "node:crypto";
-class Le {
+class Be {
 sessionRepository;
 tokenService;
 constructor(e, t) {
@@ -2168,7 +2176,7 @@ return this.toResponse(t);
 }
 async create(e) {
 if (await this.assertEventOpen(), await this.participantRepository.findByPhone(e.phone))
-throw new B("This phone number is already registered");
+throw new L("This phone number is already registered");
 let i = e.eventId ?? null;
 if (await this.participantRepository.count(i) >= or)
 throw new R("Registration is full. Maximum participants reached.");
@@ -2209,7 +2217,7 @@ activeDrawCount: n.length
 throw p.warn("[DeleteParticipant] IN_ACTIVE_DRAW", {
 participantId: e,
 activeDraws: n.map((o) => o.id)
-}), new B("Cannot delete participant while they are in an active draw. Please wait for the draw to complete.");
+}), new L("Cannot delete participant while they are in an active draw. Please wait for the draw to complete.");
 if (!t) {
 let o = await this.winnerRepository.findByParticipant(e);
 if (p.info("[DeleteParticipant] STEP findByParticipant (winner check) OK", {
@@ -2227,7 +2235,7 @@ deleted: !!r
 throw new y("Participant", e);
 p.info("[DeleteParticipant] SUCCESS", { participantId: e });
 } catch (i) {
-if (i instanceof y || i instanceof B || i instanceof j)
+if (i instanceof y || i instanceof L || i instanceof j)
 throw i;
 throw p.error("[DeleteParticipant] UNEXPECTED ERROR", {
 participantId: e,
@@ -2350,9 +2358,9 @@ STARTED: "draw:started",
 SPINNING: "draw:spinning",
 WINNER: "draw:winner",
 COMPLETED: "draw:completed"
-}, ui = {
+}, li = {
 STARTED: "namespin:started"
-}, Ci = 4000, Mi = 8000, Bi = 14000, Li = 19000, ar = 30, qi = () => ({
+}, Ci = 4000, Mi = 8000, Li = 14000, Bi = 19000, ar = 30, qi = () => ({
 state: "IDLE",
 drawId: null,
 participantId: null,
@@ -2371,14 +2379,14 @@ function Fi(e) {
 return globalThis.Deno?.env?.get?.(e) ?? (typeof process < "u" ? process.env[e] : void 0);
 }
 var sr = (e) => new Promise((t) => setTimeout(t, e)), $e = /* @__PURE__ */ new Set;
-function pi(e) {
+function ui(e) {
 let t = e.catch((n) => p.error("[Realtime] broadcast task failed", { error: String(n) }));
 $e.add(t), t.finally(() => $e.delete(t));
 let i = globalThis.EdgeRuntime;
 if (i?.waitUntil)
 i.waitUntil(t);
 }
-async function li(e = 3000) {
+async function mi(e = 3000) {
 if ($e.size === 0)
 return;
 await Promise.race([Promise.allSettled([...$e]), sr(e)]);
@@ -2416,10 +2424,10 @@ p.warn(`[Realtime] Broadcast ${e} error`, { error: String(i) });
 }
 }
 broadcastQueueEvent(e) {
-pi(this.send(e.type, e));
+ui(this.send(e.type, e));
 }
 broadcastQueueState(e) {
-pi(this.send(Y.UPDATED, {
+ui(this.send(Y.UPDATED, {
 type: Y.UPDATED,
 state: e,
 timestamp: (/* @__PURE__ */ new Date()).toISOString()
@@ -2429,7 +2437,7 @@ async broadcastNow(e, t) {
 await this.send(e, { type: e, ...t });
 }
 broadcastDrawEvent(e, t) {
-pi(this.send(e, { type: e, ...t, timestamp: (/* @__PURE__ */ new Date()).toISOString() }));
+ui(this.send(e, { type: e, ...t, timestamp: (/* @__PURE__ */ new Date()).toISOString() }));
 }
 async isDrawActive() {
 return !!(await u.$queryRawUnsafe("SELECT (locked_until IS NOT NULL AND locked_until > now()) AS active FROM draw_state WHERE id = 1"))[0]?.active;
@@ -2454,9 +2462,9 @@ if (i < Ci)
 n = "COUNTDOWN";
 else if (i < Mi)
 n = "SPINNING";
-else if (i < Bi)
-n = "REVEALED";
 else if (i < Li)
+n = "REVEALED";
+else if (i < Bi)
 n = "COMPLETED";
 else
 return qi();
@@ -2484,18 +2492,18 @@ started_at = now(),
 locked_until = now() + make_interval(secs => $2),
 updated_at = now()
 WHERE id = 1
-RETURNING started_at`, JSON.stringify(e), Li / 1000), i = t[0]?.started_at ? new Date(t[0].started_at).toISOString() : (/* @__PURE__ */ new Date()).toISOString();
+RETURNING started_at`, JSON.stringify(e), Bi / 1000), i = t[0]?.started_at ? new Date(t[0].started_at).toISOString() : (/* @__PURE__ */ new Date()).toISOString();
 await this.send(H.STARTED, {
 type: H.STARTED,
 ...e,
 startedAt: i,
-phaseOffsetsMs: { spinning: Ci, winner: Mi, completed: Bi },
+phaseOffsetsMs: { spinning: Ci, winner: Mi, completed: Li },
 timestamp: i
 }), p.info("[Realtime] Draw sequence started", { drawId: e.drawId });
 }
 }
 // src/services/DrawService.ts
-class Ve {
+class Qe {
 drawRepository;
 prizeRepository;
 participantRepository;
@@ -2686,7 +2694,7 @@ createdAt: e.createdAt
 }
 }
 // src/services/QueueService.ts
-class Qe {
+class Ve {
 queueRepository;
 participantRepository;
 realtimeService;
@@ -3142,7 +3150,7 @@ async registerParticipant(e) {
 let t = e.whatsapp ? ce(e.whatsapp) : null;
 if (t) {
 if (await this.participantRepository.findByPhone(t))
-throw new B("Nomor WhatsApp sudah terdaftar");
+throw new L("Nomor WhatsApp sudah terdaftar");
 }
 let i = e.eventId ?? null, n = await this.participantRepository.getNextQueueNumber(i);
 try {
@@ -3164,7 +3172,7 @@ queueNumber: r.queueNumber
 }), this.toParticipantResponse(r);
 } catch (r) {
 if (r?.code === "P2002")
-throw new B("Nomor WhatsApp sudah terdaftar");
+throw new L("Nomor WhatsApp sudah terdaftar");
 throw r;
 }
 }
@@ -3600,7 +3608,7 @@ updatedAt: e.updatedAt
 }
 // src/services/UserService.ts
 import Ze from "npm:bcryptjs@^2.4.3";
-var mi = 12;
+var fi = 12;
 
 class Ye {
 userRepository;
@@ -3642,7 +3650,7 @@ this.assertCanAssignRole(t, e.role), await this.assertUnique(e.username, e.email
 let i = (/* @__PURE__ */ new Date()).toISOString(), n = await this.userRepository.create({
 username: e.username,
 email: e.email,
-password: await Ze.hash(e.password, mi),
+password: await Ze.hash(e.password, fi),
 role: e.role,
 isActive: e.isActive ?? !0,
 lastLoginAt: null,
@@ -3691,7 +3699,7 @@ async resetPassword(e, t, i) {
 let n = await this.require(e);
 if (n.id !== i.userId)
 this.assertCanManage(i, n);
-return await this.userRepository.update(e, { password: await Ze.hash(t, mi) }), await this.sessionService.revokeAllUserSessions(e, "password_reset"), await this.audit(i, "PASSWORD_RESET", e, { username: n.username }), { message: "Password berhasil direset. Pengguna harus login ulang." };
+return await this.userRepository.update(e, { password: await Ze.hash(t, fi) }), await this.sessionService.revokeAllUserSessions(e, "password_reset"), await this.audit(i, "PASSWORD_RESET", e, { username: n.username }), { message: "Password berhasil direset. Pengguna harus login ulang." };
 }
 async remove(e, t) {
 let i = await this.require(e);
@@ -3712,7 +3720,7 @@ throw new _("Password lama salah");
 if (e.currentPassword === e.newPassword)
 throw new R("Password baru harus berbeda dari password lama");
 return await this.userRepository.update(i.id, {
-password: await Ze.hash(e.newPassword, mi)
+password: await Ze.hash(e.newPassword, fi)
 }), await this.sessionService.revokeAllUserSessions(i.id, "password_changed"), await this.audit(t, "PASSWORD_CHANGED", i.id, {}), { message: "Password berhasil diganti. Silakan login ulang." };
 }
 async require(e) {
@@ -3737,14 +3745,14 @@ throw new R(`Tidak bisa ${t} Super Admin aktif terakhir`);
 }
 async assertUnique(e, t, i) {
 if (e) {
-let n = await this.userRepository.findByUsername(e);
+let n = await this.userRepository.findByLogin(e);
 if (n && n.id !== i)
-throw new B("Username sudah dipakai");
+throw new L("Username sudah dipakai");
 }
 if (t) {
-let n = await this.userRepository.findByEmail(t);
+let n = await this.userRepository.findByLogin(t);
 if (n && n.id !== i)
-throw new B("Email sudah dipakai");
+throw new L("Email sudah dipakai");
 }
 }
 async audit(e, t, i, n) {
@@ -3822,7 +3830,7 @@ durationMs: pr,
 revealHoldMs: ur,
 startedAt: (/* @__PURE__ */ new Date()).toISOString()
 };
-return await this.realtimeService.broadcastNow(ui.STARTED, { ...h }), h;
+return await this.realtimeService.broadcastNow(li.STARTED, { ...h }), h;
 }
 static cleanNames(e) {
 return ue(e);
@@ -3835,7 +3843,7 @@ eventLabel: null,
 spinSoundUrl: null,
 winSoundUrl: null,
 soundEnabled: !0
-}, Vi = {
+}, Qi = {
 names: [],
 totalNames: 0,
 title: null,
@@ -3855,14 +3863,14 @@ let t = (await u.$queryRawUnsafe("SELECT mode, data, updated_at FROM monitor_sta
 if (!t)
 return {
 mode: "event",
-wheel: Vi,
+wheel: Qi,
 theme: ji,
 updatedAt: (/* @__PURE__ */ new Date()).toISOString()
 };
 let i = typeof t.data === "string" ? JSON.parse(t.data) : t.data ?? {};
 return {
 mode: t.mode === "namespin" ? "namespin" : "event",
-wheel: { ...Vi, ...i.wheel ?? {} },
+wheel: { ...Qi, ...i.wheel ?? {} },
 theme: { ...ji, ...i.theme ?? {} },
 updatedAt: new Date(t.updated_at).toISOString()
 };
@@ -4006,6 +4014,15 @@ let t = await this.model.findFirst({
 where: { username: e, deletedAt: null }
 });
 return t ? this.toEntity(t) : null;
+}
+async findByLogin(e) {
+let t = e.trim();
+if (!t)
+return null;
+let i = t.includes("@") ? "email" : "username", n = await this.model.findFirst({
+where: { [i]: { equals: t, mode: "insensitive" }, deletedAt: null }
+});
+return n ? this.toEntity(n) : null;
 }
 async findByEmail(e) {
 let t = await this.model.findFirst({
@@ -4974,9 +4991,9 @@ return this.model.findFirst({ where: { code: e, deletedAt: null } });
 }
 // src/routes/auditLog.routes.ts
 import { Router as lr } from "npm:express@^4.21.0";
-function Qi(e) {
+function Vi(e) {
 let t = lr();
-return t.use(I(e)), t.get("/", L(f.AUDIT_READ), async (i, n, r) => {
+return t.use(I(e)), t.get("/", B(f.AUDIT_READ), async (i, n, r) => {
 try {
 let o = i.query, a = Math.max(1, Number(o.page) || 1), s = Math.min(200, Math.max(1, Number(o.limit) || 50)), c = {};
 if (o.action)
@@ -5012,13 +5029,13 @@ r(o);
 
 // src/app.ts
 function Gi() {
-let e = fi(), t = new ae, i = new dt, n = new pt, r = new nt, o = new rt, a = new ot, s = new st, c = new ct, h = new at, l = new ut, m = new lt, g = new Be, w = new Le(i, g), S = new qe(n), ee = new Ce(t, g, w, S), te = new Fe(r, c, s, a, h), oe = new We(o), C = new je, x = new Ve(a, o, r, C), W = new Qe(s, r, C), yt = new He(c), yi = new Ge(a, r, o), gt = new Xe(r, o, c, h, C), Zi = new Ke(l, S), Yi = new Je(m, S), en = new we(ee), tn = new Se(te), nn = new Re(oe), rn = new Ae(x), on = new ve(W), an = new Ie(yt), sn = new Ee(yi), cn = new Te, dn = new _e(gt), pn = new Ue(Zi), un = new xe(Yi), ln = new Ye(t, w, S), mn = new Oe(ln), fn = new ke(new tt(o, C)), yn = new ze(new it(o, C));
+let e = yi(), t = new ae, i = new dt, n = new pt, r = new nt, o = new rt, a = new ot, s = new st, c = new ct, h = new at, l = new ut, m = new lt, g = new Le, w = new Be(i, g), S = new qe(n), ee = new Ce(t, g, w, S), te = new Fe(r, c, s, a, h), oe = new We(o), C = new je, x = new Qe(a, o, r, C), W = new Ve(s, r, C), yt = new He(c), gi = new Ge(a, r, o), gt = new Xe(r, o, c, h, C), Zi = new Ke(l, S), Yi = new Je(m, S), en = new we(ee), tn = new Se(te), nn = new Re(oe), rn = new Ae(x), on = new ve(W), an = new Ie(yt), sn = new Ee(gi), cn = new Te, dn = new _e(gt), pn = new Ue(Zi), un = new xe(Yi), ln = new Ye(t, w, S), mn = new Oe(ln), fn = new ke(new tt(o, C)), yn = new ze(new it(o, C));
 e.use(fr({ contentSecurityPolicy: v.isProduction ? void 0 : !1 })), e.set("trust proxy", !0);
 let gn = v.CORS_ORIGIN.split(",").flatMap((se) => {
 let X = se.trim().replace(/\/+$/, ""), ht = X.startsWith("https://") ? X.includes("://www.") ? X.replace("://www.", "://") : X.replace("://", "://www.") : null;
 return ht && ht !== X ? [X, ht] : [X];
 });
-e.use(mr({ origin: gn, credentials: !0 })), e.use(fi.json({ limit: "10mb" })), e.use(fi.urlencoded({ extended: !0 })), e.use(yr()), e.use(St);
+e.use(mr({ origin: gn, credentials: !0 })), e.use(yi.json({ limit: "10mb" })), e.use(yi.urlencoded({ extended: !0 })), e.use(yr()), e.use(St);
 let hn = Hi({
 windowMs: v.RATE_LIMIT_WINDOW_MS,
 max: v.RATE_LIMIT_MAX,
@@ -5029,7 +5046,7 @@ skip: (se) => se.method === "GET" && /\/(draw-state|health|monitor\/state)/.test
 message: { success: !1, error: { code: "RATE_LIMIT", message: "Too many requests" } }
 });
 e.use("/api/", hn);
-let gi = Hi({
+let hi = Hi({
 windowMs: v.REGISTRATION_RATE_LIMIT_WINDOW_MS,
 max: v.REGISTRATION_RATE_LIMIT_MAX,
 standardHeaders: !0,
@@ -5040,7 +5057,7 @@ success: !1,
 error: { code: "RATE_LIMIT", message: "Too many registration attempts" }
 }
 });
-return e.use("/api/participants/register", gi), e.use("/api/participants", gi), e.use("/api/health", ii(cn)), e.use("/api/auth", Xt(en, g)), e.use("/api/participants", Kt(tn, g)), e.use("/api/prizes", Jt(nn, g)), e.use("/api/draws", Zt(rn, g)), e.use("/api/queue", Yt(on, g)), e.use("/api/settings", ei(an, g)), e.use("/api/analytics", ti(sn, g)), e.use("/api/booth", ni(dn, g)), e.use("/api/events", ri(pn, g)), e.use("/api/booths", oi(un, g)), e.use("/api/users", ai(mn, g)), e.use("/api/name-spin", si(fn, g)), e.use("/api/monitor", di(yn, g)), e.use("/api/audit-logs", Qi(g)), e.get("/", (se, X) => {
+return e.use("/api/participants/register", hi), e.use("/api/participants", hi), e.use("/api/health", ii(cn)), e.use("/api/auth", Xt(en, g)), e.use("/api/participants", Kt(tn, g)), e.use("/api/prizes", Jt(nn, g)), e.use("/api/draws", Zt(rn, g)), e.use("/api/queue", Yt(on, g)), e.use("/api/settings", ei(an, g)), e.use("/api/analytics", ti(sn, g)), e.use("/api/booth", ni(dn, g)), e.use("/api/events", ri(pn, g)), e.use("/api/booths", oi(un, g)), e.use("/api/users", ai(mn, g)), e.use("/api/name-spin", si(fn, g)), e.use("/api/monitor", di(yn, g)), e.use("/api/audit-logs", Vi(g)), e.get("/", (se, X) => {
 X.json({
 success: !0,
 service: "Radiant Lucky Draw API",
@@ -5120,7 +5137,7 @@ ft.disable("x-powered-by");
 ft.use(async (e, t, i) => {
 await vr();
 let n = t.send.bind(t);
-t.send = (r) => (li().finally(() => n(r)), t), i();
+t.send = (r) => (mi().finally(() => n(r)), t), i();
 });
 ft.use(Ar);
 ft.listen(8000, () => p.info("[Edge] Radiant Lucky Draw API ready"));

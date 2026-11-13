@@ -12,7 +12,8 @@ const password = z
   .min(8, 'Password minimal 8 karakter')
   .max(128, 'Password maksimal 128 karakter')
   .regex(/[A-Za-z]/, 'Password harus mengandung huruf')
-  .regex(/\d/, 'Password harus mengandung angka');
+  .regex(/\d/, 'Password harus mengandung angka')
+  .refine((v) => v === v.trim(), 'Password tidak boleh diawali atau diakhiri spasi');
 
 const username = z
   .string()

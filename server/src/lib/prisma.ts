@@ -165,7 +165,9 @@ function compileScalar(field: FieldMeta, col: string, cond: any, p: Params): str
     if (v === undefined || op === 'mode') continue;
     switch (op) {
       case 'equals':
-        parts.push(v === null ? `${col} IS NULL` : `${col} = ${p.add(toDb(field, v), cast)}`);
+        if (v === null) parts.push(`${col} IS NULL`);
+        else if (insensitive && typeof v === 'string') parts.push(`${col} ILIKE ${p.add(esc(v))}`);
+        else parts.push(`${col} = ${p.add(toDb(field, v), cast)}`);
         break;
       case 'not':
         if (v === null) parts.push(`${col} IS NOT NULL`);

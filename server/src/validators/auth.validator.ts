@@ -9,8 +9,9 @@ import { ROLE_LIST } from '../auth';
 
 export const loginSchema = z.object({
   body: z.object({
-    email: z.string().email('Invalid email format'),
-    password: z.string().min(6, 'Password must be at least 6 characters'),
+    /** Email or username. */
+    email: z.string().trim().min(1, 'Email atau username wajib diisi').max(255),
+    password: z.string().min(1, 'Password wajib diisi').max(200),
     rememberMe: z.boolean().optional(),
   }),
 });

@@ -64,6 +64,7 @@ function formatDate(iso: string | null): string {
 }
 
 function passwordProblem(pw: string): string | null {
+  if (pw !== pw.trim()) return 'Password tidak boleh diawali atau diakhiri spasi';
   if (pw.length < 8) return 'Password minimal 8 karakter';
   if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'Password harus mengandung huruf dan angka';
   return null;
@@ -157,6 +158,78 @@ function FormError({ message }: { message: string | null }) {
   );
 }
 
+// ─── Credentials shown after create / reset ─────────────────────────
+
+interface Credentials {
+  title: string;
+  username: string;
+  email: string;
+  password: string;
+}
+
+function CredentialsModal({ creds, onClose }: { creds: Credentials; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const loginUrl = `${window.location.origin}/login`;
+  const text = `Login Radiant Lucky Draw\n${loginUrl}\nEmail: ${creds.email}\nUsername: ${creds.username}\nPassword: ${creds.password}`;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard blocked: the text stays visible to copy by hand */
+    }
+  };
+
+  const row = (label: string, value: string, mono = false) => (
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-dark-border/60 last:border-0">
+      <span className="text-xs text-dark-text-tertiary shrink-0">{label}</span>
+      <span className={`text-sm text-white select-all break-all text-right ${mono ? 'font-mono' : ''}`}>
+        {value}
+      </span>
+    </div>
+  );
+
+  return (
+    <Modal title={creds.title} onClose={onClose}>
+      <div className="space-y-4">
+        <p className="text-sm text-dark-text-secondary">
+          Akun sudah aktif dan bisa langsung dipakai login. Salin data di bawah dan berikan ke
+          pengguna. <span className="text-amber-300">Password tidak akan ditampilkan lagi</span>{' '}
+          setelah jendela ini ditutup.
+        </p>
+        <div className="rounded-lg border border-dark-border bg-dark-surface px-3">
+          {row('Link login', loginUrl)}
+          {row('Email', creds.email)}
+          {row('Username', creds.username)}
+          {row('Password', creds.password, true)}
+        </div>
+        <p className="text-xs text-dark-text-tertiary">
+          Bisa login dengan email atau username. Setelah masuk, pengguna sebaiknya mengganti password
+          lewat menu profil → Ganti Password.
+        </p>
+        <div className="flex justify-end gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => void copy()}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-primary-500/20 text-primary-300 hover:bg-primary-500/30"
+          >
+            {copied ? 'Tersalin ✓' : 'Salin semua'}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-sm text-dark-text-secondary hover:text-white hover:bg-dark-surface-tertiary"
+          >
+            Selesai
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 // ─── Create / edit user ──────────────────────────────────────────────
 
 function UserFormModal({
@@ -170,7 +243,7 @@ function UserFormModal({
   isSelf: boolean;
   canAssignSuperAdmin: boolean;
   onClose: () => void;
-  onSaved: (message: string) => void;
+  onSaved: (message: string, credentials?: Credentials) => void;
 }) {
   const isEdit = !!user;
   const [username, setUsername] = useState(user?.username ?? '');
@@ -200,8 +273,13 @@ function UserFormModal({
         });
         onSaved(`Pengguna ${username} diperbarui`);
       } else {
-        await userApi.create({ username, email, password, role });
-        onSaved(`Pengguna ${username} dibuat. Bagikan password-nya secara aman.`);
+        const res = await userApi.create({ username: username.trim(), email: email.trim(), password, role });
+        onSaved(`Pengguna ${res.data.username} dibuat`, {
+          title: 'Pengguna berhasil dibuat',
+          username: res.data.username,
+          email: res.data.email,
+          password,
+        });
       }
     } catch (err) {
       setError(errorMessage(err));
@@ -211,11 +289,15 @@ function UserFormModal({
 
   return (
     <Modal title={isEdit ? 'Edit Pengguna' : 'Tambah Pengguna'} onClose={onClose}>
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4" autoComplete="off">
         <label className="block space-y-1">
           <span className="text-xs text-dark-text-tertiary">Username</span>
           <input
             className={inputCls}
+            name="new-user-username"
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore="true"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
@@ -231,6 +313,10 @@ function UserFormModal({
           <input
             className={inputCls}
             type="email"
+            name="new-user-email"
+            autoComplete="off"
+            data-lpignore="true"
+            data-1p-ignore="true"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -261,6 +347,10 @@ function UserFormModal({
               <input
                 className={`${inputCls} font-mono`}
                 type={showPassword ? 'text' : 'password'}
+                name="new-user-password"
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore="true"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -298,7 +388,7 @@ function ResetPasswordModal({
 }: {
   user: ManagedUser;
   onClose: () => void;
-  onSaved: (message: string) => void;
+  onSaved: (message: string, credentials?: Credentials) => void;
 }) {
   const [password, setPassword] = useState(generatePassword());
   const [busy, setBusy] = useState(false);
@@ -311,7 +401,12 @@ function ResetPasswordModal({
     setBusy(true);
     try {
       await userApi.resetPassword(user.id, password);
-      onSaved(`Password ${user.username} direset. Semua sesinya sudah dikeluarkan.`);
+      onSaved(`Password ${user.username} direset. Semua sesinya sudah dikeluarkan.`, {
+        title: `Password ${user.username} direset`,
+        username: user.username,
+        email: user.email,
+        password,
+      });
     } catch (err) {
       setError(errorMessage(err));
       setBusy(false);
@@ -320,12 +415,16 @@ function ResetPasswordModal({
 
   return (
     <Modal title={`Reset Password — ${user.username}`} onClose={onClose}>
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4" autoComplete="off">
         <label className="block space-y-1">
           <span className="text-xs text-dark-text-tertiary">Password baru</span>
           <div className="flex gap-2">
             <input
               className={`${inputCls} font-mono`}
+              name="reset-user-password"
+              autoComplete="new-password"
+              data-lpignore="true"
+              data-1p-ignore="true"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -401,6 +500,7 @@ type Dialog =
   | { kind: 'reset'; user: ManagedUser }
   | { kind: 'toggle'; user: ManagedUser }
   | { kind: 'delete'; user: ManagedUser }
+  | { kind: 'credentials'; creds: Credentials }
   | null;
 
 export default function UsersPage() {
@@ -455,8 +555,8 @@ export default function UsersPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const done = useCallback(
-    (message: string) => {
-      setDialog(null);
+    (message: string, credentials?: Credentials) => {
+      setDialog(credentials ? { kind: 'credentials', creds: credentials } : null);
       setNotice(message);
       void load();
     },
@@ -720,6 +820,9 @@ export default function UsersPage() {
             onClose={() => setDialog(null)}
             onSaved={done}
           />
+        )}
+        {dialog?.kind === 'credentials' && (
+          <CredentialsModal creds={dialog.creds} onClose={() => setDialog(null)} />
         )}
         {dialog?.kind === 'reset' && (
           <ResetPasswordModal user={dialog.user} onClose={() => setDialog(null)} onSaved={done} />

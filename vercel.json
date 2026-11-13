@@ -6,18 +6,13 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://radiant-lucky-draw-production.up.railway.app/api/$1"
-    },
-    {
-      "source": "/socket.io/(.*)",
-      "destination": "https://radiant-lucky-draw-production.up.railway.app/socket.io/$1"
+      "destination": "https://emwmnghbxsoudfxxltna.supabase.co/functions/v1/api/$1?forceFunctionRegion=ap-southeast-1"
     },
     {
       "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
   ],
-
   "headers": [
     {
       "source": "/assets/(.*)",

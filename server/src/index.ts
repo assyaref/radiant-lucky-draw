@@ -1,10 +1,12 @@
 /**
  * Server Entry Point
  *
- * Bootstraps the Express application and starts listening.
+ * Local Node entry: bootstraps the Express application and starts listening.
+ * Production runs the same app as a Supabase Edge Function (see src/edge.ts).
  * Includes graceful shutdown and uncaught error handling.
  */
 
+import 'dotenv/config';
 import { createApp } from './app';
 import { env } from './config';
 import { logger } from './utils';
@@ -29,7 +31,7 @@ process.on('unhandledRejection', (reason) => {
 // ─── Server Startup ────────────────────────────────────────
 
 async function main() {
-  const { app, realtimeService } = createApp();
+  const { app } = createApp();
 
   const baseUrl = process.env.APP_URL ?? `http://localhost:${env.PORT}`;
 
@@ -47,7 +49,6 @@ async function main() {
   });
 
   // Attach Socket.IO realtime layer to the HTTP server
-  realtimeService.attach(server);
 
   // ─── Graceful Shutdown ─────────────────────────────────
 

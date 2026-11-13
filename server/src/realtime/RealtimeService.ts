@@ -1,28 +1,28 @@
 /**
- * RealtimeService
+ * RealtimeService (Supabase edition)
  *
- * Socket.IO real-time communication layer for the backend.
- * Acts as the single broadcast hub for queue events so that
- * Operator Dashboard, Queue TV, and Registration stay in sync.
+ * Broadcast hub for queue and draw events, now delivered through
+ * Supabase Realtime (Broadcast) instead of Socket.IO, so the backend can run
+ * as a stateless Supabase Edge Function.
  *
- * Events broadcast:
- * - queue:created    (new participant added to queue)
- * - queue:updated    (full queue state changed)
- * - queue:called     (next participant called)
- * - queue:completed  (participant completed)
- * - queue:skipped    (participant skipped)
- * - queue:cancelled  (participant cancelled)
+ * - Every event is sent to the public Realtime channel `radiant`
+ *   (REALTIME_CHANNEL) with the same event name and payload the Socket.IO
+ *   server used, so the frontend keeps its event contract.
+ * - The draw lock and the active draw sequence live in the `draw_state`
+ *   table (one row), because separate requests may hit separate isolates.
+ *   The current draw phase is derived from the time elapsed since the draw
+ *   started, so any instance returns the same state.
+ * - The timed broadcasts (spinning → winner → completed) run in the
+ *   background with EdgeRuntime.waitUntil when available.
  *
- * DrawEngine lifecycle events (RC2.4):
- * - draw:started     (draw session started)
- * - draw:spinning    (prize selection in progress)
- * - draw:winner      (winner selected)
- * - draw:completed   (draw lifecycle completed)
+ * Events: queue:created/updated/called/completed/skipped/cancelled,
+ *         draw:started/spinning/winner/completed
  */
 
-import { Server as SocketIOServer } from 'socket.io';
-import type { Server as HttpServer } from 'http';
+import { prisma } from '../lib/prisma';
 import { logger } from '../utils';
+
+export const REALTIME_CHANNEL = 'radiant';
 
 // ─── Queue Event Names ──────────────────────────────────────────────────
 
@@ -37,7 +37,7 @@ export const QUEUE_EVENTS = {
 
 export type QueueEventName = (typeof QUEUE_EVENTS)[keyof typeof QUEUE_EVENTS];
 
-// ─── DrawEngine Event Names (RC2.4) ─────────────────────────────────────
+// ─── DrawEngine Event Names ─────────────────────────────────────────────
 
 export const DRAW_EVENTS = {
   STARTED: 'draw:started',
@@ -79,8 +79,6 @@ export interface QueueEventPayload {
   state: QueueStatePayload;
   timestamp: string;
 }
-
-// ─── Draw Payload Types (RC2.4) ─────────────────────────────────────────
 
 export interface DrawStartedPayload {
   drawId: string;
@@ -137,100 +135,179 @@ export interface ActiveDrawState {
   lastUpdated: string;
 }
 
+export interface DrawSequenceData {
+  drawId: string;
+  participantId: string;
+  participantName: string;
+  participantCompany?: string;
+  participantPhotoUrl?: string;
+  prizeId: string;
+  prizeName: string;
+  prizeImageUrl?: string;
+  prizeTier: string;
+  remainingStock: number;
+}
+
+// Sequence timeline (ms after start) — same as the Socket.IO implementation.
+const T_SPINNING = 4000;
+const T_REVEALED = 8000;
+const T_COMPLETED = 14000;
+const T_IDLE = 19000;
+/** Lock held while the spin transaction runs, before the sequence starts. */
+const PRE_SEQUENCE_LOCK_SECONDS = 30;
+
+const IDLE_STATE = (): ActiveDrawState => ({
+  state: 'IDLE',
+  drawId: null,
+  participantId: null,
+  participantName: null,
+  participantCompany: null,
+  participantPhotoUrl: null,
+  prizeId: null,
+  prizeName: null,
+  prizeTier: null,
+  prizeImageUrl: null,
+  remainingStock: null,
+  startedAt: null,
+  lastUpdated: new Date().toISOString(),
+});
+
+function envVar(name: string): string | undefined {
+  const g = globalThis as any;
+  return g.Deno?.env?.get?.(name) ?? (typeof process !== 'undefined' ? process.env[name] : undefined);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Keep background work alive after the HTTP response (Supabase Edge Runtime). */
+function runInBackground(p: Promise<unknown>): void {
+  const er = (globalThis as any).EdgeRuntime;
+  const guarded = p.catch((e) => logger.error('[Realtime] background task failed', { error: String(e) }));
+  if (er?.waitUntil) er.waitUntil(guarded);
+}
+
 // ─── RealtimeService ────────────────────────────────────────────────────
 
 export class RealtimeService {
-  private io: SocketIOServer | null = null;
-  private activeDraw: ActiveDrawState = {
-    state: 'IDLE',
-    drawId: null,
-    participantId: null,
-    participantName: null,
-    participantCompany: null,
-    participantPhotoUrl: null,
-    prizeId: null,
-    prizeName: null,
-    prizeTier: null,
-    prizeImageUrl: null,
-    remainingStock: null,
-    startedAt: null,
-    lastUpdated: new Date().toISOString(),
-  };
-  private drawSequenceTimers: ReturnType<typeof setTimeout>[] = [];
-  private isDrawLocked: boolean = false;
+  private readonly url = envVar('SUPABASE_URL');
+  private readonly key = envVar('SUPABASE_SERVICE_ROLE_KEY');
 
-  /** Attach Socket.IO to the HTTP server */
-  attach(server: HttpServer): void {
-    if (this.io) {
-      logger.warn('[Realtime] Socket.IO already attached');
+  isAttached(): boolean {
+    return !!(this.url && this.key);
+  }
+
+  // ─── Broadcast transport ────────────────────────────────────────────
+
+  private async send(event: string, payload: Record<string, unknown>): Promise<void> {
+    if (!this.isAttached()) {
+      logger.warn(`[Realtime] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing, skipping ${event}`);
       return;
     }
-
-    this.io = new SocketIOServer(server, {
-      cors: {
-        origin: '*',
-        methods: ['GET', 'POST'],
-      },
-      transports: ['websocket', 'polling'],
-    });
-
-    // Expose the Socket.IO instance globally so analytics can read the
-    // real active connection count (GO LIVE HOTFIX).
-    (globalThis as any).__radiantRealtimeIO = this.io;
-
-    this.io.on('connection', (socket) => {
-      logger.info(`[Realtime] Client connected: ${socket.id}`);
-
-      // Send current draw state to newly connected monitor clients
-      socket.on('draw:get-state', () => {
-        socket.emit('draw:state-sync', this.getDrawState());
-        logger.info(`[Realtime] Draw state sent to: ${socket.id}`);
+    try {
+      const res = await fetch(`${this.url}/realtime/v1/api/broadcast`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: this.key!,
+          Authorization: `Bearer ${this.key}`,
+        },
+        body: JSON.stringify({
+          messages: [{ topic: REALTIME_CHANNEL, event, payload, private: false }],
+        }),
       });
-
-      socket.on('disconnect', () => {
-        logger.info(`[Realtime] Client disconnected: ${socket.id}`);
-      });
-    });
-
-    logger.info('[Realtime] Socket.IO attached to HTTP server');
+      if (!res.ok) {
+        logger.warn(`[Realtime] Broadcast ${event} failed: ${res.status} ${await res.text()}`);
+      } else {
+        logger.info(`[Realtime] Broadcast: ${event}`);
+      }
+    } catch (e) {
+      logger.warn(`[Realtime] Broadcast ${event} error`, { error: String(e) });
+    }
   }
 
-  /** Check if the realtime layer is attached */
-  isAttached(): boolean {
-    return this.io !== null;
+  /** Broadcast a queue event to all connected clients */
+  broadcastQueueEvent(payload: QueueEventPayload): void {
+    runInBackground(this.send(payload.type, payload as unknown as Record<string, unknown>));
   }
 
-  // ─── Draw Lock ──────────────────────────────────────────────────────
+  /** Broadcast a full queue state update */
+  broadcastQueueState(state: QueueStatePayload): void {
+    runInBackground(
+      this.send(QUEUE_EVENTS.UPDATED, {
+        type: QUEUE_EVENTS.UPDATED,
+        state,
+        timestamp: new Date().toISOString(),
+      }),
+    );
+  }
 
-  /** Check if a draw is currently in progress (prevents double spin) */
-  isDrawActive(): boolean {
-    return this.isDrawLocked;
+  /** Broadcast a draw lifecycle event */
+  broadcastDrawEvent(event: DrawEventName, payload: Record<string, unknown>): void {
+    runInBackground(
+      this.send(event, { type: event, ...payload, timestamp: new Date().toISOString() }),
+    );
+  }
+
+  // ─── Draw Lock (DB-backed) ──────────────────────────────────────────
+
+  async isDrawActive(): Promise<boolean> {
+    const rows = await prisma.$queryRawUnsafe(
+      `SELECT (locked_until IS NOT NULL AND locked_until > now()) AS active FROM draw_state WHERE id = 1`,
+    );
+    return !!rows[0]?.active;
   }
 
   /** Attempt to acquire the draw lock. Returns true if lock acquired. */
-  acquireDrawLock(): boolean {
-    if (this.isDrawLocked) return false;
-    this.isDrawLocked = true;
-    return true;
+  async acquireDrawLock(): Promise<boolean> {
+    const rows = await prisma.$queryRawUnsafe(
+      `UPDATE draw_state
+          SET locked_until = now() + make_interval(secs => $1), updated_at = now()
+        WHERE id = 1 AND (locked_until IS NULL OR locked_until <= now())
+        RETURNING id`,
+      PRE_SEQUENCE_LOCK_SECONDS,
+    );
+    return rows.length === 1;
   }
 
-  /** Release the draw lock */
-  releaseDrawLock(): void {
-    this.isDrawLocked = false;
+  async releaseDrawLock(): Promise<void> {
+    await prisma.$queryRawUnsafe(
+      `UPDATE draw_state SET locked_until = NULL, updated_at = now() WHERE id = 1`,
+    );
   }
 
-  // ─── Draw State Management ──────────────────────────────────────────
+  // ─── Draw State ─────────────────────────────────────────────────────
 
-  /** Get the current draw state (for monitor reconnection) */
-  getDrawState(): ActiveDrawState {
-    return { ...this.activeDraw };
-  }
+  /** Current draw state, derived from the stored sequence start time. */
+  async getDrawState(): Promise<ActiveDrawState> {
+    const rows = await prisma.$queryRawUnsafe(
+      `SELECT data, started_at, updated_at,
+              (EXTRACT(EPOCH FROM (now() - started_at)) * 1000)::bigint AS elapsed_ms
+         FROM draw_state WHERE id = 1`,
+    );
+    const row = rows[0];
+    if (!row || !row.started_at || !row.data) return IDLE_STATE();
+    const elapsed = Number(row.elapsed_ms);
+    let state: DrawState;
+    if (elapsed < T_SPINNING) state = 'COUNTDOWN';
+    else if (elapsed < T_REVEALED) state = 'SPINNING';
+    else if (elapsed < T_COMPLETED) state = 'REVEALED';
+    else if (elapsed < T_IDLE) state = 'COMPLETED';
+    else return IDLE_STATE();
 
-  /** Set draw state internally */
-  private setDrawState(partial: Partial<ActiveDrawState>): void {
-    this.activeDraw = {
-      ...this.activeDraw,
-      ...partial,
+    const d = (typeof row.data === 'string' ? JSON.parse(row.data) : row.data) as DrawSequenceData;
+    return {
+      state,
+      drawId: d.drawId,
+      participantId: d.participantId,
+      participantName: d.participantName,
+      participantCompany: d.participantCompany ?? null,
+      participantPhotoUrl: d.participantPhotoUrl ?? null,
+      prizeId: d.prizeId,
+      prizeName: d.prizeName,
+      prizeTier: d.prizeTier,
+      prizeImageUrl: d.prizeImageUrl ?? null,
+      remainingStock: d.remainingStock,
+      startedAt: new Date(row.started_at).toISOString(),
       lastUpdated: new Date().toISOString(),
     };
   }
@@ -238,163 +315,79 @@ export class RealtimeService {
   /**
    * Start a sequenced draw lifecycle with timed broadcasts.
    * Winner data is provided upfront (already determined by the server).
-   * Handles countdown→spinning→winner→completed animation sequence.
+   * COUNTDOWN (0s) → SPINNING (4s) → REVEALED (8s) → COMPLETED (14s) → IDLE (19s)
    */
-  startDrawSequence(winnerData: {
-    drawId: string;
-    participantId: string;
-    participantName: string;
-    participantCompany?: string;
-    participantPhotoUrl?: string;
-    prizeId: string;
-    prizeName: string;
-    prizeImageUrl?: string;
-    prizeTier: string;
-    remainingStock: number;
-  }): void {
-    this.clearDrawTimers();
-    const ts = new Date().toISOString();
+  async startDrawSequence(winnerData: DrawSequenceData): Promise<void> {
+    const rows = await prisma.$queryRawUnsafe(
+      `UPDATE draw_state
+          SET data = $1::jsonb,
+              started_at = now(),
+              locked_until = now() + make_interval(secs => $2),
+              updated_at = now()
+        WHERE id = 1
+        RETURNING started_at`,
+      JSON.stringify(winnerData),
+      T_IDLE / 1000,
+    );
+    const startedAt = rows[0]?.started_at ? new Date(rows[0].started_at).toISOString() : new Date().toISOString();
 
     // Step 1: COUNTDOWN (immediate)
-    this.setDrawState({
-      state: 'COUNTDOWN',
-      drawId: winnerData.drawId,
-      participantId: winnerData.participantId,
-      participantName: winnerData.participantName,
-      participantCompany: winnerData.participantCompany ?? null,
-      participantPhotoUrl: winnerData.participantPhotoUrl ?? null,
-      prizeId: winnerData.prizeId,
-      prizeName: winnerData.prizeName,
-      prizeImageUrl: winnerData.prizeImageUrl ?? null,
-      prizeTier: winnerData.prizeTier,
-      remainingStock: winnerData.remainingStock,
-      startedAt: ts,
+    await this.send(DRAW_EVENTS.STARTED, {
+      type: DRAW_EVENTS.STARTED,
+      ...winnerData,
+      timestamp: startedAt,
     });
-    this.broadcastDrawEvent(DRAW_EVENTS.STARTED, { ...winnerData, timestamp: ts });
 
-    // Step 2: SPINNING (after 4s)
-    this.drawSequenceTimers.push(
-      setTimeout(() => {
-        if (this.activeDraw.state !== 'COUNTDOWN') return;
-        this.setDrawState({ state: 'SPINNING' });
-        this.broadcastDrawEvent(DRAW_EVENTS.SPINNING, {
-          drawId: winnerData.drawId,
-          participantId: winnerData.participantId,
-          participantName: winnerData.participantName,
-          participantPhotoUrl: winnerData.participantPhotoUrl ?? null,
-          prizeId: winnerData.prizeId,
-          prizeName: winnerData.prizeName,
-          prizeTier: winnerData.prizeTier,
-          prizeImageUrl: winnerData.prizeImageUrl ?? null,
-          timestamp: new Date().toISOString(),
-        });
-      }, 4000),
-    );
+    const sequence = async () => {
+      await sleep(T_SPINNING);
+      if (!(await this.isCurrentDraw(winnerData.drawId))) return;
+      await this.send(DRAW_EVENTS.SPINNING, {
+        type: DRAW_EVENTS.SPINNING,
+        drawId: winnerData.drawId,
+        participantId: winnerData.participantId,
+        participantName: winnerData.participantName,
+        participantPhotoUrl: winnerData.participantPhotoUrl ?? null,
+        prizeId: winnerData.prizeId,
+        prizeName: winnerData.prizeName,
+        prizeTier: winnerData.prizeTier,
+        prizeImageUrl: winnerData.prizeImageUrl ?? null,
+        timestamp: new Date().toISOString(),
+      });
 
-    // Step 3: REVEALED (after 8s)
-    this.drawSequenceTimers.push(
-      setTimeout(() => {
-        if (this.activeDraw.state !== 'SPINNING') return;
-        this.setDrawState({ state: 'REVEALED' });
-        this.broadcastDrawEvent(DRAW_EVENTS.WINNER, {
-          ...winnerData,
-          probability: 0,
-          timestamp: new Date().toISOString(),
-        });
-      }, 8000),
-    );
+      await sleep(T_REVEALED - T_SPINNING);
+      if (!(await this.isCurrentDraw(winnerData.drawId))) return;
+      await this.send(DRAW_EVENTS.WINNER, {
+        type: DRAW_EVENTS.WINNER,
+        ...winnerData,
+        probability: 0,
+        timestamp: new Date().toISOString(),
+      });
 
-    // Step 4: COMPLETED → IDLE (after 14s + 5s)
-    this.drawSequenceTimers.push(
-      setTimeout(() => {
-        if (this.activeDraw.state !== 'REVEALED') return;
-        this.setDrawState({ state: 'COMPLETED' });
-        this.broadcastDrawEvent(DRAW_EVENTS.COMPLETED, {
-          drawId: winnerData.drawId,
-          participantId: winnerData.participantId,
-          prizeId: winnerData.prizeId,
-          prizeName: winnerData.prizeName,
-          remainingStock: winnerData.remainingStock,
-          totalWinners: 0,
-          drawCount: 0,
-          timestamp: new Date().toISOString(),
-        });
-        setTimeout(() => {
-          this.setDrawState({
-            state: 'IDLE',
-            drawId: null,
-            participantId: null,
-            participantName: null,
-            participantCompany: null,
-            participantPhotoUrl: null,
-            prizeId: null,
-            prizeName: null,
-            prizeImageUrl: null,
-            prizeTier: null,
-            remainingStock: null,
-            startedAt: null,
-          });
-          this.releaseDrawLock();
-          logger.info('[Realtime] Draw sequence: IDLE, lock released');
-        }, 5000);
-      }, 14000),
-    );
+      await sleep(T_COMPLETED - T_REVEALED);
+      if (!(await this.isCurrentDraw(winnerData.drawId))) return;
+      await this.send(DRAW_EVENTS.COMPLETED, {
+        type: DRAW_EVENTS.COMPLETED,
+        drawId: winnerData.drawId,
+        participantId: winnerData.participantId,
+        prizeId: winnerData.prizeId,
+        prizeName: winnerData.prizeName,
+        remainingStock: winnerData.remainingStock,
+        totalWinners: 0,
+        drawCount: 0,
+        timestamp: new Date().toISOString(),
+      });
+      // The lock expires on its own at T_IDLE (locked_until), so a crashed
+      // isolate can never leave the booth stuck.
+    };
 
+    runInBackground(sequence());
     logger.info('[Realtime] Draw sequence started', { drawId: winnerData.drawId });
   }
 
-  /** Clear all pending draw sequence timers */
-  private clearDrawTimers(): void {
-    for (const t of this.drawSequenceTimers) clearTimeout(t);
-    this.drawSequenceTimers = [];
-  }
-
-  /** Broadcast a queue event to all connected clients */
-  broadcastQueueEvent(payload: QueueEventPayload): void {
-    if (!this.io) {
-      logger.warn('[Realtime] Socket.IO not attached, skipping broadcast');
-      return;
-    }
-
-    this.io.emit(payload.type, payload);
-    logger.info(`[Realtime] Broadcast: ${payload.type}`);
-  }
-
-  /** Broadcast a full queue state update */
-  broadcastQueueState(state: QueueStatePayload): void {
-    if (!this.io) {
-      logger.warn('[Realtime] Socket.IO not attached, skipping broadcast');
-      return;
-    }
-
-    this.io.emit(QUEUE_EVENTS.UPDATED, {
-      type: QUEUE_EVENTS.UPDATED,
-      state,
-      timestamp: new Date().toISOString(),
-    });
-    logger.info('[Realtime] Broadcast: queue:updated');
-  }
-
-  /**
-   * Broadcast a draw lifecycle event (RC2.4).
-   * Events: draw:started, draw:spinning, draw:winner, draw:completed
-   */
-  broadcastDrawEvent(event: DrawEventName, payload: Record<string, unknown>): void {
-    if (!this.io) {
-      logger.warn('[Realtime] Socket.IO not attached, skipping draw broadcast');
-      return;
-    }
-
-    this.io.emit(event, {
-      type: event,
-      ...payload,
-      timestamp: new Date().toISOString(),
-    });
-    logger.info(`[Realtime] Broadcast: ${event}`);
-  }
-
-  /** Get the underlying Socket.IO server (for advanced use) */
-  getIO(): SocketIOServer | null {
-    return this.io;
+  private async isCurrentDraw(drawId: string): Promise<boolean> {
+    const rows = await prisma.$queryRawUnsafe(
+      `SELECT data->>'drawId' AS draw_id FROM draw_state WHERE id = 1`,
+    );
+    return rows[0]?.draw_id === drawId;
   }
 }

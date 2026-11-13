@@ -44,3 +44,11 @@ export type {
 
 export type { CreateEventRequest, UpdateEventRequest, EventResponse } from './event.dto';
 export type { CreateBoothRequest, UpdateBoothRequest, BoothResponse } from './booth.dto';
+export type {
+  UserResponse,
+  ListUsersQuery,
+  CreateUserRequest,
+  UpdateUserRequest,
+  ResetPasswordRequest,
+  ChangePasswordRequest,
+} from './user.dto';

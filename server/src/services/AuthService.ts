@@ -12,6 +12,7 @@ import { SessionService } from './SessionService';
 import { AuditService } from './AuditService';
 import { ConflictError, UnauthorizedError } from '../utils';
 import { env } from '../config';
+import { ROLE_PERMISSIONS } from '../auth';
 import type {
   LoginRequest,
   LoginResponse,
@@ -50,6 +51,7 @@ export class AuthService {
       username: user.username,
       email: user.email,
       role: user.role,
+      permissions: [...(ROLE_PERMISSIONS[user.role] ?? [])],
     };
   }
 

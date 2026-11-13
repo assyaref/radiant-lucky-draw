@@ -13,3 +13,4 @@ export { createHealthRoutes } from './health.routes';
 export { createBoothRoutes } from './booth.routes';
 export { createEventRoutes } from './event.routes';
 export { createBoothMgmtRoutes } from './booth-mgmt.routes';
+export { createUserRoutes } from './user.routes';

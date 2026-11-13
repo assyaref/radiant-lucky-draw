@@ -6,7 +6,8 @@
 
 import { Router } from 'express';
 import { AuthController } from '../controllers';
-import { validate } from '../middlewares';
+import { validate, requirePermission } from '../middlewares';
+import { PERMISSIONS } from '../auth';
 import { createAuthenticate } from '../middlewares/auth.middleware';
 import { TokenService } from '../services';
 import { loginSchema, registerSchema, revokeSessionSchema } from '../validators';
@@ -160,7 +161,15 @@ export function createAuthRoutes(
    *       409:
    *         description: Conflict
    */
-  router.post('/register', validate({ body: registerSchema.shape.body }), authController.register);
+  // Creating accounts requires an authenticated user with `user:write`
+  // (previously public — anyone could create a super_admin).
+  router.post(
+    '/register',
+    authenticate,
+    requirePermission(PERMISSIONS.USER_WRITE),
+    validate({ body: registerSchema.shape.body }),
+    authController.register,
+  );
 
   return router;
 }

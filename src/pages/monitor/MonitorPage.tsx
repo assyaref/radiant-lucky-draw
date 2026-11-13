@@ -13,6 +13,7 @@ import { env } from '@config/env';
 import { normalizeImageUrl } from '@/utils';
 import { boothApi, type Winner } from '@/api/booth';
 import luckyDrawLogo from '@assets/images/lucky-draw-logo.png';
+import { MonitorImage } from './MonitorImage';
 
 type DrawState = 'IDLE' | 'COUNTDOWN' | 'SPINNING' | 'REVEALED' | 'COMPLETED';
 interface DrawData {
@@ -271,18 +272,12 @@ function PrizeListPanel({
                 transition={{ repeat: Infinity, duration: 2.2 }}
               >
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/[0.04] flex-shrink-0 flex items-center justify-center border border-white/[0.06] shadow-[0_0_15px_rgba(0,0,0,0.3)]">
-                  {imgUrl ? (
-                    <img
-                      src={imgUrl}
-                      alt={p.name}
-                      className="w-full h-full object-contain p-1"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span className="text-white/20 text-xl">{String.fromCodePoint(0x1f381)}</span>
-                  )}
+                  <MonitorImage
+                    src={imgUrl}
+                    alt={p.name}
+                    className="w-full h-full object-contain p-1"
+                    fallback={<span className="text-white/20 text-xl">{String.fromCodePoint(0x1f381)}</span>}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white/85 text-xs font-semibold truncate leading-tight">
@@ -511,18 +506,13 @@ function CenterPanel({
                     boxShadow: '0 0 50px rgba(251,191,36,0.3), 0 0 100px rgba(245,158,11,0.15)',
                   }}
                 >
-                  {participantPhotoUrl ? (
-                    <img
-                      src={participantPhotoUrl}
-                      alt={drawData.participantName ?? 'Winner'}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span className="text-5xl">{String.fromCodePoint(0x1f464)}</span>
-                  )}
+                  <MonitorImage
+                    src={participantPhotoUrl}
+                    alt={drawData.participantName ?? 'Winner'}
+                    className="w-full h-full object-cover"
+                    displaySize={144}
+                    fallback={<span className="text-5xl">{String.fromCodePoint(0x1f464)}</span>}
+                  />
                 </motion.div>
 
                 {/* Participant Name */}
@@ -561,18 +551,13 @@ function CenterPanel({
                   }}
                   transition={{ repeat: Infinity, duration: 2 }}
                 >
-                  {prizeImageUrl ? (
-                    <img
-                      src={prizeImageUrl}
-                      alt={drawData.prizeName ?? 'Prize'}
-                      className="w-full h-full object-contain p-3"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span className="text-5xl">{String.fromCodePoint(0x1f381)}</span>
-                  )}
+                  <MonitorImage
+                    src={prizeImageUrl}
+                    alt={drawData.prizeName ?? 'Prize'}
+                    className="w-full h-full object-contain p-3"
+                    displaySize={176}
+                    fallback={<span className="text-5xl">{String.fromCodePoint(0x1f381)}</span>}
+                  />
                 </motion.div>
 
                 {/* Prize Name */}
@@ -682,18 +667,13 @@ function WinnerListPanel({ winners }: { winners: WinnerEntry[] }) {
                       : 'border-2 border-white/[0.06]')
                   }
                 >
-                  {photoUrl ? (
-                    <img
-                      src={photoUrl}
-                      alt={w.participantName}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span className="text-white/20 text-base">{medal}</span>
-                  )}
+                  <MonitorImage
+                    src={photoUrl}
+                    alt={w.participantName}
+                    className="w-full h-full object-cover"
+                    displaySize={56}
+                    fallback={<span className="text-white/20 text-base">{medal}</span>}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white/90 text-xs font-bold truncate leading-tight">
@@ -940,18 +920,12 @@ function SpinningScreen({
             }}
             transition={{ repeat: Infinity, duration: converge ? 2.5 : 1 }}
           >
-            {imgUrl ? (
-              <img
-                src={imgUrl}
-                alt={displayPrize?.name ?? 'Prize'}
-                className="w-full h-full object-contain p-3"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <span className="text-6xl">{String.fromCodePoint(0x1f381)}</span>
-            )}
+            <MonitorImage
+              src={imgUrl}
+              alt={displayPrize?.name ?? 'Prize'}
+              className="w-full h-full object-contain p-3"
+              fallback={<span className="text-6xl">{String.fromCodePoint(0x1f381)}</span>}
+            />
           </motion.div>
 
           {/* Prize name */}

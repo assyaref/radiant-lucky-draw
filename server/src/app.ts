@@ -28,6 +28,7 @@ import {
   createBoothRoutes,
   createEventRoutes,
   createBoothMgmtRoutes,
+  createUserRoutes,
 } from './routes';
 import {
   AuthController,
@@ -41,6 +42,7 @@ import {
   BoothController,
   EventController,
   BoothMgmtController,
+  UserController,
 } from './controllers';
 import {
   AuthService,
@@ -56,6 +58,7 @@ import {
   BoothService,
   EventService,
   BoothMgmtService,
+  UserService,
 } from './services';
 import {
   UserRepository,
@@ -151,6 +154,8 @@ export function createApp(): AppInstance {
   const boothController = new BoothController(boothService);
   const eventController = new EventController(eventService);
   const boothMgmtController = new BoothMgmtController(boothMgmtService);
+  const userService = new UserService(userRepository, sessionService, auditService);
+  const userController = new UserController(userService);
 
   // =========================================================
   // Global Middleware
@@ -224,6 +229,7 @@ export function createApp(): AppInstance {
   app.use('/api/booth', createBoothRoutes(boothController, tokenService));
   app.use('/api/events', createEventRoutes(eventController, tokenService));
   app.use('/api/booths', createBoothMgmtRoutes(boothMgmtController, tokenService));
+  app.use('/api/users', createUserRoutes(userController, tokenService));
 
   // =========================================================
   // Root Route

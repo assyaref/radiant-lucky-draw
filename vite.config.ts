@@ -46,7 +46,8 @@ export default defineConfig({
         : {
             target: 'https://emwmnghbxsoudfxxltna.supabase.co',
             changeOrigin: true,
-            rewrite: (p: string) => `/functions/v1${p}`,
+            rewrite: (p: string) =>
+              `/functions/v1${p}${p.includes('?') ? '&' : '?'}forceFunctionRegion=ap-southeast-1`,
           },
     },
   },

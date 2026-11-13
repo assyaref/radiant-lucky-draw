@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://emwmnghbxsoudfxxltna.supabase.co/functions/v1/api/$1"
+      "destination": "https://emwmnghbxsoudfxxltna.supabase.co/functions/v1/api/$1?forceFunctionRegion=ap-southeast-1"
     },
     {
       "source": "/((?!assets/).*)",

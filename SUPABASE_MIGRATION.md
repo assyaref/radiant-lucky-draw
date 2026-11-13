@@ -85,5 +85,7 @@ Akun admin awal dibuat otomatis: `admin@radiantgroup.com` / `Admin123!` — **se
   dari `draw_state.started_at`, dan Monitor tetap mem-polling-nya tiap 3 detik.
 - **Kunci undian** (`draw_state.locked_until`) kedaluwarsa sendiri setelah 19 detik,
   jadi booth tidak bisa macet terkunci.
+- **Region**: Vercel me-rewrite `/api/*` dengan `forceFunctionRegion=ap-southeast-1`,
+  jadi Edge Function selalu jalan di Singapore, dekat database.
 - **Rate limit** disimpan di memori per instance Edge Function (perkiraan, bukan global).
 - Ekstensi `pg_net` aktif dan dipakai untuk smoke test HTTP dari SQL.

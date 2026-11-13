@@ -14,3 +14,11 @@ export {
   spinSchema,
   updateClaimStatusSchema,
 } from './booth.validator';
+export {
+  listUsersSchema,
+  createUserSchema,
+  updateUserSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  userIdParamSchema,
+} from './user.validator';

@@ -5,7 +5,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useThemeContext } from '@contexts/ThemeContext';
-import { DevelopmentModeBanner, useAuth } from '@features/auth';
+import { DevelopmentModeBanner, useAuth, PERMISSIONS, type Permission } from '@features/auth';
+import { ChangePasswordModal } from '@features/auth/ChangePasswordModal';
 import { useDashboardStore } from '@store/operator/dashboardStore';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -28,6 +29,8 @@ import {
   HiOutlinePaintBrush,
   HiOutlineServer,
   HiOutlineBuildingStorefront,
+  HiOutlineUserGroup,
+  HiOutlineKey,
 } from 'react-icons/hi2';
 
 // ─── Navigation Items ────────────────────────────────────────────────
@@ -37,6 +40,8 @@ interface NavItem {
   path: string;
   icon: React.ReactNode;
   badge?: number;
+  /** Only shown when the logged-in user has this permission */
+  permission?: Permission;
 }
 
 const navItems: NavItem[] = [
@@ -75,6 +80,12 @@ const navItems: NavItem[] = [
     icon: <HiOutlineServer className="w-5 h-5" />,
   },
   {
+    label: 'Users',
+    path: '/operator/users',
+    icon: <HiOutlineUserGroup className="w-5 h-5" />,
+    permission: PERMISSIONS.USER_READ,
+  },
+  {
     label: 'Settings',
     path: '/dashboard/settings',
     icon: <HiOutlineCog6Tooth className="w-5 h-5" />,
@@ -84,6 +95,8 @@ const navItems: NavItem[] = [
 // ─── Sidebar ─────────────────────────────────────────────────────────
 
 function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  const { hasPermission } = useAuth();
+  const visibleItems = navItems.filter((item) => !item.permission || hasPermission(item.permission));
   return (
     <aside
       className={`
@@ -114,7 +127,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 
       {/* Navigation */}
       <nav className="p-2 space-y-1 overflow-y-auto max-h-[calc(100vh-4rem)]">
-        {navItems.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
@@ -310,6 +323,7 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const { stats, unreadCount } = useDashboardStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const navigate = useNavigate();
 
@@ -475,6 +489,16 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
                       </button>
                       <button
                         onClick={() => {
+                          setShowChangePassword(true);
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-dark-text-secondary hover:text-white hover:bg-dark-surface-tertiary transition-colors"
+                      >
+                        <HiOutlineKey className="w-4 h-4" />
+                        Ganti Password
+                      </button>
+                      <button
+                        onClick={() => {
                           void handleLogout();
                           setShowUserMenu(false);
                         }}
@@ -491,6 +515,18 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
           </div>
         </div>
       </header>
+
+      <AnimatePresence>
+        {showChangePassword && (
+          <ChangePasswordModal
+            onClose={() => setShowChangePassword(false)}
+            onChanged={() => {
+              setShowChangePassword(false);
+              void handleLogout();
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Command Palette Overlay */}
       <AnimatePresence>

@@ -14,7 +14,7 @@ import express from 'express';
 import { createApp } from './app';
 import { logger } from './utils';
 import { flushPendingBroadcasts } from './realtime';
-import { ensureAdminUser, ensureDefaultSettings, ensureDefaultPrizes } from './bootstrap';
+import { ensureAdminUser, ensureDefaultSettings } from './bootstrap';
 
 const { app } = createApp();
 
@@ -25,7 +25,6 @@ function ensureBootstrapped(): Promise<void> {
     bootstrap = (async () => {
       await ensureAdminUser();
       await ensureDefaultSettings();
-      await ensureDefaultPrizes();
     })().catch((error) => {
       logger.error('[Edge] Bootstrap failed', { error: String(error) });
       bootstrap = null; // retry on next request

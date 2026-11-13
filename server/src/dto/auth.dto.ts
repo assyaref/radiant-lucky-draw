@@ -2,7 +2,7 @@
  * Authentication DTOs
  */
 
-import type { Role } from '../auth';
+import type { Role, Permission } from '../auth';
 import type { PublicSession } from '../entities';
 
 export interface LoginRequest {
@@ -16,6 +16,7 @@ export interface AuthUser {
   username: string;
   email: string;
   role: Role;
+  permissions: Permission[];
 }
 
 export interface LoginResponse {

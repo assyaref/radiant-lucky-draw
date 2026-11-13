@@ -10,7 +10,7 @@ import 'dotenv/config';
 import { createApp } from './app';
 import { env } from './config';
 import { logger } from './utils';
-import { ensureAdminUser, ensureDefaultSettings, ensureDefaultPrizes } from './bootstrap';
+import { ensureAdminUser, ensureDefaultSettings } from './bootstrap';
 
 // ─── Uncaught Error Handlers ───────────────────────────────
 
@@ -38,7 +38,6 @@ async function main() {
   // Idempotent auto-seed: creates admin + settings + prizes only if missing.
   await ensureAdminUser();
   await ensureDefaultSettings();
-  await ensureDefaultPrizes();
 
   const server = app.listen(env.PORT, () => {
     logger.info(`Server started on port ${env.PORT}`, {

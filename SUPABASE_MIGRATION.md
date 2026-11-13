@@ -77,11 +77,17 @@ Akun admin awal dibuat otomatis: `admin@radiantgroup.com` / `Admin123!` — **se
   yang terhubung sebagai role `postgres`.
 - Anon key di frontend hanya dipakai untuk berlangganan broadcast Realtime.
 
-## Fitur Spin Nama
+## Fitur Spin Nama & mode Monitor
 
-`POST /api/name-spin` (login + `draw:execute`) menerima daftar nama, memilih pemenang
-dengan RNG kriptografis di server, lalu mem-broadcast `namespin:started` ke Monitor.
-Tidak ada yang ditulis ke database. Halaman: Dashboard → **Spin Nama**.
+- `POST /api/name-spin` (login + `draw:execute`) menerima daftar nama, memilih pemenang
+  dengan RNG kriptografis di server, lalu mem-broadcast `namespin:started`. Hasil spin
+  tidak ditulis ke database.
+- `GET /api/monitor/state` (publik) / `PUT /api/monitor/state` (login + `draw:execute`):
+  mode tampilan Monitor — `event` (layar undian booth) atau `namespin` (roda nama) — plus
+  data roda (sampel maks. 60 nama, judul, hadiah) di tabel `monitor_state`. Perubahan
+  di-broadcast sebagai `monitor:state`.
+- Dashboard → **Spin Nama**: pilih tampilan Monitor, tempel nama, SPIN. Roda berhenti
+  tepat di irisan pemenang yang dipilih server.
 
 ## Catatan teknis
 

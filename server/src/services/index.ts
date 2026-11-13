@@ -17,3 +17,4 @@ export { EventService } from './EventService';
 export { BoothMgmtService } from './BoothMgmtService';
 export { UserService } from './UserService';
 export { NameSpinService } from './NameSpinService';
+export { MonitorService } from './MonitorService';

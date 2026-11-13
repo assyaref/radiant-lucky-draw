@@ -4,7 +4,8 @@
  * Quick prize draw from a list of names typed/pasted by the operator
  * (independent from booth registration). The server picks the winner with a
  * cryptographically secure RNG — never in the browser — and broadcasts the
- * spin to every Monitor over Supabase Realtime (`namespin:started`).
+ * spin to every Monitor over Supabase Realtime (`namespin:started`), where it
+ * is shown on the name wheel.
  *
  * By design nothing is stored: no winner record, no stock change. A prize may
  * be referenced by id only to show its name/image (read-only).
@@ -14,6 +15,7 @@ import { randomInt, randomUUID } from 'crypto';
 import { PrizeRepository } from '../repositories';
 import { RealtimeService, NAME_SPIN_EVENTS } from '../realtime';
 import { ValidationError, NotFoundError } from '../utils';
+import { cleanNames, sampleForWheel } from '../utils/names';
 
 export interface NameSpinRequest {
   names: string[];
@@ -31,16 +33,18 @@ export interface NameSpinResult {
   prizeImageUrl: string | null;
   prizeTier: string | null;
   title: string | null;
-  /** Names shown on the reel, ending with the winner (subset when the list is long). */
-  reel: string[];
+  /**
+   * Wheel segments — the same sample the idle wheel shows (see MonitorService),
+   * guaranteed to contain the winner at `winnerSegment`.
+   */
+  segments: string[];
+  winnerSegment: number;
   durationMs: number;
   revealHoldMs: number;
   startedAt: string;
 }
 
-/** Reel length shown on screen; long lists are sampled. */
-const REEL_SIZE = 40;
-const SPIN_DURATION_MS = 7000;
+const SPIN_DURATION_MS = 9000;
 const REVEAL_HOLD_MS = 12000;
 
 export class NameSpinService {
@@ -50,7 +54,7 @@ export class NameSpinService {
   ) {}
 
   async spin(data: NameSpinRequest): Promise<NameSpinResult> {
-    const names = NameSpinService.cleanNames(data.names);
+    const names = cleanNames(data.names);
     if (names.length < 2) throw new ValidationError('Masukkan minimal 2 nama yang berbeda');
 
     let prizeName = data.prizeName?.trim() || null;
@@ -67,13 +71,13 @@ export class NameSpinService {
     const winnerIndex = randomInt(names.length);
     const winnerName = names[winnerIndex];
 
-    // Reel: shuffled sample of the other names, winner last.
-    const others = names.filter((_, i) => i !== winnerIndex);
-    for (let i = others.length - 1; i > 0; i--) {
-      const j = randomInt(i + 1);
-      [others[i], others[j]] = [others[j], others[i]];
+    // Wheel: same sample as the idle wheel; make sure the winner is on it.
+    const segments = sampleForWheel(names);
+    let winnerSegment = segments.indexOf(winnerName);
+    if (winnerSegment < 0) {
+      winnerSegment = randomInt(segments.length);
+      segments[winnerSegment] = winnerName;
     }
-    const reel = [...others.slice(0, REEL_SIZE - 1), winnerName];
 
     const result: NameSpinResult = {
       spinId: randomUUID(),
@@ -84,7 +88,8 @@ export class NameSpinService {
       prizeImageUrl,
       prizeTier,
       title: data.title?.trim() || null,
-      reel,
+      segments,
+      winnerSegment,
       durationMs: SPIN_DURATION_MS,
       revealHoldMs: REVEAL_HOLD_MS,
       startedAt: new Date().toISOString(),
@@ -94,18 +99,8 @@ export class NameSpinService {
     return result;
   }
 
-  /** Trim, collapse whitespace, drop empties and case-insensitive duplicates (first wins). */
+  /** @see cleanNames */
   static cleanNames(input: string[]): string[] {
-    const seen = new Set<string>();
-    const out: string[] = [];
-    for (const raw of input) {
-      const name = String(raw ?? '').replace(/\s+/g, ' ').trim();
-      if (!name) continue;
-      const key = name.toLocaleLowerCase('id-ID');
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(name);
-    }
-    return out;
+    return cleanNames(input);
   }
 }

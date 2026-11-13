@@ -22,7 +22,9 @@ export interface NameSpinResult {
   prizeImageUrl: string | null;
   prizeTier: string | null;
   title: string | null;
-  reel: string[];
+  /** Wheel segments (same sample as the idle wheel); winner at `winnerSegment`. */
+  segments: string[];
+  winnerSegment: number;
   durationMs: number;
   revealHoldMs: number;
   startedAt: string;

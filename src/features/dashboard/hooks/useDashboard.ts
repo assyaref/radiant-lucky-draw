@@ -16,6 +16,7 @@ import type {
   DashboardData,
   DashboardState,
   DashboardStatus,
+  DashboardWidgets,
   HealthMetric,
   RecentWinner,
   ServerStatusItem,
@@ -27,7 +28,15 @@ interface DashboardStats {
   estimatedWait: number;
   drawsToday: number;
   prizesAwarded: number;
+  breakdown?: DashboardWidgets;
 }
+
+const EMPTY_WIDGETS: DashboardWidgets = {
+  participants: { total: 0, registeredToday: 0, active: 0 },
+  prizes: { total: 0, available: 0, claimed: 0 },
+  queue: { waiting: 0, ready: 0, served: 0 },
+  winners: { today: 0, claimed: 0, pending: 0 },
+};
 
 interface DrawAnalytics {
   totalDraws: number;
@@ -115,6 +124,7 @@ const EMPTY: DashboardData = {
   serverStatus: [],
   health: [],
   quickActions: QUICK_ACTIONS,
+  widgets: EMPTY_WIDGETS,
 };
 
 function settled<T>(r: PromiseSettledResult<T>): T | null {
@@ -290,6 +300,7 @@ function build(
     serverStatus,
     health: healthMetrics,
     quickActions: QUICK_ACTIONS,
+    widgets: stats?.breakdown ?? EMPTY_WIDGETS,
   };
 }
 

@@ -76,6 +76,3 @@ export type { SocketContextValue, SocketProviderProps } from './context';
 export { useSocket, useSocketEvent, useSocketConnection, useSocketEmit } from './hooks';
 export type { UseSocketConnectionReturn, UseSocketEmitReturn } from './hooks';
 
-// Mock
-export { MockSocketServer, createMockSocketServer } from './mock';
-export type { MockSocketServerConfig } from './mock';

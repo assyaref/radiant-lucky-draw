@@ -8,6 +8,7 @@ import { useThemeContext } from '@contexts/ThemeContext';
 import { DevelopmentModeBanner, useAuth, PERMISSIONS, type Permission } from '@features/auth';
 import { ChangePasswordModal } from '@features/auth/ChangePasswordModal';
 import { useDashboardStore } from '@store/operator/dashboardStore';
+import { useSocket } from '@services/socket';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   HiOutlineChartBar,
@@ -327,7 +328,8 @@ function CommandPalette({ onClose }: { onClose: () => void }) {
 function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
   const { isDark, toggleTheme } = useThemeContext();
   const { logout, user } = useAuth();
-  const { stats, unreadCount } = useDashboardStore();
+  const { unreadCount } = useDashboardStore();
+  const { status: connectionStatus } = useSocket();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -373,31 +375,18 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-surface-tertiary/50">
               <span
                 className={`w-2 h-2 rounded-full ${
-                  stats.connectionStatus === 'connected'
+                  connectionStatus === 'connected'
                     ? 'bg-success-500 animate-pulse'
-                    : stats.connectionStatus === 'reconnecting'
+                    : connectionStatus === 'reconnecting' || connectionStatus === 'connecting'
                       ? 'bg-warning-500'
                       : 'bg-danger-500'
                 }`}
               />
               <span className="text-xs text-dark-text-secondary capitalize">
-                {stats.connectionStatus}
+                {connectionStatus}
               </span>
             </div>
 
-            {/* TV Status */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-surface-tertiary/50">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  stats.tvStatus === 'online'
-                    ? 'bg-success-500'
-                    : stats.tvStatus === 'standby'
-                      ? 'bg-warning-500'
-                      : 'bg-danger-500'
-                }`}
-              />
-              <span className="text-xs text-dark-text-secondary">TV: {stats.tvStatus}</span>
-            </div>
           </div>
 
           {/* Right */}

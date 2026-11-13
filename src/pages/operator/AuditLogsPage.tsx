@@ -1,57 +1,92 @@
 // ============================================================
-// Audit Logs Page
+// Audit Logs Page — live data from GET /api/audit-logs
 // ============================================================
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   HiOutlineMagnifyingGlass,
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
 } from 'react-icons/hi2';
+import api from '@api/client';
 
-const mockLogs = Array.from({ length: 20 }, (_, i) => ({
-  id: `LOG-${String(i + 1).padStart(4, '0')}`,
-  userName: ['Admin User', 'Operator One', 'Operator Two', 'System'][Math.floor(Math.random() * 4)],
-  action: ['login', 'logout', 'draw_start', 'draw_complete', 'update', 'create', 'delete'][
-    Math.floor(Math.random() * 7)
-  ],
-  entity: ['user', 'draw', 'prize', 'participant', 'settings'][Math.floor(Math.random() * 5)],
-  ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
-  createdAt: new Date(Date.now() - Math.random() * 86400000 * 3).toISOString(),
-}));
+interface AuditLogRow {
+  id: string;
+  action: string;
+  entity: string;
+  entityId: string | null;
+  ipAddress: string;
+  createdAt: string;
+  user: { id: string; username: string; email: string; role: string } | null;
+}
+
+interface Paginated<T> {
+  data: T[];
+  meta?: { page: number; limit: number; total: number; totalPages: number };
+}
+
+const PAGE_SIZE = 25;
 
 export default function AuditLogsPage() {
+  const [logs, setLogs] = useState<AuditLogRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const pageSize = 10;
 
-  const filtered = mockLogs.filter(
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    api
+      .get<Paginated<AuditLogRow>>(`/audit-logs?page=${page}&limit=${PAGE_SIZE}`)
+      .then((res) => {
+        if (!alive) return;
+        setLogs(res.data ?? []);
+        setTotal(res.meta?.total ?? res.data?.length ?? 0);
+        setError(null);
+      })
+      .catch((e) => {
+        if (alive) setError(e instanceof Error ? e.message : 'Gagal memuat audit log');
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [page]);
+
+  const term = search.toLowerCase();
+  const filtered = logs.filter(
     (l) =>
-      l.userName.toLowerCase().includes(search.toLowerCase()) ||
-      l.action.toLowerCase().includes(search.toLowerCase()) ||
-      l.entity.toLowerCase().includes(search.toLowerCase()),
+      (l.user?.username ?? 'system').toLowerCase().includes(term) ||
+      l.action.toLowerCase().includes(term) ||
+      l.entity.toLowerCase().includes(term),
   );
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Audit Logs</h1>
-        <p className="text-sm text-dark-text-tertiary mt-1">{filtered.length} log entries</p>
+        <p className="text-sm text-dark-text-tertiary mt-1">{total} catatan</p>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
+          {error}
+        </div>
+      )}
 
       <div className="relative max-w-md">
         <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-text-tertiary" />
         <input
           type="text"
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Search logs..."
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Cari di halaman ini (user, aksi, entitas)…"
           className="w-full pl-10 pr-4 py-2 rounded-lg bg-dark-surface-secondary border border-dark-border text-white placeholder-dark-text-tertiary outline-none focus:border-primary-500/50 transition-colors text-sm"
         />
       </div>
@@ -61,37 +96,38 @@ export default function AuditLogsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-dark-border">
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
-                  User
-                </th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
-                  Action
-                </th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
-                  Entity
-                </th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
-                  IP Address
-                </th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
-                  Timestamp
-                </th>
+                {['User', 'Aksi', 'Entitas', 'IP Address', 'Waktu'].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-border/50">
-              {paginated.map((log, i) => (
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-dark-text-tertiary">
+                    {loading ? 'Memuat audit log…' : 'Belum ada catatan.'}
+                  </td>
+                </tr>
+              )}
+              {filtered.map((log, i) => (
                 <motion.tr
                   key={log.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
+                  transition={{ delay: Math.min(i, 10) * 0.03 }}
                   className="hover:bg-dark-surface-tertiary/50 transition-colors"
                 >
-                  <td className="px-4 py-3 text-sm text-dark-text-secondary font-mono">{log.id}</td>
-                  <td className="px-4 py-3 text-sm text-white font-medium">{log.userName}</td>
+                  <td className="px-4 py-3 text-sm text-white font-medium">
+                    {log.user?.username ?? 'System'}
+                    {log.user?.role && (
+                      <span className="ml-2 text-xs text-dark-text-tertiary">{log.user.role}</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary-500/20 text-primary-400">
                       {log.action}
@@ -99,10 +135,10 @@ export default function AuditLogsPage() {
                   </td>
                   <td className="px-4 py-3 text-sm text-dark-text-secondary">{log.entity}</td>
                   <td className="px-4 py-3 text-sm text-dark-text-tertiary font-mono">
-                    {log.ipAddress}
+                    {log.ipAddress || '–'}
                   </td>
                   <td className="px-4 py-3 text-sm text-dark-text-tertiary">
-                    {new Date(log.createdAt).toLocaleString()}
+                    {new Date(log.createdAt).toLocaleString('id-ID')}
                   </td>
                 </motion.tr>
               ))}
@@ -112,28 +148,19 @@ export default function AuditLogsPage() {
 
         <div className="flex items-center justify-between px-4 py-3 border-t border-dark-border">
           <p className="text-sm text-dark-text-tertiary">
-            Page {page} of {totalPages}
+            Halaman {page} dari {totalPages}
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
+              disabled={page === 1 || loading}
               className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <HiOutlineChevronLeft className="w-4 h-4" />
             </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-8 h-8 rounded-lg text-sm transition-colors ${p === page ? 'bg-primary-500/20 text-primary-400' : 'text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary'}`}
-              >
-                {p}
-              </button>
-            ))}
             <button
               onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
+              disabled={page >= totalPages || loading}
               className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <HiOutlineChevronRight className="w-4 h-4" />

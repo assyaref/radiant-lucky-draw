@@ -15,7 +15,7 @@
  */
 
 import { memo } from 'react';
-import { AnimatedBackground } from '@components/layout';
+import { AnimatedBackground } from '@components/layout/AnimatedBackground';
 import { colors, radius, shadows } from '@design-system/index';
 import { DevelopmentModeBanner } from '@features/auth';
 import { useDashboard } from './hooks/useDashboard';
@@ -180,10 +180,10 @@ export const DashboardPage = memo(function DashboardPage() {
 
                 {/* Widgets */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <ParticipantsWidget total={1284} registeredToday={342} active={96} delay={0} />
-                  <PrizeWidget available={96} claimed={42} total={138} delay={0.08} />
-                  <QueueWidget waiting={57} ready={18} served={284} delay={0.16} />
-                  <WinnerWidget today={42} claimed={31} pending={11} delay={0.24} />
+                  <ParticipantsWidget {...data.widgets.participants} delay={0} />
+                  <PrizeWidget {...data.widgets.prizes} delay={0.08} />
+                  <QueueWidget {...data.widgets.queue} delay={0.16} />
+                  <WinnerWidget {...data.widgets.winners} delay={0.24} />
                 </div>
 
                 {/* Middle */}

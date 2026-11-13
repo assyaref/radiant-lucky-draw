@@ -73,4 +73,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # If migrations fail (drift, DB not ready), the container exits and
 # Railway retries automatically (ON_FAILURE, max 10 retries).
 # This guarantees the schema matches before any request is served.
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# DIRECT_URL falls back to DATABASE_URL so non-Supabase deployments keep working.
+CMD ["sh", "-c", "export DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" && npx prisma migrate deploy && npm start"]

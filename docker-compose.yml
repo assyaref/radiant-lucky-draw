@@ -5,7 +5,8 @@
 version: "3.9"
 
 services:
-  # ─── PostgreSQL Database ──────────────────────────────────
+  # ─── PostgreSQL Database (local dev only) ─────────────────
+  # Production uses Supabase — see SUPABASE_MIGRATION.md
   postgres:
     image: postgres:16-alpine
     container_name: radiant-postgres
@@ -40,6 +41,7 @@ services:
       NODE_ENV: production
       PORT: 3001
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-radiant_lucky_draw}?schema=public
+      DIRECT_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-radiant_lucky_draw}?schema=public
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
@@ -70,6 +72,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-radiant_lucky_draw}?schema=public
+      DIRECT_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-radiant_lucky_draw}?schema=public
     command: >
       sh -c "npx prisma migrate deploy && npx prisma db seed"
     profiles:

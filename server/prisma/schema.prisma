@@ -1,15 +1,20 @@
 // ============================================================
 // RADIANT LUCKY DRAW - Prisma Schema
-// Database: PostgreSQL
+// Database: PostgreSQL (hosted on Supabase)
 // ============================================================
 
 generator client {
   provider = "prisma-client-js"
 }
 
+// Supabase:
+//   DATABASE_URL → Supavisor transaction pooler (port 6543, ?pgbouncer=true) — runtime queries
+//   DIRECT_URL   → session pooler / direct connection (port 5432) — prisma migrate
+// Local Postgres / docker-compose: set DIRECT_URL to the same value as DATABASE_URL.
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================================

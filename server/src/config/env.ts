@@ -20,6 +20,7 @@ interface EnvValidation {
 
 const validations: EnvValidation[] = [
   { key: 'DATABASE_URL', required: true, production: true },
+  { key: 'DIRECT_URL', required: false, production: true },
   { key: 'JWT_SECRET', required: true, production: true },
   { key: 'JWT_REFRESH_SECRET', required: true, production: true },
   { key: 'PORT', required: false, production: false },
@@ -57,6 +58,8 @@ export const env = {
 
   // Database
   DATABASE_URL: process.env.DATABASE_URL || '',
+  // Used by `prisma migrate` only (Supabase session pooler / direct connection)
+  DIRECT_URL: process.env.DIRECT_URL || process.env.DATABASE_URL || '',
 
   // JWT (secrets are REQUIRED - no fallbacks allowed)
   JWT_SECRET: process.env.JWT_SECRET || '',

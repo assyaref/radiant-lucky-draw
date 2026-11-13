@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, Outlet, type RouteObject } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, type RouteObject } from 'react-router-dom';
 import { ProtectedRoute } from '@features/auth';
 
 function LazyPage({ Component }: { Component: React.LazyExoticComponent<React.ComponentType> }) {
@@ -10,7 +10,6 @@ function LazyPage({ Component }: { Component: React.LazyExoticComponent<React.Co
   );
 }
 
-const Home = lazy(() => import('@pages/Home'));
 const Login = lazy(() => import('@pages/Login'));
 const Register = lazy(() => import('@pages/Register'));
 const Draws = lazy(() => import('@pages/Draws'));
@@ -121,8 +120,10 @@ const routes: RouteObject[] = [
   },
   // ─── Public Routes ────────────────────────────────────────────────
   {
+    // The former landing page (mock data) was removed; '/' opens the dashboard
+    // (ProtectedRoute sends visitors who are not logged in to /login).
     path: '/',
-    element: <LazyPage Component={Home} />,
+    element: <Navigate to="/dashboard" replace />,
   },
   {
     path: '/login',

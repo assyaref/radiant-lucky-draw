@@ -403,7 +403,7 @@ function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
           {/* Right */}
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/booth')}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary transition-colors border border-dark-border"
               title="Open lucky draw booth"
             >

@@ -41,6 +41,7 @@ const OperatorAnnouncements = lazy(() => import('@pages/operator/AnnouncementsPa
 const OperatorReports = lazy(() => import('@pages/operator/ReportsPage'));
 const OperatorSettings = lazy(() => import('@pages/operator/SettingsPage'));
 const OperatorUsers = lazy(() => import('@pages/operator/UsersPage'));
+const NameSpinPage = lazy(() => import('@pages/operator/NameSpinPage'));
 const OperatorAuditLogs = lazy(() => import('@pages/operator/AuditLogsPage'));
 
 // ─── Booth Enterprise Pages ───────────────────────────────────────────
@@ -109,6 +110,7 @@ const routes: RouteObject[] = [
       { path: 'reports', element: <LazyPage Component={OperatorReports} /> },
       { path: 'settings', element: <LazyPage Component={OperatorSettings} /> },
       { path: 'users', element: <LazyPage Component={OperatorUsers} /> },
+      { path: 'name-spin', element: <LazyPage Component={NameSpinPage} /> },
       { path: 'audit-logs', element: <LazyPage Component={OperatorAuditLogs} /> },
       { path: 'event-config', element: <LazyPage Component={EventConfigPage} /> },
       { path: 'branding', element: <LazyPage Component={BrandingSettingsPage} /> },

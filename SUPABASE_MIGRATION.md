@@ -77,6 +77,12 @@ Akun admin awal dibuat otomatis: `admin@radiantgroup.com` / `Admin123!` — **se
   yang terhubung sebagai role `postgres`.
 - Anon key di frontend hanya dipakai untuk berlangganan broadcast Realtime.
 
+## Fitur Spin Nama
+
+`POST /api/name-spin` (login + `draw:execute`) menerima daftar nama, memilih pemenang
+dengan RNG kriptografis di server, lalu mem-broadcast `namespin:started` ke Monitor.
+Tidak ada yang ditulis ke database. Halaman: Dashboard → **Spin Nama**.
+
 ## Catatan teknis
 
 - **Timeline undian booth**: server hanya mem-broadcast `draw:started` (berisi

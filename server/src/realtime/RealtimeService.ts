@@ -48,6 +48,12 @@ export const DRAW_EVENTS = {
 
 export type DrawEventName = (typeof DRAW_EVENTS)[keyof typeof DRAW_EVENTS];
 
+// ─── Name Spin (quick draw from a typed list of names) ──────────────────
+
+export const NAME_SPIN_EVENTS = {
+  STARTED: 'namespin:started',
+} as const;
+
 // ─── Payload Types ──────────────────────────────────────────────────────
 
 export interface QueueEntryPayload {
@@ -253,6 +259,11 @@ export class RealtimeService {
         timestamp: new Date().toISOString(),
       }),
     );
+  }
+
+  /** Broadcast a name-spin event and wait until Realtime accepted it. */
+  async broadcastNow(event: string, payload: Record<string, unknown>): Promise<void> {
+    await this.send(event, { type: event, ...payload });
   }
 
   /** Broadcast a draw lifecycle event */

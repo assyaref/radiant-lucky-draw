@@ -14,6 +14,8 @@ import { normalizeImageUrl } from '@/utils';
 import { boothApi, type Winner } from '@/api/booth';
 import luckyDrawLogo from '@assets/images/lucky-draw-logo.png';
 import { MonitorImage } from './MonitorImage';
+import { NameSpinReel } from '@components/namespin/NameSpinReel';
+import type { NameSpinResult } from '@api/nameSpin';
 
 type DrawState = 'IDLE' | 'COUNTDOWN' | 'SPINNING' | 'REVEALED' | 'COMPLETED';
 interface DrawData {
@@ -1417,6 +1419,23 @@ export default function MonitorPage() {
     ),
   );
 
+  // ─── Name spin overlay (quick draw from a typed list of names) ──────
+  const [nameSpin, setNameSpin] = useState<NameSpinResult | null>(null);
+  useSocketEvent(
+    SOCKET_EVENTS.NAMESPIN_STARTED as SocketEventName,
+    useCallback((p: any) => {
+      if (!p?.spinId || !Array.isArray(p.reel)) return;
+      setNameSpin(p as NameSpinResult);
+    }, []),
+  );
+  useEffect(() => {
+    if (!nameSpin) return;
+    const shownFor = Date.now() - Date.parse(nameSpin.startedAt);
+    const total = (nameSpin.durationMs ?? 7000) + (nameSpin.revealHoldMs ?? 12000);
+    const t = setTimeout(() => setNameSpin(null), Math.max(1000, total - Math.max(0, shownFor)));
+    return () => clearTimeout(t);
+  }, [nameSpin]);
+
   // ─── Reconnection sync ──────────────────────────────────────────────
   useEffect(() => {
     if (isConnected) emit?.('draw:get-state' as any, {});
@@ -1485,6 +1504,33 @@ export default function MonitorPage() {
     <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#020617] select-none font-sans">
       <div className="absolute inset-0 bg-gradient-to-b from-[#070b1a] via-[#020617] to-[#060a18]" />
       <ParticleField />
+
+      {/* Name spin overlay */}
+      <AnimatePresence>
+        {nameSpin && (
+          <motion.div
+            key={nameSpin.spinId}
+            className="fixed inset-0 z-40 flex items-center justify-center bg-[#020617]/95 px-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <NameSpinReel
+              spinId={nameSpin.spinId}
+              reel={nameSpin.reel}
+              winnerName={nameSpin.winnerName}
+              durationMs={nameSpin.durationMs}
+              startedAt={nameSpin.startedAt}
+              prizeName={nameSpin.prizeName}
+              prizeImageUrl={nameSpin.prizeImageUrl}
+              title={nameSpin.title}
+              totalNames={nameSpin.totalNames}
+              size="lg"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-6 md:px-10 py-3 border-b border-white/[0.04] bg-gradient-to-b from-[#020617cc] to-transparent">
         <div className="flex items-center gap-3">

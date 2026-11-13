@@ -31,6 +31,7 @@ import {
   HiOutlineBuildingStorefront,
   HiOutlineUserGroup,
   HiOutlineKey,
+  HiOutlineSparkles,
 } from 'react-icons/hi2';
 
 // ─── Navigation Items ────────────────────────────────────────────────
@@ -78,6 +79,12 @@ const navItems: NavItem[] = [
     label: 'Monitoring',
     path: '/operator/monitoring',
     icon: <HiOutlineServer className="w-5 h-5" />,
+  },
+  {
+    label: 'Spin Nama',
+    path: '/operator/name-spin',
+    icon: <HiOutlineSparkles className="w-5 h-5" />,
+    permission: PERMISSIONS.DRAW_EXECUTE,
   },
   {
     label: 'Users',

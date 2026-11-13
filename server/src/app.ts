@@ -29,6 +29,7 @@ import {
   createEventRoutes,
   createBoothMgmtRoutes,
   createUserRoutes,
+  createNameSpinRoutes,
 } from './routes';
 import {
   AuthController,
@@ -43,6 +44,7 @@ import {
   EventController,
   BoothMgmtController,
   UserController,
+  NameSpinController,
 } from './controllers';
 import {
   AuthService,
@@ -59,6 +61,7 @@ import {
   EventService,
   BoothMgmtService,
   UserService,
+  NameSpinService,
 } from './services';
 import {
   UserRepository,
@@ -156,6 +159,9 @@ export function createApp(): AppInstance {
   const boothMgmtController = new BoothMgmtController(boothMgmtService);
   const userService = new UserService(userRepository, sessionService, auditService);
   const userController = new UserController(userService);
+  const nameSpinController = new NameSpinController(
+    new NameSpinService(prizeRepository, realtimeService),
+  );
 
   // =========================================================
   // Global Middleware
@@ -230,6 +236,7 @@ export function createApp(): AppInstance {
   app.use('/api/events', createEventRoutes(eventController, tokenService));
   app.use('/api/booths', createBoothMgmtRoutes(boothMgmtController, tokenService));
   app.use('/api/users', createUserRoutes(userController, tokenService));
+  app.use('/api/name-spin', createNameSpinRoutes(nameSpinController, tokenService));
 
   // =========================================================
   // Root Route

@@ -6,6 +6,7 @@ export {
   RealtimeService,
   QUEUE_EVENTS,
   DRAW_EVENTS,
+  NAME_SPIN_EVENTS,
   REALTIME_CHANNEL,
   flushPendingBroadcasts,
 } from './RealtimeService';

@@ -22,3 +22,4 @@ export {
   changePasswordSchema,
   userIdParamSchema,
 } from './user.validator';
+export { nameSpinSchema } from './nameSpin.validator';

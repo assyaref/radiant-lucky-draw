@@ -23,4 +23,4 @@ export {
   userIdParamSchema,
 } from './user.validator';
 export { nameSpinSchema } from './nameSpin.validator';
-export { updateMonitorStateSchema } from './monitor.validator';
+export { updateMonitorStateSchema, uploadMonitorAssetSchema } from './monitor.validator';

@@ -17,7 +17,14 @@ import { nameSpinApi, cleanNames, type NameSpinResult } from '@api/nameSpin';
 import { prizeApi, type Prize } from '@api/prize';
 import { ApiClientError } from '@api/client';
 import { NameSpinStage } from '@components/namespin/NameSpinStage';
-import { monitorApi, sampleForWheel, type MonitorMode } from '@api/monitor';
+import {
+  monitorApi,
+  sampleForWheel,
+  DEFAULT_THEME,
+  type MonitorMode,
+  type MonitorTheme,
+} from '@api/monitor';
+import { ThemeSettings } from '@components/namespin/ThemeSettings';
 
 const STORAGE_KEY = 'radiant:namespin:v1';
 
@@ -34,16 +41,27 @@ interface Saved {
   removeWinner: boolean;
   title: string;
   history: HistoryItem[];
+  /** Play sounds in the preview on this device too. */
+  localSound: boolean;
 }
 
 function load(): Saved {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return { text: '', removeWinner: true, title: '', history: [], ...JSON.parse(raw) };
+    if (raw) {
+      return {
+        text: '',
+        removeWinner: true,
+        title: '',
+        history: [],
+        localSound: false,
+        ...JSON.parse(raw),
+      };
+    }
   } catch {
     /* storage unavailable */
   }
-  return { text: '', removeWinner: true, title: '', history: [] };
+  return { text: '', removeWinner: true, title: '', history: [], localSound: false };
 }
 
 function save(v: Saved): void {
@@ -63,6 +81,8 @@ export default function NameSpinPage() {
   const [removeWinner, setRemoveWinner] = useState(initial.removeWinner);
   const [title, setTitle] = useState(initial.title);
   const [history, setHistory] = useState<HistoryItem[]>(initial.history);
+  const [localSound, setLocalSound] = useState(initial.localSound);
+  const [theme, setTheme] = useState<MonitorTheme>(DEFAULT_THEME);
 
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [prizeChoice, setPrizeChoice] = useState<string>(''); // '' none | 'custom' | prize id
@@ -81,14 +101,17 @@ export default function NameSpinPage() {
   const idleSegments = useMemo(() => sampleForWheel(names), [names]);
 
   useEffect(() => {
-    save({ text, removeWinner, title, history });
-  }, [text, removeWinner, title, history]);
+    save({ text, removeWinner, title, history, localSound });
+  }, [text, removeWinner, title, history, localSound]);
 
   // Current Monitor mode
   useEffect(() => {
     monitorApi
       .get()
-      .then((r) => setMonitorMode(r.data.mode))
+      .then((r) => {
+        setMonitorMode(r.data.mode);
+        setTheme({ ...DEFAULT_THEME, ...(r.data.theme ?? {}) });
+      })
       .catch(() => setMonitorMode(null));
   }, []);
 
@@ -144,6 +167,7 @@ export default function NameSpinPage() {
   }, []);
 
   const doSpin = async () => {
+    if (spinning) return;
     setError(null);
     if (names.length < 2) return setError('Masukkan minimal 2 nama yang berbeda');
     setSpinning(true);
@@ -240,8 +264,9 @@ export default function NameSpinPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-        {/* ── Input ── */}
-        <div className="space-y-4 rounded-xl border border-dark-border bg-dark-surface-secondary p-5">
+        {/* ── Input + look & sound ── */}
+        <div className="space-y-6">
+          <div className="space-y-4 rounded-xl border border-dark-border bg-dark-surface-secondary p-5">
           <label className="block space-y-1">
             <span className="flex justify-between text-xs text-dark-text-tertiary">
               <span>Daftar nama (satu per baris)</span>
@@ -326,25 +351,46 @@ export default function NameSpinPage() {
             <HiOutlineSparkles className="w-5 h-5" />
             {spinning ? 'Mengundi…' : 'SPIN'}
           </button>
+          </div>
+
+          <ThemeSettings theme={theme} onChange={setTheme} />
         </div>
 
         {/* ── Stage + history ── */}
         <div className="space-y-6">
-          <div className="rounded-xl border border-dark-border bg-[#020617] p-6 min-h-[420px] flex items-center justify-center">
-            <NameSpinStage
-              segments={idleSegments}
-              totalNames={names.length}
-              title={title.trim() || null}
-              prizeName={
-                prizeChoice === 'custom'
-                  ? customPrize.trim() || null
-                  : (prizes.find((p) => p.id === prizeChoice)?.name ?? null)
-              }
-              prizeImageUrl={prizes.find((p) => p.id === prizeChoice)?.imageUrl ?? null}
-              spin={spin}
-              size="md"
-              onRevealed={onRevealed}
-            />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-dark-text-tertiary">Pratinjau — sama dengan layar Monitor</span>
+              <label className="flex items-center gap-2 text-xs text-dark-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={localSound}
+                  onChange={(e) => setLocalSound(e.target.checked)}
+                  className="accent-primary-500"
+                />
+                Suara di perangkat ini
+              </label>
+            </div>
+            <div className="rounded-2xl border border-dark-border overflow-hidden">
+              <NameSpinStage
+                segments={idleSegments}
+                totalNames={names.length}
+                title={title.trim() || null}
+                prizeName={
+                  prizeChoice === 'custom'
+                    ? customPrize.trim() || null
+                    : (prizes.find((p) => p.id === prizeChoice)?.name ?? null)
+                }
+                prizeImageUrl={prizes.find((p) => p.id === prizeChoice)?.imageUrl ?? null}
+                spin={spin}
+                theme={theme}
+                sound={localSound}
+                variant="embed"
+                onSpinAgain={() => void doSpin()}
+                spinDisabled={spinning || names.length < 2}
+                onRevealed={onRevealed}
+              />
+            </div>
           </div>
 
           <div className="rounded-xl border border-dark-border bg-dark-surface-secondary">

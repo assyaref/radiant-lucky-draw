@@ -14,8 +14,9 @@ import { normalizeImageUrl } from '@/utils';
 import { boothApi, type Winner } from '@/api/booth';
 import luckyDrawLogo from '@assets/images/lucky-draw-logo.png';
 import { MonitorImage } from './MonitorImage';
-import { NameSpinReel } from '@components/namespin/NameSpinReel';
+import { NameSpinStage } from '@components/namespin/NameSpinStage';
 import type { NameSpinResult } from '@api/nameSpin';
+import { monitorApi, type MonitorState } from '@api/monitor';
 
 type DrawState = 'IDLE' | 'COUNTDOWN' | 'SPINNING' | 'REVEALED' | 'COMPLETED';
 interface DrawData {
@@ -1419,22 +1420,47 @@ export default function MonitorPage() {
     ),
   );
 
-  // ─── Name spin overlay (quick draw from a typed list of names) ──────
+  // ─── Monitor mode (event | namespin) + Spin Nama ─────────────────────
+  const [monitorState, setMonitorState] = useState<MonitorState | null>(null);
+  const applyMonitorState = useCallback((st: MonitorState | null | undefined) => {
+    if (!st?.mode) return;
+    setMonitorState((prev) =>
+      prev && Date.parse(prev.updatedAt) > Date.parse(st.updatedAt) ? prev : st,
+    );
+  }, []);
+  useEffect(() => {
+    const load = () =>
+      monitorApi
+        .get()
+        .then((r) => applyMonitorState(r.data))
+        .catch(() => undefined);
+    void load();
+    // Fallback in case a realtime event is missed.
+    const t = setInterval(load, 15000);
+    return () => clearInterval(t);
+  }, [applyMonitorState]);
+  useSocketEvent(
+    SOCKET_EVENTS.MONITOR_STATE as SocketEventName,
+    useCallback((p: any) => applyMonitorState(p as MonitorState), [applyMonitorState]),
+  );
+
   const [nameSpin, setNameSpin] = useState<NameSpinResult | null>(null);
   useSocketEvent(
     SOCKET_EVENTS.NAMESPIN_STARTED as SocketEventName,
     useCallback((p: any) => {
-      if (!p?.spinId || !Array.isArray(p.reel)) return;
+      if (!p?.spinId || !Array.isArray(p.segments)) return;
       setNameSpin(p as NameSpinResult);
     }, []),
   );
+  // Keep the spin (and its winner) on screen for duration + hold, then go idle.
   useEffect(() => {
     if (!nameSpin) return;
     const shownFor = Date.now() - Date.parse(nameSpin.startedAt);
-    const total = (nameSpin.durationMs ?? 7000) + (nameSpin.revealHoldMs ?? 12000);
+    const total = (nameSpin.durationMs ?? 9000) + (nameSpin.revealHoldMs ?? 12000);
     const t = setTimeout(() => setNameSpin(null), Math.max(1000, total - Math.max(0, shownFor)));
     return () => clearTimeout(t);
   }, [nameSpin]);
+  const nameSpinMode = monitorState?.mode === 'namespin';
 
   // ─── Reconnection sync ──────────────────────────────────────────────
   useEffect(() => {
@@ -1505,27 +1531,26 @@ export default function MonitorPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#070b1a] via-[#020617] to-[#060a18]" />
       <ParticleField />
 
-      {/* Name spin overlay */}
+      {/* Spin Nama: full-screen wheel in 'namespin' mode, overlay on spin in 'event' mode */}
       <AnimatePresence>
-        {nameSpin && (
+        {(nameSpinMode || nameSpin) && (
           <motion.div
-            key={nameSpin.spinId}
-            className="fixed inset-0 z-40 flex items-center justify-center bg-[#020617]/95 px-6"
+            key={nameSpinMode ? 'namespin-mode' : `namespin-${nameSpin?.spinId}`}
+            className={`fixed inset-0 flex items-center justify-center px-6 pt-16 pb-6 ${
+              nameSpinMode ? 'z-20 bg-[#020617]' : 'z-40 bg-[#020617]/95'
+            }`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <NameSpinReel
-              spinId={nameSpin.spinId}
-              reel={nameSpin.reel}
-              winnerName={nameSpin.winnerName}
-              durationMs={nameSpin.durationMs}
-              startedAt={nameSpin.startedAt}
-              prizeName={nameSpin.prizeName}
-              prizeImageUrl={nameSpin.prizeImageUrl}
-              title={nameSpin.title}
-              totalNames={nameSpin.totalNames}
+            <NameSpinStage
+              segments={monitorState?.wheel.names ?? []}
+              totalNames={monitorState?.wheel.totalNames ?? 0}
+              title={monitorState?.wheel.title}
+              prizeName={monitorState?.wheel.prizeName}
+              prizeImageUrl={monitorState?.wheel.prizeImageUrl}
+              spin={nameSpin}
               size="lg"
             />
           </motion.div>

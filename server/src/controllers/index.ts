@@ -15,3 +15,4 @@ export { EventController } from './EventController';
 export { BoothMgmtController } from './BoothMgmtController';
 export { UserController } from './UserController';
 export { NameSpinController } from './NameSpinController';
+export { MonitorController } from './MonitorController';

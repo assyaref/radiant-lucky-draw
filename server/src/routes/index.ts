@@ -15,3 +15,4 @@ export { createEventRoutes } from './event.routes';
 export { createBoothMgmtRoutes } from './booth-mgmt.routes';
 export { createUserRoutes } from './user.routes';
 export { createNameSpinRoutes } from './nameSpin.routes';
+export { createMonitorRoutes } from './monitor.routes';

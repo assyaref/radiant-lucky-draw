@@ -1,16 +1,23 @@
 // ============================================================
 // Spin Nama — undian cepat dari daftar nama yang diinput operator.
-// Pemenang dipilih server lalu ditayangkan juga di layar Monitor.
+// Pemenang dipilih server lalu ditayangkan juga di layar Monitor (roda putar).
+// Dari sini operator juga memilih tampilan Monitor: Event atau Spin Nama.
 // Hasil TIDAK disimpan ke database (tanpa catatan pemenang / stok).
 // ============================================================
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { HiOutlineSparkles, HiOutlineTrash, HiOutlineClipboard } from 'react-icons/hi2';
+import {
+  HiOutlineSparkles,
+  HiOutlineTrash,
+  HiOutlineClipboard,
+  HiOutlineTv,
+} from 'react-icons/hi2';
 
 import { nameSpinApi, cleanNames, type NameSpinResult } from '@api/nameSpin';
 import { prizeApi, type Prize } from '@api/prize';
 import { ApiClientError } from '@api/client';
-import { NameSpinReel } from '@components/namespin/NameSpinReel';
+import { NameSpinStage } from '@components/namespin/NameSpinStage';
+import { monitorApi, sampleForWheel, type MonitorMode } from '@api/monitor';
 
 const STORAGE_KEY = 'radiant:namespin:v1';
 
@@ -62,15 +69,72 @@ export default function NameSpinPage() {
   const [customPrize, setCustomPrize] = useState('');
 
   const [spin, setSpin] = useState<NameSpinResult | null>(null);
+  const [monitorMode, setMonitorMode] = useState<MonitorMode | null>(null);
+  const [modeBusy, setModeBusy] = useState(false);
+  const [syncNote, setSyncNote] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const names = useMemo(() => cleanNames(text), [text]);
   const rawCount = useMemo(() => text.split(/\r?\n|;|\t/).filter((l) => l.trim()).length, [text]);
 
+  const idleSegments = useMemo(() => sampleForWheel(names), [names]);
+
   useEffect(() => {
     save({ text, removeWinner, title, history });
   }, [text, removeWinner, title, history]);
+
+  // Current Monitor mode
+  useEffect(() => {
+    monitorApi
+      .get()
+      .then((r) => setMonitorMode(r.data.mode))
+      .catch(() => setMonitorMode(null));
+  }, []);
+
+  const wheelPayload = useCallback(
+    () => ({
+      names,
+      title: title.trim() || null,
+      prizeId: prizeChoice && prizeChoice !== 'custom' ? prizeChoice : null,
+      prizeName: prizeChoice === 'custom' ? customPrize.trim() || null : null,
+    }),
+    [names, title, prizeChoice, customPrize],
+  );
+
+  // While the Monitor shows the wheel, keep it in sync with this list (debounced).
+  useEffect(() => {
+    if (monitorMode !== 'namespin' || spinning) return;
+    const t = setTimeout(() => {
+      monitorApi
+        .update({ wheel: wheelPayload() })
+        .then(() => setSyncNote(`Monitor diperbarui ${new Date().toLocaleTimeString('id-ID')}`))
+        .catch(() => setSyncNote('Gagal memperbarui Monitor'));
+    }, 800);
+    return () => clearTimeout(t);
+  }, [monitorMode, spinning, wheelPayload]);
+
+  const switchMonitor = async (mode: MonitorMode) => {
+    setModeBusy(true);
+    setError(null);
+    try {
+      const r = await monitorApi.update(
+        mode === 'namespin' ? { mode, wheel: wheelPayload() } : { mode },
+      );
+      setMonitorMode(r.data.mode);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal mengganti tampilan Monitor');
+    } finally {
+      setModeBusy(false);
+    }
+  };
+
+  // Show the spin + winner for duration + hold, then back to the idle wheel.
+  useEffect(() => {
+    if (!spin) return;
+    const t = setTimeout(() => setSpin(null), spin.durationMs + spin.revealHoldMs);
+    return () => clearTimeout(t);
+  }, [spin]);
 
   useEffect(() => {
     prizeApi
@@ -139,9 +203,40 @@ export default function NameSpinPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Spin Nama</h1>
         <p className="text-sm text-dark-text-tertiary mt-1">
-          Undian cepat dari daftar nama. Animasi tampil juga di layar Monitor. Hasil tidak disimpan
-          sebagai pemenang dan tidak mengurangi stok hadiah.
+          Undian cepat dari daftar nama dengan roda putar, tampil juga di layar Monitor. Hasil
+          tidak disimpan sebagai pemenang dan tidak mengurangi stok hadiah.
         </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dark-border bg-dark-surface-secondary px-4 py-3">
+        <HiOutlineTv className="w-5 h-5 text-dark-text-tertiary" />
+        <span className="text-sm text-dark-text-secondary">Tampilan Monitor:</span>
+        <div className="inline-flex rounded-lg border border-dark-border p-0.5">
+          {(
+            [
+              ['event', 'Event (Lucky Draw Booth)'],
+              ['namespin', 'Spin Nama (Roda)'],
+            ] as const
+          ).map(([mode, label]) => (
+            <button
+              key={mode}
+              onClick={() => void switchMonitor(mode)}
+              disabled={modeBusy || monitorMode === mode}
+              className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                monitorMode === mode
+                  ? 'bg-primary-500/20 text-primary-300'
+                  : 'text-dark-text-tertiary hover:text-white'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-dark-text-tertiary">
+          {monitorMode === 'namespin'
+            ? (syncNote ?? 'Daftar nama di bawah tampil sebagai roda di Monitor.')
+            : 'Saat SPIN ditekan, roda tetap muncul sebagai layar penuh di Monitor.'}
+        </span>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
@@ -236,27 +331,20 @@ export default function NameSpinPage() {
         {/* ── Stage + history ── */}
         <div className="space-y-6">
           <div className="rounded-xl border border-dark-border bg-[#020617] p-6 min-h-[420px] flex items-center justify-center">
-            {spin ? (
-              <NameSpinReel
-                key={spin.spinId}
-                spinId={spin.spinId}
-                reel={spin.reel}
-                winnerName={spin.winnerName}
-                durationMs={spin.durationMs}
-                prizeName={spin.prizeName}
-                prizeImageUrl={spin.prizeImageUrl}
-                title={spin.title}
-                totalNames={spin.totalNames}
-                size="md"
-                onRevealed={onRevealed}
-              />
-            ) : (
-              <p className="text-dark-text-tertiary text-sm text-center">
-                Masukkan nama-nama lalu tekan <b>SPIN</b>.
-                <br />
-                Buka <span className="font-mono">/monitor</span> di layar TV untuk menayangkannya.
-              </p>
-            )}
+            <NameSpinStage
+              segments={idleSegments}
+              totalNames={names.length}
+              title={title.trim() || null}
+              prizeName={
+                prizeChoice === 'custom'
+                  ? customPrize.trim() || null
+                  : (prizes.find((p) => p.id === prizeChoice)?.name ?? null)
+              }
+              prizeImageUrl={prizes.find((p) => p.id === prizeChoice)?.imageUrl ?? null}
+              spin={spin}
+              size="md"
+              onRevealed={onRevealed}
+            />
           </div>
 
           <div className="rounded-xl border border-dark-border bg-dark-surface-secondary">

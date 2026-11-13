@@ -30,6 +30,7 @@ import {
   createBoothMgmtRoutes,
   createUserRoutes,
   createNameSpinRoutes,
+  createMonitorRoutes,
 } from './routes';
 import {
   AuthController,
@@ -45,6 +46,7 @@ import {
   BoothMgmtController,
   UserController,
   NameSpinController,
+  MonitorController,
 } from './controllers';
 import {
   AuthService,
@@ -62,6 +64,7 @@ import {
   BoothMgmtService,
   UserService,
   NameSpinService,
+  MonitorService,
 } from './services';
 import {
   UserRepository,
@@ -162,6 +165,9 @@ export function createApp(): AppInstance {
   const nameSpinController = new NameSpinController(
     new NameSpinService(prizeRepository, realtimeService),
   );
+  const monitorController = new MonitorController(
+    new MonitorService(prizeRepository, realtimeService),
+  );
 
   // =========================================================
   // Global Middleware
@@ -195,7 +201,7 @@ export function createApp(): AppInstance {
     legacyHeaders: false,
     validate: false,
     // Monitors poll these continuously; never rate-limit them.
-    skip: (req) => req.method === 'GET' && /\/(draw-state|health)/.test(req.originalUrl),
+    skip: (req) => req.method === 'GET' && /\/(draw-state|health|monitor\/state)/.test(req.originalUrl),
     message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many requests' } },
   });
   app.use('/api/', limiter);
@@ -237,6 +243,7 @@ export function createApp(): AppInstance {
   app.use('/api/booths', createBoothMgmtRoutes(boothMgmtController, tokenService));
   app.use('/api/users', createUserRoutes(userController, tokenService));
   app.use('/api/name-spin', createNameSpinRoutes(nameSpinController, tokenService));
+  app.use('/api/monitor', createMonitorRoutes(monitorController, tokenService));
 
   // =========================================================
   // Root Route

@@ -57,7 +57,6 @@ const routes: RouteObject[] = [
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <LazyPage Component={EnterpriseDashboard} /> },
       {
         element: (
           <Suspense
@@ -67,6 +66,7 @@ const routes: RouteObject[] = [
           </Suspense>
         ),
         children: [
+          { index: true, element: <LazyPage Component={EnterpriseDashboard} /> },
           { path: 'participants', element: <LazyPage Component={OperatorParticipants} /> },
           { path: 'prizes', element: <LazyPage Component={OperatorPrizes} /> },
           { path: 'queue', element: <LazyPage Component={OperatorQueue} /> },

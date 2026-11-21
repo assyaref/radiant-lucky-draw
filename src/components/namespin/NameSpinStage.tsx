@@ -190,6 +190,8 @@ export function NameSpinStage({
     enabled: soundOn,
     spinUrl: theme?.spinSoundUrl,
     winUrl: theme?.winSoundUrl,
+    winUrls: theme?.winSoundUrls,
+    winStyle: theme?.winSoundStyle,
   });
 
   // Layout follows the space we actually get, not the window.

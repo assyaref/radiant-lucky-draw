@@ -22,14 +22,22 @@ export interface MonitorTheme {
   eventLabel: string | null;
   spinSoundUrl: string | null;
   winSoundUrl: string | null;
+  /** Several win sounds; one is picked at random on each win. */
+  winSoundUrls: string[];
+  /** Built-in win sound used when no custom file is set. */
+  winSoundStyle: WinSoundStyle;
   soundEnabled: boolean;
 }
+
+export type WinSoundStyle = 'fanfare' | 'chime' | 'jackpot' | 'random';
 
 export const DEFAULT_THEME: MonitorTheme = {
   logoUrl: null,
   eventLabel: null,
   spinSoundUrl: null,
   winSoundUrl: null,
+  winSoundUrls: [],
+  winSoundStyle: 'fanfare',
   soundEnabled: true,
 };
 

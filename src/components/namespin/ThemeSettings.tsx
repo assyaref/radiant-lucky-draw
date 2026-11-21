@@ -1,7 +1,8 @@
 /**
  * ThemeSettings — per-event look & sound of the Spin Nama screen:
- * logo (upload or link), event label, spin sound and win sound (upload or
- * link, with a test button), and a switch for sound on the Monitor.
+ * logo (upload or link), event label, spin sound, a pool of win sounds (one
+ * is picked at random per win; upload or link, with test buttons) or a built-in
+ * win sound style, and a switch for sound on the Monitor.
  * Every change is saved to the Monitor state right away, so all screens update.
  */
 
@@ -13,9 +14,11 @@ import {
   HiOutlinePlay,
   HiOutlineArrowUturnLeft,
   HiOutlineMusicalNote,
+  HiOutlineTrash,
+  HiOutlineArrowsRightLeft,
 } from 'react-icons/hi2';
-import { monitorApi, type MonitorTheme } from '@api/monitor';
-import { previewDefault, previewSound } from './spinSound';
+import { monitorApi, type MonitorTheme, type WinSoundStyle } from '@api/monitor';
+import { previewDefault, previewSound, winSoundPool } from './spinSound';
 import defaultLogo from '@assets/images/lucky-draw-logo.png';
 
 interface Props {
@@ -29,10 +32,15 @@ const btnCls =
   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-dark-border text-dark-text-secondary hover:text-white hover:bg-dark-surface-tertiary disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
 
 const LIMITS = {
-  logo: { bytes: 2 * 1024 * 1024, accept: 'image/png,image/jpeg,image/webp,image/gif', label: 'maks 2 MB' },
+  logo: {
+    bytes: 2 * 1024 * 1024,
+    accept: 'image/png,image/jpeg,image/webp,image/gif',
+    label: 'maks 2 MB',
+  },
   sound: {
     bytes: 5 * 1024 * 1024,
-    accept: 'audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/ogg,audio/webm,audio/mp4,audio/x-m4a,audio/aac,.mp3,.wav,.ogg,.m4a,.aac',
+    accept:
+      'audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/ogg,audio/webm,audio/mp4,audio/x-m4a,audio/aac,.mp3,.wav,.ogg,.m4a,.aac',
     label: 'maks 5 MB',
   },
 };
@@ -58,6 +66,14 @@ function fileLabel(url: string | null): string {
 
 type Field = 'logoUrl' | 'spinSoundUrl' | 'winSoundUrl';
 
+const MAX_WIN_SOUNDS = 20;
+const WIN_STYLES: { value: WinSoundStyle; label: string }[] = [
+  { value: 'fanfare', label: 'Fanfare' },
+  { value: 'chime', label: 'Lonceng' },
+  { value: 'jackpot', label: 'Jackpot' },
+  { value: 'random', label: 'Acak (ganti-ganti)' },
+];
+
 function patchOf(field: Field, value: string | null): Partial<MonitorTheme> {
   const p: Partial<MonitorTheme> = {};
   p[field] = value;
@@ -80,6 +96,12 @@ export function ThemeSettings({ theme, onChange }: Props) {
     winSoundUrl: null,
   });
 
+  const pool = winSoundPool(theme);
+  const poolPatch = (urls: string[]): Partial<MonitorTheme> => ({
+    winSoundUrls: Array.from(new Set(urls)).slice(0, MAX_WIN_SOUNDS),
+    winSoundUrl: null,
+  });
+
   const save = async (patch: Partial<MonitorTheme>, what: string) => {
     setBusy(what);
     setError(null);
@@ -93,19 +115,27 @@ export function ThemeSettings({ theme, onChange }: Props) {
     }
   };
 
-  const upload = async (field: Field, file: File) => {
+  /** Uploads the file(s); win sounds may be several and are added to the pool. */
+  const upload = async (field: Field, picked: File[]) => {
     const kind = field === 'logoUrl' ? 'logo' : 'sound';
     const lim = LIMITS[kind];
-    if (file.size > lim.bytes) {
+    const files = field === 'winSoundUrl' ? picked : picked.slice(0, 1);
+    if (!files.length) return;
+    if (files.some((f) => f.size > lim.bytes)) {
       setError(`File terlalu besar (${lim.label})`);
       return;
     }
     setBusy(field);
     setError(null);
     try {
-      const dataUrl = await readAsDataUrl(file);
-      const up = await monitorApi.uploadAsset(kind, dataUrl, file.name);
-      const patch = patchOf(field, up.data.url);
+      const urls: string[] = [];
+      for (const file of files) {
+        const dataUrl = await readAsDataUrl(file);
+        const up = await monitorApi.uploadAsset(kind, dataUrl, file.name);
+        urls.push(up.data.url);
+      }
+      const patch =
+        field === 'winSoundUrl' ? poolPatch([...pool, ...urls]) : patchOf(field, urls[0]);
       const r = await monitorApi.update({ theme: patch });
       onChange({ ...theme, ...(r.data.theme ?? patch) });
     } catch (e) {
@@ -121,7 +151,7 @@ export function ThemeSettings({ theme, onChange }: Props) {
       setError('Link harus diawali http:// atau https://');
       return;
     }
-    await save(patchOf(field, url), field);
+    await save(field === 'winSoundUrl' ? poolPatch([...pool, url]) : patchOf(field, url), field);
     setLinks((l) => ({ ...l, [field]: '' }));
     setOpenLink(null);
   };
@@ -144,11 +174,12 @@ export function ThemeSettings({ theme, onChange }: Props) {
           }}
           type="file"
           accept={LIMITS[kind].accept}
+          multiple={field === 'winSoundUrl'}
           className="hidden"
           onChange={(e) => {
-            const f = e.target.files?.[0];
+            const files = Array.from(e.target.files ?? []);
             e.target.value = '';
-            if (f) void upload(field, f);
+            void upload(field, files);
           }}
         />
         <button
@@ -159,7 +190,7 @@ export function ThemeSettings({ theme, onChange }: Props) {
           <HiOutlineLink className="w-4 h-4" />
           Sisipkan link
         </button>
-        {theme[field] && (
+        {field !== 'winSoundUrl' && theme[field] && (
           <button
             className={btnCls}
             disabled={!!busy}
@@ -195,7 +226,7 @@ export function ThemeSettings({ theme, onChange }: Props) {
       </div>
     );
 
-  const soundRow = (field: 'spinSoundUrl' | 'winSoundUrl', title: string, def: string) => (
+  const soundRow = (field: 'spinSoundUrl', title: string, def: string) => (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
@@ -212,7 +243,7 @@ export function ThemeSettings({ theme, onChange }: Props) {
           onClick={() => {
             const url = theme[field];
             if (url) previewSound(url);
-            else void previewDefault(field === 'spinSoundUrl' ? 'spin' : 'win');
+            else void previewDefault('spin');
           }}
         >
           <HiOutlinePlay className="w-4 h-4" />
@@ -274,7 +305,8 @@ export function ThemeSettings({ theme, onChange }: Props) {
             onChange={(e) => setLabel(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void save({ eventLabel: label }, 'label')}
             onBlur={() => {
-              if ((theme.eventLabel ?? '') !== label.trim()) void save({ eventLabel: label }, 'label');
+              if ((theme.eventLabel ?? '') !== label.trim())
+                void save({ eventLabel: label }, 'label');
             }}
             placeholder="DRAW EVENT"
           />
@@ -284,7 +316,95 @@ export function ThemeSettings({ theme, onChange }: Props) {
       <div className="h-px bg-dark-border" />
 
       {soundRow('spinSoundUrl', 'Suara saat berputar', 'Bawaan: bunyi "tik" tiap nama lewat')}
-      {soundRow('winSoundUrl', 'Suara saat menang', 'Bawaan: fanfare kemenangan')}
+
+      {/* Win sounds: random pool */}
+      <div className="space-y-2">
+        <div className="min-w-0">
+          <p className="text-sm text-white flex items-center gap-1.5">
+            <HiOutlineMusicalNote className="w-4 h-4 text-amber-300" />
+            Suara saat menang
+            {pool.length > 1 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                <HiOutlineArrowsRightLeft className="h-3 w-3" />
+                ACAK
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-dark-text-tertiary">
+            {pool.length > 1
+              ? `${pool.length} suara — tiap pemenang diputar salah satu secara acak.`
+              : pool.length === 1
+                ? 'Tambah suara lagi agar diputar acak tiap pemenang.'
+                : 'Upload beberapa suara agar diputar acak, atau pilih suara bawaan.'}
+          </p>
+        </div>
+
+        {pool.length > 0 ? (
+          <ul className="space-y-1.5">
+            {pool.map((url, i) => (
+              <li
+                key={url}
+                className="flex items-center gap-2 rounded-lg border border-dark-border bg-dark-surface px-3 py-1.5"
+              >
+                <span className="text-xs text-dark-text-tertiary w-5">{i + 1}.</span>
+                <span className="flex-1 truncate text-xs text-dark-text-secondary" title={url}>
+                  {fileLabel(url)}
+                </span>
+                <button
+                  className="p-1 rounded text-dark-text-tertiary hover:text-white"
+                  title="Tes"
+                  onClick={() => previewSound(url)}
+                >
+                  <HiOutlinePlay className="w-4 h-4" />
+                </button>
+                <button
+                  className="p-1 rounded text-dark-text-tertiary hover:text-danger-400 disabled:opacity-40"
+                  title="Hapus"
+                  disabled={!!busy}
+                  onClick={() => void save(poolPatch(pool.filter((u) => u !== url)), 'winSoundUrl')}
+                >
+                  <HiOutlineTrash className="w-4 h-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-dark-text-tertiary">Bawaan:</span>
+            {WIN_STYLES.map((st) => (
+              <button
+                key={st.value}
+                disabled={!!busy}
+                onClick={() => {
+                  void previewDefault('win', st.value);
+                  if (theme.winSoundStyle !== st.value)
+                    void save({ winSoundStyle: st.value }, 'winSoundStyle');
+                }}
+                className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
+                  (theme.winSoundStyle ?? 'fanfare') === st.value
+                    ? 'border-amber-400/50 bg-amber-500/15 text-amber-300'
+                    : 'border-dark-border text-dark-text-secondary hover:text-white'
+                }`}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {pool.length < MAX_WIN_SOUNDS && sourceButtons('winSoundUrl')}
+        {pool.length > 0 && (
+          <button
+            className={btnCls}
+            disabled={!!busy}
+            onClick={() => void save(poolPatch([]), 'winSoundUrl')}
+          >
+            <HiOutlineArrowUturnLeft className="w-4 h-4" />
+            Hapus semua, pakai bawaan
+          </button>
+        )}
+        {linkInput('winSoundUrl', 'https://…/suara-menang.mp3')}
+      </div>
 
       <label className="flex items-center gap-2 text-sm text-dark-text-secondary">
         <input

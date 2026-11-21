@@ -17,8 +17,15 @@ import {
   HiOutlineTrash,
   HiOutlineArrowsRightLeft,
 } from 'react-icons/hi2';
-import { monitorApi, type MonitorTheme, type WinSoundStyle } from '@api/monitor';
-import { previewDefault, previewSound, winSoundPool } from './spinSound';
+import { monitorApi, type MonitorTheme } from '@api/monitor';
+import {
+  decodeWinSound,
+  encodeWinSound,
+  previewDefault,
+  previewSound,
+  WIN_SOUND_MAX_LENGTH,
+  type WinSoundStyle,
+} from './spinSound';
 import defaultLogo from '@assets/images/lucky-draw-logo.png';
 
 interface Props {
@@ -96,16 +103,25 @@ export function ThemeSettings({ theme, onChange }: Props) {
     winSoundUrl: null,
   });
 
-  const pool = winSoundPool(theme);
-  const poolPatch = (urls: string[]): Partial<MonitorTheme> => ({
-    winSoundUrls: Array.from(new Set(urls)).slice(0, MAX_WIN_SOUNDS),
-    winSoundUrl: null,
-  });
+  const { urls: pool, style: winStyle } = decodeWinSound(theme.winSoundUrl);
+  const winPatch = (urls: string[], style: WinSoundStyle = winStyle): Partial<MonitorTheme> => {
+    const value = encodeWinSound({ urls: urls.slice(0, MAX_WIN_SOUNDS), style });
+    if (value && value.length > WIN_SOUND_MAX_LENGTH) {
+      throw new Error('Daftar suara terlalu panjang, hapus beberapa suara dulu');
+    }
+    return { winSoundUrl: value };
+  };
+  const poolPatch = (urls: string[]) => winPatch(urls);
 
-  const save = async (patch: Partial<MonitorTheme>, what: string) => {
+  const save = async (
+    makePatch: Partial<MonitorTheme> | (() => Partial<MonitorTheme>),
+    what: string,
+  ) => {
     setBusy(what);
     setError(null);
+    let patch: Partial<MonitorTheme>;
     try {
+      patch = typeof makePatch === 'function' ? makePatch() : makePatch;
       const r = await monitorApi.update({ theme: patch });
       onChange({ ...theme, ...(r.data.theme ?? patch) });
     } catch (e) {
@@ -151,7 +167,10 @@ export function ThemeSettings({ theme, onChange }: Props) {
       setError('Link harus diawali http:// atau https://');
       return;
     }
-    await save(field === 'winSoundUrl' ? poolPatch([...pool, url]) : patchOf(field, url), field);
+    await save(
+      () => (field === 'winSoundUrl' ? poolPatch([...pool, url]) : patchOf(field, url)),
+      field,
+    );
     setLinks((l) => ({ ...l, [field]: '' }));
     setOpenLink(null);
   };
@@ -361,7 +380,9 @@ export function ThemeSettings({ theme, onChange }: Props) {
                   className="p-1 rounded text-dark-text-tertiary hover:text-danger-400 disabled:opacity-40"
                   title="Hapus"
                   disabled={!!busy}
-                  onClick={() => void save(poolPatch(pool.filter((u) => u !== url)), 'winSoundUrl')}
+                  onClick={() =>
+                    void save(() => poolPatch(pool.filter((u) => u !== url)), 'winSoundUrl')
+                  }
                 >
                   <HiOutlineTrash className="w-4 h-4" />
                 </button>
@@ -377,11 +398,11 @@ export function ThemeSettings({ theme, onChange }: Props) {
                 disabled={!!busy}
                 onClick={() => {
                   void previewDefault('win', st.value);
-                  if (theme.winSoundStyle !== st.value)
-                    void save({ winSoundStyle: st.value }, 'winSoundStyle');
+                  if (winStyle !== st.value)
+                    void save(() => winPatch(pool, st.value), 'winSoundStyle');
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${
-                  (theme.winSoundStyle ?? 'fanfare') === st.value
+                  winStyle === st.value
                     ? 'border-amber-400/50 bg-amber-500/15 text-amber-300'
                     : 'border-dark-border text-dark-text-secondary hover:text-white'
                 }`}
@@ -397,7 +418,7 @@ export function ThemeSettings({ theme, onChange }: Props) {
           <button
             className={btnCls}
             disabled={!!busy}
-            onClick={() => void save(poolPatch([]), 'winSoundUrl')}
+            onClick={() => void save(() => poolPatch([]), 'winSoundUrl')}
           >
             <HiOutlineArrowUturnLeft className="w-4 h-4" />
             Hapus semua, pakai bawaan

@@ -29,8 +29,6 @@ export const updateMonitorStateSchema = z.object({
           eventLabel: z.string().trim().max(60).nullable().optional(),
           spinSoundUrl: assetUrl.nullable().optional(),
           winSoundUrl: assetUrl.nullable().optional(),
-          winSoundUrls: z.array(assetUrl).max(20).optional(),
-          winSoundStyle: z.enum(['fanfare', 'chime', 'jackpot', 'random']).optional(),
           soundEnabled: z.boolean().optional(),
         })
         .optional(),

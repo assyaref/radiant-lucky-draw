@@ -37,10 +37,6 @@ export interface MonitorTheme {
   spinSoundUrl: string | null;
   /** Sound played when the winner is revealed; null = built-in fanfare. */
   winSoundUrl: string | null;
-  /** Several win sounds; one is picked at random on each win (overrides winSoundUrl). */
-  winSoundUrls: string[];
-  /** Built-in win sound: 'random' picks one of the synthesized variants each time. */
-  winSoundStyle: 'fanfare' | 'chime' | 'jackpot' | 'random';
   /** Play sounds on Monitor screens. */
   soundEnabled: boolean;
 }
@@ -68,8 +64,6 @@ const DEFAULT_THEME: MonitorTheme = {
   eventLabel: null,
   spinSoundUrl: null,
   winSoundUrl: null,
-  winSoundUrls: [],
-  winSoundStyle: 'fanfare',
   soundEnabled: true,
 };
 
@@ -139,12 +133,6 @@ export class MonitorService {
       if (t.eventLabel !== undefined) theme.eventLabel = text(t.eventLabel);
       if (t.spinSoundUrl !== undefined) theme.spinSoundUrl = text(t.spinSoundUrl);
       if (t.winSoundUrl !== undefined) theme.winSoundUrl = text(t.winSoundUrl);
-      if (t.winSoundUrls !== undefined) {
-        theme.winSoundUrls = Array.from(
-          new Set((t.winSoundUrls ?? []).map((u) => u.trim()).filter(Boolean)),
-        ).slice(0, 20);
-      }
-      if (t.winSoundStyle !== undefined) theme.winSoundStyle = t.winSoundStyle;
       if (t.soundEnabled !== undefined) theme.soundEnabled = !!t.soundEnabled;
     }
 

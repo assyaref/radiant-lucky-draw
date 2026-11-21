@@ -19,23 +19,43 @@ const BUILT_IN_WIN: BuiltInWinSound[] = ['fanfare', 'chime', 'jackpot'];
 export interface SpinSoundOptions {
   enabled: boolean;
   spinUrl?: string | null;
-  /** Legacy single win sound. */
+  /** Theme `winSoundUrl`: one or more sounds + built-in style, see encodeWinSound. */
   winUrl?: string | null;
-  /** Pool of win sounds; one is picked at random per win. */
-  winUrls?: string[] | null;
-  winStyle?: WinSoundStyle | null;
 }
 
-/** Custom win sounds of a theme: the list, or the legacy single file. */
-export function winSoundPool(
-  theme?: {
-    winSoundUrl?: string | null;
-    winSoundUrls?: string[] | null;
-  } | null,
-): string[] {
-  const list = (theme?.winSoundUrls ?? []).filter(Boolean);
-  if (list.length) return list;
-  return theme?.winSoundUrl ? [theme.winSoundUrl] : [];
+/**
+ * The win-sound setting is stored in the theme's single `winSoundUrl` text:
+ * several links separated by "|" (one is picked at random per win), plus an
+ * optional marker for the built-in style used when there are no files.
+ * A plain single link (older setting) still works.
+ */
+const STYLE_MARK = 'https://builtin.sound/';
+export const WIN_SOUND_MAX_LENGTH = 2000;
+
+export interface WinSoundSetting {
+  urls: string[];
+  style: WinSoundStyle;
+}
+
+export function decodeWinSound(value?: string | null): WinSoundSetting {
+  const out: WinSoundSetting = { urls: [], style: 'fanfare' };
+  for (const part of (value ?? '').split('|')) {
+    const v = part.trim();
+    if (!v) continue;
+    if (v.startsWith(STYLE_MARK)) {
+      const st = v.slice(STYLE_MARK.length) as WinSoundStyle;
+      if (st === 'random' || (BUILT_IN_WIN as string[]).includes(st)) out.style = st;
+    } else if (!out.urls.includes(v)) out.urls.push(v);
+  }
+  return out;
+}
+
+export function encodeWinSound({ urls, style }: WinSoundSetting): string | null {
+  const parts = Array.from(
+    new Set(urls.map((u) => u.trim().replace(/\|/g, '%7C')).filter(Boolean)),
+  );
+  if (style !== 'fanfare') parts.push(STYLE_MARK + style);
+  return parts.length ? parts.join('|') : null;
 }
 
 /** Random index in [0, n), avoiding `last` when there is a choice. */
@@ -311,7 +331,7 @@ export async function previewDefault(
   }
 }
 
-export function useSpinSound({ enabled, spinUrl, winUrl, winUrls, winStyle }: SpinSoundOptions) {
+export function useSpinSound({ enabled, spinUrl, winUrl }: SpinSoundOptions) {
   const engine = getSpinAudio();
   const [locked, setLocked] = useState(engine.locked);
   const enabledRef = useRef(enabled);
@@ -319,10 +339,10 @@ export function useSpinSound({ enabled, spinUrl, winUrl, winUrls, winStyle }: Sp
 
   useEffect(() => engine.onChange(() => setLocked(engine.locked)), [engine]);
 
-  const poolKey = winSoundPool({ winSoundUrl: winUrl, winSoundUrls: winUrls }).join('\n');
   useEffect(() => {
-    engine.setSources(spinUrl ?? null, poolKey ? poolKey.split('\n') : [], winStyle ?? 'fanfare');
-  }, [engine, spinUrl, poolKey, winStyle]);
+    const win = decodeWinSound(winUrl);
+    engine.setSources(spinUrl ?? null, win.urls, win.style);
+  }, [engine, spinUrl, winUrl]);
 
   // Any interaction with the page unlocks audio.
   useEffect(() => {

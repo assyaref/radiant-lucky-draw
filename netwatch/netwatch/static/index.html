@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NETWATCH Terminal</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- ============ LOGIN ============ -->
+  <div id="login" class="screen center">
+    <form class="panel login-panel" id="login-form" autocomplete="off">
+      <header class="panel-head">
+        <div class="glyph">&gt;_</div>
+        <div>
+          <h1>NETWATCH // SECURE ACCESS TERMINAL</h1>
+          <p class="sub">CLASSIFIED · AUTHORIZED OPERATORS ONLY</p>
+        </div>
+      </header>
+      <section class="panel-info">
+        <p><b>NW-SEC</b> / LOCAL AUTHENTICATION CHANNEL</p>
+        <p>ROLE CHECK: NETWORK ADMIN · SESSION PERSISTENCE: DISABLED</p>
+        <p class="prompt" id="login-prompt">&gt; Awaiting operator credentials <span class="cursor">_</span></p>
+      </section>
+      <section class="panel-body">
+        <label for="u">AGENT ID</label>
+        <input id="u" name="username" placeholder="Enter operator username" autofocus />
+        <label for="p">PASSPHRASE</label>
+        <input id="p" name="password" type="password" placeholder="Enter passphrase" />
+        <button type="submit" id="login-btn" disabled>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
+          AUTHENTICATE
+        </button>
+        <p class="foot">Credentials are verified by the NETWATCH host. All access is logged.</p>
+      </section>
+    </form>
+  </div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div id="app" class="screen hidden">
+    <header class="topbar">
+      <div class="glyph">&gt;_</div>
+      <div class="title">
+        <h1>NETWATCH // NETWORK SURVEILLANCE TERMINAL</h1>
+        <p class="sub" id="sysline">CLASSIFIED · LINK ESTABLISHING…</p>
+      </div>
+      <div class="top-right">
+        <span class="badge" id="mode-badge">—</span>
+        <span class="clock" id="clock">--:--:--</span>
+        <button class="icon-btn" id="logout" title="Terminate session">✕</button>
+      </div>
+    </header>
+
+    <form class="command" id="target-form">
+      <label for="target">TARGET IP</label>
+      <div class="cmd-row">
+        <span class="chev">&gt;</span>
+        <input id="target" placeholder="e.g. 192.168.1.10" spellcheck="false" />
+        <button type="submit">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
+          LOCK TARGET
+        </button>
+      </div>
+      <p class="prompt" id="cmd-prompt">&gt; Awaiting target designation <span class="cursor">_</span></p>
+    </form>
+
+    <main class="grid">
+      <aside class="panel assets">
+        <div class="panel-title">NETWORK ASSETS <span id="asset-count">0</span></div>
+        <input id="asset-filter" class="mini" placeholder="filter ip / hostname" />
+        <ul id="asset-list"></ul>
+      </aside>
+
+      <section class="main-col">
+        <div id="empty" class="panel empty">
+          <p class="big">NO TARGET LOCKED</p>
+          <p>Enter a device IP address above, or select an asset from the list.</p>
+        </div>
+
+        <div id="dossier" class="hidden">
+          <div class="panel dossier-head">
+            <div>
+              <div class="label">TARGET</div>
+              <div class="target-ip" id="d-ip">—</div>
+              <div class="muted" id="d-host">—</div>
+            </div>
+            <dl class="facts">
+              <div><dt>MAC</dt><dd id="d-mac">—</dd></div>
+              <div><dt>FIRST SEEN</dt><dd id="d-first">—</dd></div>
+              <div><dt>LAST SEEN</dt><dd id="d-last">—</dd></div>
+              <div><dt>STATUS</dt><dd id="d-status">—</dd></div>
+            </dl>
+          </div>
+
+          <div class="tiles">
+            <div class="panel tile"><span>DOWNLOADED</span><b id="t-down">0</b></div>
+            <div class="panel tile"><span>UPLOADED</span><b id="t-up">0</b></div>
+            <div class="panel tile"><span>LIVE RATE ↓ / ↑</span><b id="t-rate">0</b></div>
+            <div class="panel tile"><span>SITES OBSERVED</span><b id="t-sites">0</b></div>
+          </div>
+
+          <div class="panel chart-panel">
+            <div class="panel-title">BANDWIDTH · LAST 120s
+              <span class="legend"><i class="lg-down"></i>DOWN <i class="lg-up"></i>UP</span>
+            </div>
+            <canvas id="chart" height="180"></canvas>
+          </div>
+
+          <div class="panel">
+            <nav class="tabs">
+              <button data-tab="sites" class="active">SITES VISITED</button>
+              <button data-tab="conns">CONNECTIONS</button>
+              <button data-tab="protos">PROTOCOLS</button>
+              <span class="spacer"></span>
+              <input id="site-filter" class="mini" placeholder="search" />
+              <button id="export" class="ghost">EXPORT CSV</button>
+            </nav>
+            <div class="table-wrap" id="tab-sites"><table>
+              <thead><tr><th>DOMAIN</th><th>SOURCE</th><th class="r">HITS</th><th class="r">DATA</th><th>FIRST</th><th>LAST</th></tr></thead>
+              <tbody id="sites-body"></tbody></table></div>
+            <div class="table-wrap hidden" id="tab-conns"><table>
+              <thead><tr><th>REMOTE</th><th>DOMAIN</th><th>SERVICE</th><th class="r">↓</th><th class="r">↑</th><th>LAST</th></tr></thead>
+              <tbody id="conns-body"></tbody></table></div>
+            <div class="table-wrap hidden" id="tab-protos"><div id="protos-body" class="bars"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel feed">
+        <div class="panel-title">INTERCEPT LOG <span id="feed-scope">ALL</span></div>
+        <ol id="feed"></ol>
+      </aside>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

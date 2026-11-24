@@ -2,48 +2,44 @@
  * Environment Configuration
  *
  * Centralized environment variable access with validation.
- * Uses dotenv for local development.
+ * Runs both on Node (local dev, `.env` loaded by src/index.ts) and as a
+ * Supabase Edge Function (Deno), where Supabase injects SUPABASE_URL,
+ * SUPABASE_DB_URL and SUPABASE_SERVICE_ROLE_KEY automatically.
  */
 
-import dotenv from 'dotenv';
-import path from 'path';
+import { createHash } from 'crypto';
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+const isEdge = typeof (globalThis as any).EdgeRuntime !== 'undefined' || !!(globalThis as any).Deno;
+
+function read(key: string): string | undefined {
+  const g = globalThis as any;
+  const v = g.Deno?.env?.get?.(key) ?? (typeof process !== 'undefined' ? process.env[key] : undefined);
+  return v === '' ? undefined : v;
+}
+
+/**
+ * JWT secrets: use explicit JWT_SECRET / JWT_REFRESH_SECRET when set,
+ * otherwise derive stable, server-only secrets from the Supabase service
+ * role key (never exposed to clients). Changing the source key logs
+ * everybody out, which is the expected behaviour of a secret rotation.
+ */
+function derivedSecret(purpose: string): string {
+  const seed = read('SUPABASE_SERVICE_ROLE_KEY') || read('SUPABASE_DB_URL');
+  if (!seed) return '';
+  return createHash('sha256').update(`radiant-lucky-draw:${purpose}:${seed}`).digest('hex');
+}
+
+const NODE_ENV = read('NODE_ENV') || (isEdge ? 'production' : 'development');
 
 // ─── Validation ────────────────────────────────────────────
 
-interface EnvValidation {
-  key: string;
-  required: boolean;
-  production: boolean;
-}
-
-const validations: EnvValidation[] = [
-  { key: 'DATABASE_URL', required: true, production: true },
-  { key: 'JWT_SECRET', required: true, production: true },
-  { key: 'JWT_REFRESH_SECRET', required: true, production: true },
-  { key: 'PORT', required: false, production: false },
-  { key: 'NODE_ENV', required: false, production: false },
-  { key: 'CORS_ORIGIN', required: false, production: false },
-  { key: 'COOKIE_SECURE', required: false, production: false },
-];
-
-function validateEnv(): void {
-  const isProduction = process.env.NODE_ENV === 'production';
-
-  for (const validation of validations) {
-    if (validation.required && !process.env[validation.key]) {
-      const message = `[Env Validation] Missing required environment variable: ${validation.key}`;
-      if (isProduction) {
-        console.error(message);
-        process.exit(1);
-      } else {
-        console.warn(message);
-      }
-    }
-
-    if (isProduction && validation.production && !process.env[validation.key]) {
-      console.warn(`[Env Validation] Missing production environment variable: ${validation.key}`);
+function validateEnv(values: Record<string, string>): void {
+  const isProduction = NODE_ENV === 'production';
+  for (const key of ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET']) {
+    if (!values[key]) {
+      const message = `[Env Validation] Missing required environment variable: ${key}`;
+      if (isProduction) throw new Error(message);
+      console.warn(message);
     }
   }
 }
@@ -52,28 +48,30 @@ function validateEnv(): void {
 
 export const env = {
   // Server
-  PORT: parseInt(process.env.PORT || '3001', 10),
-  NODE_ENV: process.env.NODE_ENV || 'development',
+  PORT: parseInt(read('PORT') || '3001', 10),
+  NODE_ENV,
 
   // Database
-  DATABASE_URL: process.env.DATABASE_URL || '',
+  DATABASE_URL: read('DATABASE_URL') || read('SUPABASE_DB_URL') || '',
+  // Used by `prisma migrate` only (Supabase session pooler / direct connection)
+  DIRECT_URL: read('DIRECT_URL') || read('DATABASE_URL') || read('SUPABASE_DB_URL') || '',
 
   // JWT (secrets are REQUIRED - no fallbacks allowed)
-  JWT_SECRET: process.env.JWT_SECRET || '',
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '15m',
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || '',
-  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  JWT_SECRET: read('JWT_SECRET') || derivedSecret('access'),
+  JWT_EXPIRES_IN: read('JWT_EXPIRES_IN') || '15m',
+  JWT_REFRESH_SECRET: read('JWT_REFRESH_SECRET') || derivedSecret('refresh'),
+  JWT_REFRESH_EXPIRES_IN: read('JWT_REFRESH_EXPIRES_IN') || '7d',
 
   // Cookies
-  COOKIE_NAME: process.env.COOKIE_NAME || 'radiant_refresh',
-  COOKIE_SECURE: process.env.COOKIE_SECURE === 'true',
-  COOKIE_SAME_SITE: (process.env.COOKIE_SAME_SITE || 'lax') as 'lax' | 'strict' | 'none',
-  COOKIE_MAX_AGE_MS: parseInt(process.env.COOKIE_MAX_AGE_MS || '604800000', 10), // 7 days
+  COOKIE_NAME: read('COOKIE_NAME') || 'radiant_refresh',
+  COOKIE_SECURE: read('COOKIE_SECURE') ? read('COOKIE_SECURE') === 'true' : isEdge,
+  COOKIE_SAME_SITE: (read('COOKIE_SAME_SITE') || 'lax') as 'lax' | 'strict' | 'none',
+  COOKIE_MAX_AGE_MS: parseInt(read('COOKIE_MAX_AGE_MS') || '604800000', 10), // 7 days
 
   // CORS — comma-separated origins; production-safe default includes the Vercel
   // frontend so the API works out-of-the-box without env-variable configuration.
   CORS_ORIGIN:
-    process.env.CORS_ORIGIN ||
+    read('CORS_ORIGIN') ||
     [
       'https://radiant-lucky-draw.vercel.app',
       'http://localhost:5173',
@@ -81,26 +79,27 @@ export const env = {
     ].join(','),
 
   // Rate Limiting
-  RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
-  RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+  RATE_LIMIT_WINDOW_MS: parseInt(read('RATE_LIMIT_WINDOW_MS') || '900000', 10),
+  RATE_LIMIT_MAX: parseInt(read('RATE_LIMIT_MAX') || '100', 10),
 
   // Registration rate limiting (GO LIVE HOTFIX)
   // A single event venue shares one network (one public IP) for up to 300
   // participants. The registration endpoint therefore needs a much higher
   // per-IP allowance than the general API limiter.
   REGISTRATION_RATE_LIMIT_WINDOW_MS: parseInt(
-    process.env.REGISTRATION_RATE_LIMIT_WINDOW_MS || '900000',
+    read('REGISTRATION_RATE_LIMIT_WINDOW_MS') || '900000',
     10,
   ),
-  REGISTRATION_RATE_LIMIT_MAX: parseInt(process.env.REGISTRATION_RATE_LIMIT_MAX || '600', 10),
+  REGISTRATION_RATE_LIMIT_MAX: parseInt(read('REGISTRATION_RATE_LIMIT_MAX') || '600', 10),
 
   // Logging
-  LOG_LEVEL: process.env.LOG_LEVEL || 'dev',
+  LOG_LEVEL: read('LOG_LEVEL') || 'dev',
 
   // Derived
-  isProduction: process.env.NODE_ENV === 'production',
-  isDevelopment: process.env.NODE_ENV === 'development',
+  isProduction: NODE_ENV === 'production',
+  isDevelopment: NODE_ENV === 'development',
+  isEdge,
 } as const;
 
 // Run validation on import
-validateEnv();
+validateEnv(env as unknown as Record<string, string>);

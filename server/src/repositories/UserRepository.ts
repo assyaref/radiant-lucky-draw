@@ -47,10 +47,58 @@ export class UserRepository extends PrismaRepository<User> {
     return record ? this.toEntity(record) : null;
   }
 
+  /**
+   * Login lookup: by email (contains "@") or username, case-insensitive,
+   * ignoring surrounding spaces.
+   */
+  async findByLogin(identifier: string): Promise<User | null> {
+    const value = identifier.trim();
+    if (!value) return null;
+    const field = value.includes('@') ? 'email' : 'username';
+    const record = await this.model.findFirst({
+      where: { [field]: { equals: value, mode: 'insensitive' }, deletedAt: null },
+    });
+    return record ? this.toEntity(record) : null;
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     const record = await this.model.findFirst({
       where: { email, deletedAt: null },
     });
     return record ? this.toEntity(record) : null;
+  }
+
+  /** Paginated, filtered listing for user management (excludes soft-deleted users). */
+  async search(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    role?: string;
+    isActive?: boolean;
+  }): Promise<{ data: User[]; total: number }> {
+    const where: any = { deletedAt: null };
+    if (params.role) where.role = params.role;
+    if (params.isActive !== undefined) where.isActive = params.isActive;
+    if (params.search) {
+      where.OR = [
+        { username: { contains: params.search, mode: 'insensitive' } },
+        { email: { contains: params.search, mode: 'insensitive' } },
+      ];
+    }
+    const [records, total] = await Promise.all([
+      this.model.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }],
+        skip: (params.page - 1) * params.limit,
+        take: params.limit,
+      }),
+      this.model.count({ where }),
+    ]);
+    return { data: records.map((r: any) => this.toEntity(r)), total };
+  }
+
+  /** Number of active, non-deleted users with the given role. */
+  async countActiveByRole(role: string): Promise<number> {
+    return this.model.count({ where: { role, isActive: true, deletedAt: null } });
   }
 }

@@ -255,7 +255,7 @@ export class BoothService {
 
     // ─── Draw Lock (prevents double spin) ───────────────────────────
     if (this.realtimeService) {
-      if (!this.realtimeService.acquireDrawLock()) {
+      if (!(await this.realtimeService.acquireDrawLock())) {
         throw new ValidationError('Undian sedang berlangsung, silakan tunggu');
       }
     }
@@ -337,7 +337,7 @@ export class BoothService {
 
       // ─── Start timed draw sequence for Monitor synchronization ───────
       if (this.realtimeService) {
-        this.realtimeService.startDrawSequence({
+        await this.realtimeService.startDrawSequence({
           drawId: result.draw.id,
           participantId: participant.id,
           participantName: participant.name,
@@ -365,7 +365,7 @@ export class BoothService {
     } catch (error) {
       // Release draw lock on any error
       if (this.realtimeService) {
-        this.realtimeService.releaseDrawLock();
+        await this.realtimeService.releaseDrawLock();
       }
       throw error;
     }
@@ -585,7 +585,7 @@ export class BoothService {
    * Get the current draw state from the RealtimeService.
    * Used by monitors for reconnection sync.
    */
-  getDrawState(): ActiveDrawState {
+  async getDrawState(): Promise<ActiveDrawState> {
     if (this.realtimeService) {
       return this.realtimeService.getDrawState();
     }

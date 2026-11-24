@@ -110,6 +110,14 @@ export interface DashboardData {
   serverStatus: ServerStatusItem[];
   health: HealthMetric[];
   quickActions: QuickAction[];
+  widgets: DashboardWidgets;
+}
+
+export interface DashboardWidgets {
+  participants: { total: number; registeredToday: number; active: number };
+  prizes: { total: number; available: number; claimed: number };
+  queue: { waiting: number; ready: number; served: number };
+  winners: { today: number; claimed: number; pending: number };
 }
 
 export type DashboardStatus = 'loading' | 'ready' | 'error';

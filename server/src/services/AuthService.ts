@@ -12,6 +12,7 @@ import { SessionService } from './SessionService';
 import { AuditService } from './AuditService';
 import { ConflictError, UnauthorizedError } from '../utils';
 import { env } from '../config';
+import { ROLE_PERMISSIONS } from '../auth';
 import type {
   LoginRequest,
   LoginResponse,
@@ -50,6 +51,7 @@ export class AuthService {
       username: user.username,
       email: user.email,
       role: user.role,
+      permissions: [...(ROLE_PERMISSIONS[user.role] ?? [])],
     };
   }
 
@@ -75,7 +77,7 @@ export class AuthService {
     data: LoginRequest,
     ctx: RequestContext,
   ): Promise<LoginResponse & { refreshToken: string }> {
-    const user = await this.userRepository.findByEmail(data.email);
+    const user = await this.userRepository.findByLogin(data.email);
     if (!user) {
       await this.auditService.log({
         userId: null,
@@ -85,14 +87,19 @@ export class AuthService {
         ipAddress: ctx.ipAddress,
         userAgent: ctx.userAgent,
       });
-      throw new UnauthorizedError('Invalid email or password');
+      throw new UnauthorizedError('Email/username atau password salah');
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedError('Account is disabled');
+      throw new UnauthorizedError('Akun ini dinonaktifkan. Hubungi admin.');
     }
 
-    const isValid = await bcrypt.compare(data.password, user.password);
+    // Accept a password copied with stray spaces/newline around it.
+    let isValid = await bcrypt.compare(data.password, user.password);
+    const trimmed = data.password.trim();
+    if (!isValid && trimmed !== data.password && trimmed.length > 0) {
+      isValid = await bcrypt.compare(trimmed, user.password);
+    }
     if (!isValid) {
       await this.auditService.log({
         userId: user.id,
@@ -102,7 +109,7 @@ export class AuthService {
         ipAddress: ctx.ipAddress,
         userAgent: ctx.userAgent,
       });
-      throw new UnauthorizedError('Invalid email or password');
+      throw new UnauthorizedError('Email/username atau password salah');
     }
 
     const { refreshToken } = await this.sessionService.createSession({
@@ -142,7 +149,7 @@ export class AuthService {
       throw new UnauthorizedError('User not found');
     }
     if (!user.isActive) {
-      throw new UnauthorizedError('Account is disabled');
+      throw new UnauthorizedError('Akun ini dinonaktifkan. Hubungi admin.');
     }
 
     const accessToken = this.tokenService.signAccessToken(user);

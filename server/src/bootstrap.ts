@@ -57,11 +57,11 @@ export async function ensureDefaultSettings(): Promise<void> {
     }
     await prisma.settings.create({
       data: {
-        eventName: 'Radiant Lucky Draw 2026',
-        eventDate: new Date('2026-07-30'),
-        eventLocation: 'Jakarta Convention Center',
-        eventStatus: 'active',
-        eventDescription: 'Grand Lucky Draw Event powered by Radiant',
+        eventName: 'Radiant Lucky Draw',
+        eventDate: null,
+        eventLocation: '',
+        eventStatus: 'upcoming',
+        eventDescription: '',
         maxParticipants: 1000,
         drawInterval: 30,
         celebrationLevel: 'high',
@@ -75,67 +75,5 @@ export async function ensureDefaultSettings(): Promise<void> {
     logger.info('[Bootstrap] Default Settings created');
   } catch (e) {
     logger.error('[Bootstrap] Settings FAILED', { error: String(e) });
-  }
-}
-
-export async function ensureDefaultPrizes(): Promise<void> {
-  try {
-    const c = await prisma.prize.count({ where: { deletedAt: null } });
-    if (c > 0) {
-      logger.info('[Bootstrap] Prizes exist', { count: c });
-      return;
-    }
-    const prizes = [
-      {
-        name: 'Door Prize',
-        description: 'Hadiah hiburan untuk semua peserta',
-        value: 50000,
-        tier: 'doorprize',
-        probability: 0.6,
-        quantity: 50,
-        remaining: 50,
-      },
-      {
-        name: 'Bronze Prize',
-        description: 'Hadiah perunggu - Voucher Belanja Rp 250.000',
-        value: 250000,
-        tier: 'bronze',
-        probability: 0.25,
-        quantity: 20,
-        remaining: 20,
-      },
-      {
-        name: 'Silver Prize',
-        description: 'Hadiah perak - Smartwatch Premium',
-        value: 1500000,
-        tier: 'silver',
-        probability: 0.1,
-        quantity: 10,
-        remaining: 10,
-      },
-      {
-        name: 'Gold Prize',
-        description: 'Hadiah emas - Smartphone Flagship',
-        value: 8000000,
-        tier: 'gold',
-        probability: 0.04,
-        quantity: 3,
-        remaining: 3,
-      },
-      {
-        name: 'Grand Prize',
-        description: 'Grand Prize - Umrah Package',
-        value: 30000000,
-        tier: 'grand',
-        probability: 0.01,
-        quantity: 1,
-        remaining: 1,
-      },
-    ];
-    for (const p of prizes)
-      await prisma.prize.create({ data: { ...p, currency: 'IDR', isActive: true } });
-    logger.info('[Bootstrap] Default Prizes created', { count: prizes.length });
-  } catch (e) {
-    logger.error('[Bootstrap] Prizes FAILED', { error: String(e) });
   }
 }

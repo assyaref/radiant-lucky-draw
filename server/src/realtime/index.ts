@@ -2,7 +2,14 @@
  * Realtime barrel export
  */
 
-export { RealtimeService, QUEUE_EVENTS, DRAW_EVENTS } from './RealtimeService';
+export {
+  RealtimeService,
+  QUEUE_EVENTS,
+  DRAW_EVENTS,
+  NAME_SPIN_EVENTS,
+  REALTIME_CHANNEL,
+  flushPendingBroadcasts,
+} from './RealtimeService';
 export type {
   QueueEventName,
   QueueEntryPayload,

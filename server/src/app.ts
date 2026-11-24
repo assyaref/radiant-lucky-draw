@@ -8,15 +8,11 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import compression from 'compression';
-import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 
-import swaggerUi from 'swagger-ui-express';
 import { env } from './config';
 
-import { swaggerSpec } from './config/swagger';
 
 import { requestIdMiddleware } from './utils';
 import { errorHandler } from './middlewares';
@@ -32,6 +28,9 @@ import {
   createBoothRoutes,
   createEventRoutes,
   createBoothMgmtRoutes,
+  createUserRoutes,
+  createNameSpinRoutes,
+  createMonitorRoutes,
 } from './routes';
 import {
   AuthController,
@@ -45,6 +44,9 @@ import {
   BoothController,
   EventController,
   BoothMgmtController,
+  UserController,
+  NameSpinController,
+  MonitorController,
 } from './controllers';
 import {
   AuthService,
@@ -60,6 +62,9 @@ import {
   BoothService,
   EventService,
   BoothMgmtService,
+  UserService,
+  NameSpinService,
+  MonitorService,
 } from './services';
 import {
   UserRepository,
@@ -76,6 +81,7 @@ import {
 } from './repositories';
 
 import { RealtimeService } from './realtime';
+import { createAuditLogRoutes } from './routes/auditLog.routes';
 
 export interface AppInstance {
   app: express.Express;
@@ -155,12 +161,21 @@ export function createApp(): AppInstance {
   const boothController = new BoothController(boothService);
   const eventController = new EventController(eventService);
   const boothMgmtController = new BoothMgmtController(boothMgmtService);
+  const userService = new UserService(userRepository, sessionService, auditService);
+  const userController = new UserController(userService);
+  const nameSpinController = new NameSpinController(
+    new NameSpinService(prizeRepository, realtimeService),
+  );
+  const monitorController = new MonitorController(
+    new MonitorService(prizeRepository, realtimeService),
+  );
 
   // =========================================================
   // Global Middleware
   // =========================================================
   app.use(helmet({ contentSecurityPolicy: env.isProduction ? undefined : false }));
-  app.use(compression());
+  // Behind Vercel rewrite + Supabase gateway: trust X-Forwarded-For for req.ip
+  app.set('trust proxy', true);
   // Parse comma-separated CORS origins and automatically expand www/non-www
   // variants so both `https://example.com` and `https://www.example.com` work.
   const corsOrigins = env.CORS_ORIGIN.split(',').flatMap((s) => {
@@ -177,7 +192,6 @@ export function createApp(): AppInstance {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(cookieParser());
-  app.use(morgan(env.LOG_LEVEL));
   app.use(requestIdMiddleware);
 
   // Rate limiting
@@ -186,6 +200,9 @@ export function createApp(): AppInstance {
     max: env.RATE_LIMIT_MAX,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: false,
+    // Monitors poll these continuously; never rate-limit them.
+    skip: (req) => req.method === 'GET' && /\/(draw-state|health|monitor\/state)/.test(req.originalUrl),
     message: { success: false, error: { code: 'RATE_LIMIT', message: 'Too many requests' } },
   });
   app.use('/api/', limiter);
@@ -201,6 +218,7 @@ export function createApp(): AppInstance {
     max: env.REGISTRATION_RATE_LIMIT_MAX,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: false,
     message: {
       success: false,
       error: { code: 'RATE_LIMIT', message: 'Too many registration attempts' },
@@ -211,18 +229,6 @@ export function createApp(): AppInstance {
 
   // =========================================================
   // Swagger Docs
-  // =========================================================
-  app.use(
-    '/api/docs',
-    swaggerUi.serve,
-    swaggerUi.setup(swaggerSpec, {
-      customCss: '.swagger-ui .topbar { display: none }',
-      customSiteTitle: 'Radiant Lucky Draw API Docs',
-    }),
-  );
-
-  // =========================================================
-  // API Routes
   // =========================================================
   app.use('/api/health', createHealthRoutes(healthController));
   app.use('/api/auth', createAuthRoutes(authController, tokenService));
@@ -236,6 +242,10 @@ export function createApp(): AppInstance {
   app.use('/api/booth', createBoothRoutes(boothController, tokenService));
   app.use('/api/events', createEventRoutes(eventController, tokenService));
   app.use('/api/booths', createBoothMgmtRoutes(boothMgmtController, tokenService));
+  app.use('/api/users', createUserRoutes(userController, tokenService));
+  app.use('/api/name-spin', createNameSpinRoutes(nameSpinController, tokenService));
+  app.use('/api/monitor', createMonitorRoutes(monitorController, tokenService));
+  app.use('/api/audit-logs', createAuditLogRoutes(tokenService));
 
   // =========================================================
   // Root Route
@@ -245,7 +255,6 @@ export function createApp(): AppInstance {
       success: true,
       service: 'Radiant Lucky Draw API',
       version: '1.0.0',
-      docs: '/api/docs',
       health: '/api/health',
     });
   });

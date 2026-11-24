@@ -29,6 +29,7 @@ import {
   persistDevelopmentMockSession,
 } from './developmentMock';
 import type { AuthUser, LoginCredentials, Permission, Role } from './types';
+import { ROLES } from './types';
 
 function isBackendAuthenticationUnavailable(error: unknown): boolean {
   return (
@@ -164,13 +165,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasRole = useCallback((role: Role) => user?.role === role, [user]);
 
   const hasPermission = useCallback(
-    (permission: Permission) => user?.permissions?.includes(permission) ?? false,
+    (permission: Permission) =>
+      user?.role === ROLES.SUPER_ADMIN || (user?.permissions?.includes(permission) ?? false),
     [user],
   );
 
   const hasAnyPermission = useCallback(
-    (permissions: Permission[]) => permissions.some((p) => user?.permissions?.includes(p) ?? false),
-    [user],
+    (permissions: Permission[]) => permissions.some((p) => hasPermission(p)),
+    [hasPermission],
   );
 
   const value = useMemo<AuthContextValue>(

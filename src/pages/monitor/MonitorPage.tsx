@@ -13,6 +13,10 @@ import { env } from '@config/env';
 import { normalizeImageUrl } from '@/utils';
 import { boothApi, type Winner } from '@/api/booth';
 import luckyDrawLogo from '@assets/images/lucky-draw-logo.png';
+import { MonitorImage } from './MonitorImage';
+import { NameSpinStage } from '@components/namespin/NameSpinStage';
+import type { NameSpinResult } from '@api/nameSpin';
+import { monitorApi, type MonitorState } from '@api/monitor';
 
 type DrawState = 'IDLE' | 'COUNTDOWN' | 'SPINNING' | 'REVEALED' | 'COMPLETED';
 interface DrawData {
@@ -271,18 +275,12 @@ function PrizeListPanel({
                 transition={{ repeat: Infinity, duration: 2.2 }}
               >
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/[0.04] flex-shrink-0 flex items-center justify-center border border-white/[0.06] shadow-[0_0_15px_rgba(0,0,0,0.3)]">
-                  {imgUrl ? (
-                    <img
-                      src={imgUrl}
-                      alt={p.name}
-                      className="w-full h-full object-contain p-1"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span className="text-white/20 text-xl">{String.fromCodePoint(0x1f381)}</span>
-                  )}
+                  <MonitorImage
+                    src={imgUrl}
+                    alt={p.name}
+                    className="w-full h-full object-contain p-1"
+                    fallback={<span className="text-white/20 text-xl">{String.fromCodePoint(0x1f381)}</span>}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white/85 text-xs font-semibold truncate leading-tight">
@@ -511,18 +509,13 @@ function CenterPanel({
                     boxShadow: '0 0 50px rgba(251,191,36,0.3), 0 0 100px rgba(245,158,11,0.15)',
                   }}
                 >
-                  {participantPhotoUrl ? (
-                    <img
-                      src={participantPhotoUrl}
-                      alt={drawData.participantName ?? 'Winner'}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span className="text-5xl">{String.fromCodePoint(0x1f464)}</span>
-                  )}
+                  <MonitorImage
+                    src={participantPhotoUrl}
+                    alt={drawData.participantName ?? 'Winner'}
+                    className="w-full h-full object-cover"
+                    displaySize={144}
+                    fallback={<span className="text-5xl">{String.fromCodePoint(0x1f464)}</span>}
+                  />
                 </motion.div>
 
                 {/* Participant Name */}
@@ -561,18 +554,13 @@ function CenterPanel({
                   }}
                   transition={{ repeat: Infinity, duration: 2 }}
                 >
-                  {prizeImageUrl ? (
-                    <img
-                      src={prizeImageUrl}
-                      alt={drawData.prizeName ?? 'Prize'}
-                      className="w-full h-full object-contain p-3"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span className="text-5xl">{String.fromCodePoint(0x1f381)}</span>
-                  )}
+                  <MonitorImage
+                    src={prizeImageUrl}
+                    alt={drawData.prizeName ?? 'Prize'}
+                    className="w-full h-full object-contain p-3"
+                    displaySize={176}
+                    fallback={<span className="text-5xl">{String.fromCodePoint(0x1f381)}</span>}
+                  />
                 </motion.div>
 
                 {/* Prize Name */}
@@ -682,18 +670,13 @@ function WinnerListPanel({ winners }: { winners: WinnerEntry[] }) {
                       : 'border-2 border-white/[0.06]')
                   }
                 >
-                  {photoUrl ? (
-                    <img
-                      src={photoUrl}
-                      alt={w.participantName}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span className="text-white/20 text-base">{medal}</span>
-                  )}
+                  <MonitorImage
+                    src={photoUrl}
+                    alt={w.participantName}
+                    className="w-full h-full object-cover"
+                    displaySize={56}
+                    fallback={<span className="text-white/20 text-base">{medal}</span>}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white/90 text-xs font-bold truncate leading-tight">
@@ -940,18 +923,12 @@ function SpinningScreen({
             }}
             transition={{ repeat: Infinity, duration: converge ? 2.5 : 1 }}
           >
-            {imgUrl ? (
-              <img
-                src={imgUrl}
-                alt={displayPrize?.name ?? 'Prize'}
-                className="w-full h-full object-contain p-3"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <span className="text-6xl">{String.fromCodePoint(0x1f381)}</span>
-            )}
+            <MonitorImage
+              src={imgUrl}
+              alt={displayPrize?.name ?? 'Prize'}
+              className="w-full h-full object-contain p-3"
+              fallback={<span className="text-6xl">{String.fromCodePoint(0x1f381)}</span>}
+            />
           </motion.div>
 
           {/* Prize name */}
@@ -1443,6 +1420,48 @@ export default function MonitorPage() {
     ),
   );
 
+  // ─── Monitor mode (event | namespin) + Spin Nama ─────────────────────
+  const [monitorState, setMonitorState] = useState<MonitorState | null>(null);
+  const applyMonitorState = useCallback((st: MonitorState | null | undefined) => {
+    if (!st?.mode) return;
+    setMonitorState((prev) =>
+      prev && Date.parse(prev.updatedAt) > Date.parse(st.updatedAt) ? prev : st,
+    );
+  }, []);
+  useEffect(() => {
+    const load = () =>
+      monitorApi
+        .get()
+        .then((r) => applyMonitorState(r.data))
+        .catch(() => undefined);
+    void load();
+    // Fallback in case a realtime event is missed.
+    const t = setInterval(load, 15000);
+    return () => clearInterval(t);
+  }, [applyMonitorState]);
+  useSocketEvent(
+    SOCKET_EVENTS.MONITOR_STATE as SocketEventName,
+    useCallback((p: any) => applyMonitorState(p as MonitorState), [applyMonitorState]),
+  );
+
+  const [nameSpin, setNameSpin] = useState<NameSpinResult | null>(null);
+  useSocketEvent(
+    SOCKET_EVENTS.NAMESPIN_STARTED as SocketEventName,
+    useCallback((p: any) => {
+      if (!p?.spinId || !Array.isArray(p.segments)) return;
+      setNameSpin(p as NameSpinResult);
+    }, []),
+  );
+  // Keep the spin (and its winner) on screen for duration + hold, then go idle.
+  useEffect(() => {
+    if (!nameSpin) return;
+    const shownFor = Date.now() - Date.parse(nameSpin.startedAt);
+    const total = (nameSpin.durationMs ?? 9000) + (nameSpin.revealHoldMs ?? 12000);
+    const t = setTimeout(() => setNameSpin(null), Math.max(1000, total - Math.max(0, shownFor)));
+    return () => clearTimeout(t);
+  }, [nameSpin]);
+  const nameSpinMode = monitorState?.mode === 'namespin';
+
   // ─── Reconnection sync ──────────────────────────────────────────────
   useEffect(() => {
     if (isConnected) emit?.('draw:get-state' as any, {});
@@ -1512,10 +1531,40 @@ export default function MonitorPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#070b1a] via-[#020617] to-[#060a18]" />
       <ParticleField />
 
+      {/* Spin Nama: full-screen wheel in 'namespin' mode, overlay on spin in 'event' mode */}
+      <AnimatePresence>
+        {(nameSpinMode || nameSpin) && (
+          <motion.div
+            key={nameSpinMode ? 'namespin-mode' : `namespin-${nameSpin?.spinId}`}
+            className="fixed inset-0 z-40 bg-[#080d33]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <NameSpinStage
+              segments={monitorState?.wheel.names ?? []}
+              totalNames={monitorState?.wheel.totalNames ?? 0}
+              title={monitorState?.wheel.title}
+              prizeName={monitorState?.wheel.prizeName}
+              prizeImageUrl={monitorState?.wheel.prizeImageUrl}
+              spin={nameSpin}
+              theme={monitorState?.theme}
+              variant="screen"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-6 md:px-10 py-3 border-b border-white/[0.04] bg-gradient-to-b from-[#020617cc] to-transparent">
         <div className="flex items-center gap-3">
           <img
-            src={luckyDrawLogo}
+            src={monitorState?.theme?.logoUrl || luckyDrawLogo}
+            onError={(e) => {
+              if (e.currentTarget.dataset.fallback) return;
+              e.currentTarget.dataset.fallback = '1';
+              e.currentTarget.src = luckyDrawLogo;
+            }}
             alt="Lucky Draw"
             className="h-8 w-auto object-contain opacity-90 drop-shadow-[0_0_12px_rgba(139,92,246,0.25)]"
           />

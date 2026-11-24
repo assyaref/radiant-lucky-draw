@@ -5,8 +5,7 @@
  * layout, and reusable dashboard architecture. Mock data only.
  *
  * Layout:
- *   Sidebar | TopNavigation
- *   ─────────────────────────
+ *   (inside AdminLayout: full sidebar + header)
  *   DashboardHeader
  *   KPI Cards (Participants, Today's Draw, Available Prizes, Current Queue)
  *   Widgets (Participants, Prizes, Queue, Winners)
@@ -15,12 +14,8 @@
  */
 
 import { memo } from 'react';
-import { AnimatedBackground } from '@components/layout';
 import { colors, radius, shadows } from '@design-system/index';
-import { DevelopmentModeBanner } from '@features/auth';
 import { useDashboard } from './hooks/useDashboard';
-import { Sidebar } from './components/Sidebar';
-import { TopNavigation } from './components/TopNavigation';
 import { DashboardHeader } from './components/DashboardHeader';
 import { KpiCard } from './components/KpiCard';
 import { AnalyticsChart } from './components/AnalyticsChart';
@@ -145,89 +140,73 @@ export const DashboardPage = memo(function DashboardPage() {
   const { status, data, lastUpdated, refresh } = useDashboard();
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Premium animated background */}
-      <AnimatedBackground />
+    // Rendered inside AdminLayout, which provides the full sidebar, header and banner.
+    <div className="space-y-6">
+      {status === 'loading' ? (
+        <LoadingDashboard />
+      ) : (
+        <>
+          <DashboardHeader
+            title="Dashboard"
+            subtitle="Real-time overview of your lucky draw operations"
+            lastUpdated={lastUpdated}
+            onRefresh={refresh}
+          />
 
-      {/* Content */}
-      <div className="relative z-10 flex min-h-screen">
-        {/* Sidebar */}
-        <Sidebar />
+          {/* Top KPI */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {data.kpis.map((kpi, index) => (
+              <KpiCard key={kpi.id} metric={kpi} delay={index * 0.08} />
+            ))}
+          </div>
 
-        {/* Main */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <TopNavigation />
+          {/* Widgets */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <ParticipantsWidget {...data.widgets.participants} delay={0} />
+            <PrizeWidget {...data.widgets.prizes} delay={0.08} />
+            <QueueWidget {...data.widgets.queue} delay={0.16} />
+            <WinnerWidget {...data.widgets.winners} delay={0.24} />
+          </div>
 
-          <main className="flex-1 space-y-6 overflow-y-auto p-5 lg:p-6">
-            <DevelopmentModeBanner />
-            {status === 'loading' ? (
-              <LoadingDashboard />
-            ) : (
-              <>
-                <DashboardHeader
-                  title="Dashboard"
-                  subtitle="Real-time overview of your lucky draw operations"
-                  lastUpdated={lastUpdated}
-                  onRefresh={refresh}
-                />
+          {/* Middle */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <SectionPanel title="Analytics" className="lg:col-span-2">
+              <AnalyticsChart series={data.analyticsSeries} />
+            </SectionPanel>
+            <SectionPanel title="Prize Distribution">
+              <PrizeDistribution slices={data.prizeDistribution} />
+            </SectionPanel>
+          </div>
 
-                {/* Top KPI */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {data.kpis.map((kpi, index) => (
-                    <KpiCard key={kpi.id} metric={kpi} delay={index * 0.08} />
-                  ))}
-                </div>
+          {/* Realtime statistics */}
+          <SectionPanel title="Realtime Statistics">
+            <RealtimeStats points={data.realtimeStats} />
+          </SectionPanel>
 
-                {/* Widgets */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <ParticipantsWidget total={1284} registeredToday={342} active={96} delay={0} />
-                  <PrizeWidget available={96} claimed={42} total={138} delay={0.08} />
-                  <QueueWidget waiting={57} ready={18} served={284} delay={0.16} />
-                  <WinnerWidget today={42} claimed={31} pending={11} delay={0.24} />
-                </div>
+          {/* Bottom */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <SectionPanel title="Recent Winners">
+              <RecentWinners winners={data.recentWinners} />
+            </SectionPanel>
+            <SectionPanel title="Activity Timeline">
+              <ActivityTimeline activities={data.activities} />
+            </SectionPanel>
+            <div className="space-y-6">
+              <SectionPanel title="Server Status">
+                <ServerStatus items={data.serverStatus} />
+              </SectionPanel>
+              <SectionPanel title="System Health">
+                <SystemHealth metrics={data.health} />
+              </SectionPanel>
+            </div>
+          </div>
 
-                {/* Middle */}
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  <SectionPanel title="Analytics" className="lg:col-span-2">
-                    <AnalyticsChart series={data.analyticsSeries} />
-                  </SectionPanel>
-                  <SectionPanel title="Prize Distribution">
-                    <PrizeDistribution slices={data.prizeDistribution} />
-                  </SectionPanel>
-                </div>
-
-                {/* Realtime statistics */}
-                <SectionPanel title="Realtime Statistics">
-                  <RealtimeStats points={data.realtimeStats} />
-                </SectionPanel>
-
-                {/* Bottom */}
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  <SectionPanel title="Recent Winners">
-                    <RecentWinners winners={data.recentWinners} />
-                  </SectionPanel>
-                  <SectionPanel title="Activity Timeline">
-                    <ActivityTimeline activities={data.activities} />
-                  </SectionPanel>
-                  <div className="space-y-6">
-                    <SectionPanel title="Server Status">
-                      <ServerStatus items={data.serverStatus} />
-                    </SectionPanel>
-                    <SectionPanel title="System Health">
-                      <SystemHealth metrics={data.health} />
-                    </SectionPanel>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <SectionPanel title="Quick Actions">
-                  <QuickActions actions={data.quickActions} />
-                </SectionPanel>
-              </>
-            )}
-          </main>
-        </div>
-      </div>
+          {/* Quick Actions */}
+          <SectionPanel title="Quick Actions">
+            <QuickActions actions={data.quickActions} />
+          </SectionPanel>
+        </>
+      )}
     </div>
   );
 });

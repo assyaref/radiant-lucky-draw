@@ -14,7 +14,11 @@
 // Single source of truth for the deployed backend. These are used ONLY as
 // a fallback when the corresponding VITE_ variable is not set at build time.
 const PRODUCTION_API_URL = 'https://radiant-lucky-draw.vercel.app';
-const PRODUCTION_SOCKET_URL = 'https://radiant-lucky-draw.vercel.app';
+// Supabase project (public values — the anon/publishable key is designed to be
+// shipped to browsers; every table is protected by RLS and the app only uses
+// it for Realtime broadcast). Override with VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY.
+const DEFAULT_SUPABASE_URL = 'https://emwmnghbxsoudfxxltna.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_1rcvks3PA63JAOEvfP9uPg_zjTuvcKR';
 const PRODUCTION_PUBLIC_URL = 'https://radiant-lucky-draw.vercel.app';
 
 // ─── API Base URL Normalization ─────────────────────────────────────────
@@ -30,7 +34,7 @@ function normalizeApiBaseUrl(url: string): string {
 // ─── Validation ─────────────────────────────────────────────────────────
 
 function validateEnv(): void {
-  const required: string[] = ['VITE_API_BASE_URL', 'VITE_SOCKET_URL'];
+  const required: string[] = ['VITE_API_BASE_URL'];
 
   const missing = required.filter((key) => !import.meta.env[key]);
 
@@ -68,10 +72,11 @@ export const env = {
   ),
   API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000', 10),
 
-  // Realtime (Socket.IO)
-  SOCKET_URL:
-    import.meta.env.VITE_SOCKET_URL ||
-    (import.meta.env.PROD ? PRODUCTION_SOCKET_URL : 'http://localhost:3001'),
+  // Realtime (Supabase Realtime broadcast — replaces Socket.IO)
+  SUPABASE_URL: (import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/+$/, ''),
+  SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY,
+  /** @deprecated kept for existing call sites; equals SUPABASE_URL */
+  SOCKET_URL: (import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/+$/, ''),
 
   // Features
   ENABLE_MOCK: import.meta.env.VITE_ENABLE_MOCK === 'true',

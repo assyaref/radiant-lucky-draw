@@ -37,8 +37,11 @@ export async function logout(): Promise<void> {
 }
 
 export async function getMe(): Promise<AuthUser> {
-  const res = await api.get<ApiEnvelope<AuthUser>>('/auth/me');
-  return res.data;
+  // The API answers { data: { user } }; older code read `data` as the user,
+  // which lost role/permissions after every page reload.
+  const res = await api.get<ApiEnvelope<{ user: AuthUser } | AuthUser>>('/auth/me');
+  const data = res.data as { user?: AuthUser } & Partial<AuthUser>;
+  return (data.user ?? data) as AuthUser;
 }
 
 export async function listSessions(): Promise<AuthSession[]> {

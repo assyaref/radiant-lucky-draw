@@ -2,7 +2,7 @@
 // Queue Page
 // ============================================================
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   HiOutlineMagnifyingGlass,
@@ -10,47 +10,94 @@ import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
 } from 'react-icons/hi2';
-
-const mockQueue = Array.from({ length: 20 }, (_, i) => ({
-  id: `Q${String(i + 1).padStart(3, '0')}`,
-  participantName: `Participant ${i + 1}`,
-  ticketNumber: `TKT-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`,
-  status: i < 5 ? 'waiting' : i < 12 ? 'in-progress' : 'completed',
-  joinedAt: new Date(Date.now() - i * 300000).toISOString(),
-  estimatedWait: `${Math.floor(Math.random() * 15) + 1} min`,
-}));
+import { queueApi, type QueueEntry } from '@api/queue';
 
 const statusColors: Record<string, string> = {
   waiting: 'bg-warning-500/20 text-warning-400',
-  'in-progress': 'bg-primary-500/20 text-primary-400',
+  called: 'bg-primary-500/20 text-primary-400',
   completed: 'bg-success-500/20 text-success-400',
+  cancelled: 'bg-dark-surface-tertiary text-dark-text-tertiary',
+  skipped: 'bg-dark-surface-tertiary text-dark-text-tertiary',
 };
 
+const REFRESH_MS = 15_000;
+
 export default function QueuePage() {
+  const [entries, setEntries] = useState<QueueEntry[]>([]);
+  const [estimatedWait, setEstimatedWait] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  const filtered = mockQueue.filter(
-    (q) =>
-      q.participantName.toLowerCase().includes(search.toLowerCase()) ||
-      q.ticketNumber.toLowerCase().includes(search.toLowerCase()),
+  const load = useCallback(async () => {
+    try {
+      const res = await queueApi.getOperatorState();
+      const state = res.data;
+      // Newest first so the table shows the live end of the queue.
+      setEntries([...(state?.entries ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+      setEstimatedWait(state?.estimatedWait ?? 0);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal memuat antrean');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+    const t = setInterval(() => void load(), REFRESH_MS);
+    return () => clearInterval(t);
+  }, [load]);
+
+  const callNext = async () => {
+    setBusy(true);
+    try {
+      await queueApi.callNext();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal memanggil antrean berikutnya');
+    } finally {
+      setBusy(false);
+      void load();
+    }
+  };
+
+  const term = search.toLowerCase();
+  const filtered = entries.filter(
+    (e) => e.participantName.toLowerCase().includes(term) || e.queueNumber.toLowerCase().includes(term),
   );
-  const totalPages = Math.ceil(filtered.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const waitingCount = entries.filter((e) => e.status === 'waiting').length;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Queue</h1>
-          <p className="text-sm text-dark-text-tertiary mt-1">{filtered.length} entries in queue</p>
+          <p className="text-sm text-dark-text-tertiary mt-1">
+            {waitingCount} menunggu · {entries.length} total
+            {estimatedWait > 0 ? ` · estimasi ${estimatedWait} menit` : ''}
+          </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 transition-colors text-sm">
-          <HiOutlineArrowPath className="w-4 h-4" />
-          Advance Queue
+        <button
+          onClick={callNext}
+          disabled={busy || waitingCount === 0}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+        >
+          <HiOutlineArrowPath className={`w-4 h-4 ${busy ? 'animate-spin' : ''}`} />
+          Panggil Berikutnya
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-300">
+          {error}
+        </div>
+      )}
 
       <div className="relative max-w-md">
         <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-text-tertiary" />
@@ -78,13 +125,7 @@ export default function QueuePage() {
                   Participant
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
-                  Ticket
-                </th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
                   Status
-                </th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
-                  Est. Wait
                 </th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-dark-text-tertiary uppercase tracking-wider">
                   Joined
@@ -92,6 +133,13 @@ export default function QueuePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-border/50">
+              {paginated.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-10 text-center text-sm text-dark-text-tertiary">
+                    {loading ? 'Memuat antrean…' : 'Belum ada antrean.'}
+                  </td>
+                </tr>
+              )}
               {paginated.map((q, i) => (
                 <motion.tr
                   key={q.id}
@@ -100,21 +148,17 @@ export default function QueuePage() {
                   transition={{ delay: i * 0.03 }}
                   className="hover:bg-dark-surface-tertiary/50 transition-colors"
                 >
-                  <td className="px-4 py-3 text-sm text-dark-text-secondary font-mono">{q.id}</td>
+                  <td className="px-4 py-3 text-sm text-dark-text-secondary font-mono">{q.queueNumber}</td>
                   <td className="px-4 py-3 text-sm text-white font-medium">{q.participantName}</td>
-                  <td className="px-4 py-3 text-sm text-dark-text-secondary font-mono">
-                    {q.ticketNumber}
-                  </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[q.status]}`}
+                      className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors[q.status] ?? statusColors.cancelled}`}
                     >
                       {q.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-dark-text-secondary">{q.estimatedWait}</td>
                   <td className="px-4 py-3 text-sm text-dark-text-tertiary">
-                    {new Date(q.joinedAt).toLocaleTimeString()}
+                    {new Date(q.createdAt).toLocaleTimeString('id-ID')}
                   </td>
                 </motion.tr>
               ))}

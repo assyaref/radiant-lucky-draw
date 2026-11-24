@@ -120,7 +120,7 @@ export const Sidebar = memo(function Sidebar() {
       {/* Footer */}
       <div className="p-4" style={{ borderTop: `1px solid ${colors.glass.line}` }}>
         <NavLink
-          to="/"
+          to="/booth"
           className="flex items-center gap-2 text-[10px] uppercase tracking-widest transition-colors"
           style={{ color: colors.text.tertiary }}
         >

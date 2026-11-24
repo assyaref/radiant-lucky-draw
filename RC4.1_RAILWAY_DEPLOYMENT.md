@@ -111,6 +111,9 @@ Set these in the Railway backend service **Variables** tab:
 
 ## 6. Deployment Order
 
+> **Obsolete:** Railway is no longer used. The backend and database run on Supabase —
+> see [SUPABASE_MIGRATION.md](./SUPABASE_MIGRATION.md).
+
 1. **Create PostgreSQL service** on Railway → copy the `DATABASE_URL` connection string.
 2. **Create Backend service** on Railway → point to the `server/` directory.
 3. **Set environment variables** on the backend service (see §4).

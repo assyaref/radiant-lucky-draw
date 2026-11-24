@@ -23,12 +23,6 @@ const EnterpriseDashboard = lazy(() =>
   })),
 );
 const SpinPage = lazy(() => import('@pages/SpinPage'));
-const Draws = lazy(() => import('@pages/Draws'));
-const DrawDetail = lazy(() => import('@pages/DrawDetail'));
-const DrawCreate = lazy(() => import('@pages/DrawCreate'));
-const DrawEdit = lazy(() => import('@pages/DrawEdit'));
-const PrizeManagement = lazy(() => import('@pages/PrizeManagement'));
-const BoothKioskPage = lazy(() => import('@pages/booth/BoothKioskPage'));
 
 // ─── Operator Pages ──────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('@layouts/AdminLayout'));
@@ -157,37 +151,8 @@ const routes: RouteObject[] = [
     element: <LazyPage Component={MonitorPage} />,
   },
   {
-    path: '/booth-kiosk',
-    element: <LazyPage Component={BoothKioskPage} />,
-  },
-  {
     path: '/spin',
     element: <LazyPage Component={SpinPage} />,
-  },
-  {
-    path: '/prizes',
-    element: <LazyPage Component={PrizeManagement} />,
-  },
-  {
-    path: '/draws',
-    children: [
-      {
-        index: true,
-        element: <LazyPage Component={Draws} />,
-      },
-      {
-        path: ':id',
-        element: <LazyPage Component={DrawDetail} />,
-      },
-      {
-        path: 'create',
-        element: <LazyPage Component={DrawCreate} />,
-      },
-      {
-        path: ':id/edit',
-        element: <LazyPage Component={DrawEdit} />,
-      },
-    ],
   },
   {
     path: '*',

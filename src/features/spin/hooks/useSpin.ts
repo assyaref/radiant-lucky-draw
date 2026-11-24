@@ -2,16 +2,13 @@
  * useSpin Hook
  *
  * Hook for managing spin wheel logic.
- * Integrates spinStore with prizeStore and participant data.
+ * Integrates spinStore with API data.
  * Provides spinPrize and spinName functions.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSpinStore } from '../store/spinStore';
-import { usePrizeStore } from '../../prizes/store/prizeStore';
-import type { Prize } from '@/engine/types/prize';
 import type { Participant } from '@/engine/types/participant';
-import type { WheelSegment } from '../types';
 import { api } from '@/api/client';
 
 /**
@@ -74,36 +71,8 @@ async function fetchParticipants(): Promise<Participant[]> {
   }
 }
 
-/**
- * Convert Prize array to WheelSegment array.
- */
-function prizesToSegments(prizes: Prize[]): WheelSegment[] {
-  return prizes.map((prize) => ({
-    id: prize.id,
-    label: prize.name,
-    value: prize.id,
-    color: prize.color || '#6366f1',
-    weight: prize.weight > 0 ? prize.weight : 1,
-    imageUrl: prize.image || undefined,
-  }));
-}
-
-/**
- * Convert Participant array to WheelSegment array.
- */
-function participantsToSegments(participants: Participant[]): WheelSegment[] {
-  return participants.map((participant) => ({
-    id: participant.id,
-    label: participant.fullName,
-    value: participant.id,
-    color: '#34d399',
-    weight: 1,
-  }));
-}
-
 export function useSpin() {
   const spinStore = useSpinStore();
-  const prizeStore = usePrizeStore();
 
   // Local participants state
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -111,35 +80,42 @@ export function useSpin() {
   // Derived state from spinStore
   const { mode, segments, isSpinning, result, history, error, config } = spinStore;
 
-  // Load prizes into spin segments on mount (prize mode)
-  useEffect(() => {
-    if (mode === 'prize' && prizeStore.prizes.length > 0 && segments.length === 0) {
-      spinStore.setSegments(prizesToSegments(prizeStore.prizes));
-    }
-  }, [mode, prizeStore.prizes, segments.length, spinStore]);
-
   // Load participants for name mode
   useEffect(() => {
     if (mode === 'name' && participants.length === 0) {
       fetchParticipants().then((ps) => {
         setParticipants(ps);
-        spinStore.setSegments(participantsToSegments(ps));
+        spinStore.setSegments(
+          ps.map((p) => ({
+            id: p.id,
+            label: p.fullName,
+            value: p.id,
+            color: '#34d399',
+            weight: 1,
+          })),
+        );
       });
     }
   }, [mode, participants.length, spinStore]);
 
   // Sync segments when mode changes
   useEffect(() => {
-    if (mode === 'prize') {
-      spinStore.setSegments(prizesToSegments(prizeStore.prizes));
-    } else if (mode === 'name' && participants.length > 0) {
-      spinStore.setSegments(participantsToSegments(participants));
+    if (mode === 'name' && participants.length > 0) {
+      spinStore.setSegments(
+        participants.map((p) => ({
+          id: p.id,
+          label: p.fullName,
+          value: p.id,
+          color: '#34d399',
+          weight: 1,
+        })),
+      );
     }
-  }, [mode, prizeStore.prizes, participants, spinStore]);
+  }, [mode, participants, spinStore]);
 
   /**
    * Spin the prize wheel.
-   * Selects a prize based on weighted probability.
+   * Selects a segment based on weighted probability.
    */
   const spinPrize = useCallback(
     (seed?: number) => {

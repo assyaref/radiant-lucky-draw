@@ -3,6 +3,10 @@
  * Radiant Group Lucky Draw Digital Booth
  * 1920×1080 target · Real-time synchronized via Socket.IO
  * State: IDLE → COUNTDOWN → SPINNING → REVEALED → COMPLETED → IDLE
+ *
+ * Modes:
+ * - 'event': Lucky Draw Booth (3-column: prizes | center | winners)
+ * - 'namespin': Spin Nama (Dual-Layer Wheel full-screen)
  */
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -82,16 +86,6 @@ const TIER: Record<string, { bg: string; text: string; glow: string }> = {
 function tier(t: string | null | undefined) {
   return TIER[t?.toLowerCase() ?? ''] ?? TIER.bronze;
 }
-
-// Monotonic order of draw states — used to discard stale/duplicated state
-// messages so the center can never regress or blank mid-animation.
-const STATE_RANK: Record<DrawState, number> = {
-  IDLE: 0,
-  COUNTDOWN: 1,
-  SPINNING: 2,
-  REVEALED: 3,
-  COMPLETED: 4,
-};
 
 // ─── Corporate Confetti (Logo Decoration) ──────────────────────────────
 
@@ -1176,68 +1170,6 @@ export default function MonitorPage() {
     drawDataRef.current = drawData;
   }, [drawData]);
 
-  // ─── Shared server-state application (socket + HTTP fallback) ──────
-  // Applies a server-authoritative state ONLY when it represents forward
-  // progress in the current draw or a brand-new draw. Stale/out-of-order
-  // messages are ignored so the center animation can never be blanked or
-  // regressed when events arrive twice, out of order, or via overlapping
-  // socket + HTTP deliveries.
-  const applyServerState = useCallback(
-    (st: DrawState, data?: Record<string, unknown> | null) => {
-      const newDrawId = (data?.drawId as string) ?? null;
-      const current = drawDataRef.current;
-      const currentState = drawStateRef.current;
-      const sameDraw = !!(current?.drawId && newDrawId && current.drawId === newDrawId);
-
-      // No-op when this exact state is already active for the same draw
-      // (e.g. a redundant draw:state-sync or HTTP poll) — especially so the
-      // countdown is never restarted mid-sequence by a duplicate message.
-      if (st === currentState && sameDraw) return;
-      // Same draw reported — only accept forward progress.
-      if (sameDraw && STATE_RANK[st] < STATE_RANK[currentState]) {
-        return;
-      }
-
-      // A brand-new draw must cancel any stale idle-reset scheduled by a
-      // previous draw so a stale reset can never blank the center of the
-      // new draw's sequence (whatever state it joins at).
-      if (current?.drawId && newDrawId && current.drawId !== newDrawId) {
-        if (completedResetTimerRef.current) {
-          clearTimeout(completedResetTimerRef.current);
-          completedResetTimerRef.current = null;
-        }
-        completedDrawIdRef.current = null;
-      }
-
-      setDrawState(st);
-      if (data) {
-        setDrawData((prev) => ({
-          state: st,
-          drawId: (data.drawId as string) ?? prev?.drawId ?? null,
-          participantId: (data.participantId as string) ?? prev?.participantId ?? null,
-          participantName: (data.participantName as string) ?? prev?.participantName ?? null,
-          participantCompany:
-            (data.participantCompany as string) ?? prev?.participantCompany ?? null,
-          participantPhotoUrl:
-            (data.participantPhotoUrl as string) ?? prev?.participantPhotoUrl ?? null,
-          prizeId: (data.prizeId as string) ?? prev?.prizeId ?? null,
-          prizeName: (data.prizeName as string) ?? prev?.prizeName ?? null,
-          prizeTier: (data.prizeTier as string) ?? prev?.prizeTier ?? null,
-          prizeImageUrl: (data.prizeImageUrl as string) ?? prev?.prizeImageUrl ?? null,
-          remainingStock: (data.remainingStock as number | null) ?? prev?.remainingStock ?? null,
-          startedAt: (data.startedAt as string) ?? prev?.startedAt ?? null,
-        }));
-      }
-
-      if (st === 'COUNTDOWN') {
-        startCountdown();
-      } else if (st !== 'IDLE') {
-        stopCountdown();
-      }
-    },
-    [startCountdown, stopCountdown],
-  );
-
   // ─── Socket connection diagnostics ──────────────────────────────────
   useEffect(() => {
     console.log('[Monitor] API URL:', env.API_BASE_URL);
@@ -1467,46 +1399,6 @@ export default function MonitorPage() {
     if (isConnected) emit?.('draw:get-state' as any, {});
   }, [isConnected, emit]);
 
-  useSocketEvent(
-    SOCKET_EVENTS.DRAW_STATE_SYNC as SocketEventName,
-    useCallback(
-      (st: any) => {
-        console.log('[Monitor] draw:state-sync', {
-          state: st?.state,
-          participantName: st?.participantName,
-          prizeName: st?.prizeName,
-        });
-        if (!st?.state || st.state === 'IDLE') return;
-        applyServerState(st.state, st);
-      },
-      [applyServerState],
-    ),
-  );
-
-  // ─── HTTP state reconciliation (fallback for lost/out-of-order events) ──
-  // Polls /booth/draw-state every 3s so the center can NEVER stay stuck IDLE
-  // while the server is mid-draw — even if a socket event is missed, reordered,
-  // or arrives during a connection/reconnection window. The monotonic guard in
-  // applyServerState prevents a stale poll from regressing an in-flight
-  // animation, and duplicate socket+poll updates are harmless.
-  useEffect(() => {
-    const poll = async () => {
-      try {
-        const res = await fetch(`${env.API_BASE_URL}/booth/draw-state`);
-        const j = await res.json();
-        const s = j?.data?.state as DrawState | undefined;
-        if (s && s !== 'IDLE') {
-          applyServerState(s, j.data);
-        }
-      } catch {
-        /* ignore transient network errors; next poll will retry */
-      }
-    };
-    poll();
-    const t = setInterval(poll, 3000);
-    return () => clearInterval(t);
-  }, [applyServerState]);
-
   // ─── Fullscreen ─────────────────────────────────────────────────────
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -1541,26 +1433,63 @@ export default function MonitorPage() {
 
   useEffect(() => () => stopCountdown(), [stopCountdown]);
 
+  // ─── Dual-Layer Wheel helper: extract prize segments for display ──────
+  const dualWheelPrizeSegments = useMemo(() => {
+    if (!nameSpin || !monitorState?.wheel.displayMode || monitorState.wheel.displayMode !== 'dual') return [];
+    return monitorState.wheel.prizeSegments ?? [];
+  }, [nameSpin, monitorState?.wheel.displayMode, monitorState?.wheel.prizeSegments]);
+
   // ─── Render ─────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#020617] select-none font-sans">
       <div className="absolute inset-0 bg-gradient-to-b from-[#070b1a] via-[#020617] to-[#060a18]" />
       <ParticleField />
 
-      {/* Spin Nama: full-screen wheel in 'namespin' mode, overlay on spin in 'event' mode */}
+      {/* Spin Nama: full-screen Dual-Layer Wheel in 'namespin' mode */}
       <AnimatePresence>
         {(nameSpinMode || nameSpin) && (
           <motion.div
             key={nameSpinMode ? 'namespin-mode' : `namespin-${nameSpin?.spinId}`}
-            className="fixed inset-0 z-40 bg-[#080d33]"
+            className="fixed inset-0 z-40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
           >
+            {/* Premium background for dual-layer wheel mode */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_90%_at_25%_40%,rgba(30,58,138,0.45),transparent_70%),radial-gradient(ellipse_60%_70%_at_85%_15%,rgba(124,58,237,0.35),transparent_70%),radial-gradient(ellipse_50%_60%_at_15%_85%,rgba(6,182,212,0.25),transparent_70%),radial-gradient(ellipse_40%_50%_at_80%_80%,rgba(168,85,247,0.2),transparent_65%),linear-gradient(180deg,#0c0a1e_0%,#0f172a_30%,#1e1b4b_60%,#0c0a1e_100%)]" />
+            
+            {/* Floating glow orbs */}
+            <div className="absolute inset-0 pointer-events-none">
+              {[0, 1, 2, 3].map((i) => (
+                <motion.div
+                  key={i}
+                  className="absolute rounded-full blur-3xl"
+                  style={{
+                    width: [400, 320, 350, 280][i],
+                    height: [400, 320, 350, 280][i],
+                    background: ['rgba(30,58,138,0.5)', 'rgba(124,58,237,0.4)', 'rgba(6,182,212,0.35)', 'rgba(168,85,247,0.3)'][i],
+                    opacity: 0.3,
+                    top: ['10%', '20%', '60%', '70%'][i],
+                    left: ['15%', '70%', '20%', '80%'][i],
+                  }}
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [0.2, 0.5, 0.2],
+                  }}
+                  transition={{
+                    duration: [6, 5, 7, 8][i],
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                    delay: [0, 1.5, 3, 4.5][i],
+                  }}
+                />
+              ))}
+            </div>
+
             <NameSpinStage
               segments={monitorState?.wheel.names ?? []}
-              prizeSegments={monitorState?.wheel.prizeSegments ?? []}
+              prizeSegments={dualWheelPrizeSegments}
               totalNames={monitorState?.wheel.totalNames ?? 0}
               totalPrizes={monitorState?.wheel.totalPrizes ?? 0}
               title={monitorState?.wheel.title}
@@ -1570,99 +1499,107 @@ export default function MonitorPage() {
               spin={nameSpin}
               theme={monitorState?.theme}
               variant="screen"
+              sound={monitorState?.theme?.soundEnabled ?? true}
             />
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-6 md:px-10 py-3 border-b border-white/[0.04] bg-gradient-to-b from-[#020617cc] to-transparent">
-        <div className="flex items-center gap-3">
-          <img
-            src={monitorState?.theme?.logoUrl || luckyDrawLogo}
-            onError={(e) => {
-              if (e.currentTarget.dataset.fallback) return;
-              e.currentTarget.dataset.fallback = '1';
-              e.currentTarget.src = luckyDrawLogo;
-            }}
-            alt="Lucky Draw"
-            className="h-8 w-auto object-contain opacity-90 drop-shadow-[0_0_12px_rgba(139,92,246,0.25)]"
-          />
-          <span className="text-white/15 text-[10px] font-mono tracking-[0.2em] hidden sm:block">
-            CORPORATE EVENT
-          </span>
-        </div>
-        <div className="flex items-center gap-4 ml-auto">
-          <div
-            className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${isConnected ? 'bg-success-500/10 text-success-400' : 'bg-danger-500/10 text-danger-400'}`}
-          >
-            <div
-              className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]' : 'bg-danger-400'}`}
+      {/* Event mode header (hidden during namespin) */}
+      {!nameSpinMode && (
+        <div className="absolute top-0 left-0 right-0 z-30 flex justify-between items-center px-6 md:px-10 py-3 border-b border-white/[0.04] bg-gradient-to-b from-[#020617cc] to-transparent">
+          <div className="flex items-center gap-3">
+            <img
+              src={monitorState?.theme?.logoUrl || luckyDrawLogo}
+              onError={(e) => {
+                if (e.currentTarget.dataset.fallback) return;
+                e.currentTarget.dataset.fallback = '1';
+                e.currentTarget.src = luckyDrawLogo;
+              }}
+              alt="Lucky Draw"
+              className="h-8 w-auto object-contain opacity-90 drop-shadow-[0_0_12px_rgba(139,92,246,0.25)]"
             />
-            {isConnected ? 'LIVE' : 'OFFLINE'}
+            <span className="text-white/15 text-[10px] font-mono tracking-[0.2em] hidden sm:block">
+              CORPORATE EVENT
+            </span>
           </div>
-          <button
-            onClick={toggleFullscreen}
-            className="p-2 rounded-lg text-white/20 hover:text-white/50 hover:bg-white/5 transition-colors"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+          <div className="flex items-center gap-4 ml-auto">
+            <div
+              className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${isConnected ? 'bg-success-500/10 text-success-400' : 'bg-danger-500/10 text-danger-400'}`}
             >
-              <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
-            </svg>
-          </button>
+              <div
+                className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]' : 'bg-danger-400'}`}
+              />
+              {isConnected ? 'LIVE' : 'OFFLINE'}
+            </div>
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-lg text-white/20 hover:text-white/50 hover:bg-white/5 transition-colors"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Main stage: 3-Column Grid */}
-      <div
-        className="absolute top-16 bottom-9 left-0 right-0 z-10 grid"
-        style={{
-          gridTemplateColumns: 'minmax(280px, 0.8fr) minmax(500px, 1.8fr) minmax(280px, 0.8fr)',
-        }}
-      >
-        {/* LEFT: Prize List */}
-        <div className="relative border-r border-white/[0.03]">
-          <PrizeListPanel prizes={prizes} highlightedPrizeId={highlightedPrizeId} />
+      {/* Main stage: Event mode (3-column) or hidden during namespin */}
+      {!nameSpinMode && (
+        <div
+          className="absolute top-16 bottom-9 left-0 right-0 z-10 grid"
+          style={{
+            gridTemplateColumns: 'minmax(280px, 0.8fr) minmax(500px, 1.8fr) minmax(280px, 0.8fr)',
+          }}
+        >
+          {/* LEFT: Prize List */}
+          <div className="relative border-r border-white/[0.03]">
+            <PrizeListPanel prizes={prizes} highlightedPrizeId={highlightedPrizeId} />
+          </div>
+
+          {/* CENTER: Lucky Draw */}
+          <div className="relative">
+            <CenterPanel
+              drawState={drawState}
+              drawData={drawData}
+              count={count}
+              showGo={showGo}
+              done={drawState === 'COMPLETED'}
+              prizes={prizes}
+              onVisualStop={(prizeId) => setHighlightedPrizeId(prizeId)}
+            />
+          </div>
+
+          {/* RIGHT: Winner List */}
+          <div className="relative border-l border-white/[0.03]">
+            <WinnerListPanel winners={winners} />
+          </div>
         </div>
+      )}
 
-        {/* CENTER: Lucky Draw */}
-        <div className="relative">
-          <CenterPanel
-            drawState={drawState}
-            drawData={drawData}
-            count={count}
-            showGo={showGo}
-            done={drawState === 'COMPLETED'}
-            prizes={prizes}
-            onVisualStop={(prizeId) => setHighlightedPrizeId(prizeId)}
-          />
+      {/* Gold Confetti during winner reveal (event mode only) */}
+      {!nameSpinMode && (drawState === 'REVEALED' || drawState === 'COMPLETED') && <GoldConfetti active />}
+
+      {/* Footer (event mode only) */}
+      {!nameSpinMode && (
+        <div className="absolute bottom-0 left-0 right-0 z-30 flex justify-between items-center px-8 py-2 border-t border-white/[0.04] bg-gradient-to-t from-[#020617] to-transparent">
+          <div className="flex items-center gap-4">
+            <ProgressTimeline state={drawState} />
+            <span className="text-white/10 text-[10px] font-mono tracking-wider">
+              RADIANT LUCKY DRAW · v1.0
+            </span>
+          </div>
+          <span className="text-white/06 text-[10px] font-mono">1920x1080 · 16:9</span>
         </div>
-
-        {/* RIGHT: Winner List */}
-        <div className="relative border-l border-white/[0.03]">
-          <WinnerListPanel winners={winners} />
-        </div>
-      </div>
-
-      {/* Gold Confetti during winner reveal */}
-      {(drawState === 'REVEALED' || drawState === 'COMPLETED') && <GoldConfetti active />}
-
-      {/* Footer */}
-      <div className="absolute bottom-0 left-0 right-0 z-30 flex justify-between items-center px-8 py-2 border-t border-white/[0.04] bg-gradient-to-t from-[#020617] to-transparent">
-        <div className="flex items-center gap-4">
-          <ProgressTimeline state={drawState} />
-          <span className="text-white/10 text-[10px] font-mono tracking-wider">
-            RADIANT LUCKY DRAW · v1.0
-          </span>
-        </div>
-        <span className="text-white/06 text-[10px] font-mono">1920x1080 · 16:9</span>
-      </div>
+      )}
     </div>
   );
 }

@@ -6,6 +6,8 @@
 
 import api from './client';
 
+export type DisplayMode = 'single' | 'dual';
+
 export interface NameSpinPayload {
   names: string[];
   prizeId?: string;
@@ -13,6 +15,7 @@ export interface NameSpinPayload {
   title?: string;
   randomPrize?: boolean;
   prizeList?: string[];
+  displayMode?: DisplayMode;
 }
 
 export interface NameSpinResult {
@@ -26,9 +29,12 @@ export interface NameSpinResult {
   prizeId: string | null;
   winnerId: string | null;
   title: string | null;
-  /** Wheel segments (same sample as the idle wheel); winner at `winnerSegment`. */
   segments: string[];
   winnerSegment: number;
+  prizeSegments?: string[];
+  prizeSegment?: number;
+  totalPrizes?: number;
+  displayMode?: DisplayMode;
   durationMs: number;
   revealHoldMs: number;
   startedAt: string;
@@ -39,7 +45,6 @@ export const nameSpinApi = {
     api.post<{ success: boolean; data: NameSpinResult }>('/name-spin', payload),
 };
 
-/** Same cleaning as the server: trim, collapse spaces, drop empties & case-insensitive duplicates. */
 export function cleanNames(text: string): string[] {
   const seen = new Set<string>();
   const out: string[] = [];

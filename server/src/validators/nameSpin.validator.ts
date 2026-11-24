@@ -1,8 +1,5 @@
-/**
- * Name Spin Validator
- */
-
 import { z } from 'zod';
+import { createValidate } from 'typia-zod';
 
 export const nameSpinSchema = z.object({
   body: z
@@ -16,5 +13,8 @@ export const nameSpinSchema = z.object({
       title: z.string().trim().max(120).optional(),
       randomPrize: z.boolean().optional(),
       prizeList: z.array(z.string().max(200, 'Nama hadiah maksimal 200 karakter')).optional(),
+      displayMode: z.enum(['single', 'dual']).optional(),
     }),
 });
+
+export const validateNameSpin = createValidate(nameSpinSchema);

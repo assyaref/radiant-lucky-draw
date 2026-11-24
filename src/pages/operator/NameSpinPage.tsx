@@ -12,7 +12,7 @@ import {
   HiOutlineTv,
 } from 'react-icons/hi2';
 
-import { nameSpinApi, cleanNames, type NameSpinResult } from '@api/nameSpin';
+import { nameSpinApi, cleanNames, type NameSpinResult, type DisplayMode } from '@api/nameSpin';
 import { prizeApi, type Prize } from '@api/prize';
 import { ApiClientError } from '@api/client';
 import { NameSpinStage } from '@components/namespin/NameSpinStage';
@@ -44,6 +44,7 @@ interface Saved {
   /** Play sounds in the preview on this device too. */
   localSound: boolean;
   randomPrize: boolean;
+  displayMode: DisplayMode;
 }
 
 function load(): Saved {
@@ -58,13 +59,14 @@ function load(): Saved {
         history: [],
         localSound: false,
         randomPrize: false,
+        displayMode: 'single' as DisplayMode,
         ...JSON.parse(raw),
       };
     }
   } catch {
     /* storage unavailable */
   }
-  return { text: '', prizeText: '', removeWinner: true, title: '', history: [], localSound: false, randomPrize: false };
+  return { text: '', prizeText: '', removeWinner: true, title: '', history: [], localSound: false, randomPrize: false, displayMode: 'single' as DisplayMode };
 }
 
 function save(v: Saved): void {
@@ -87,6 +89,7 @@ export default function NameSpinPage() {
   const [history, setHistory] = useState<HistoryItem[]>(initial.history);
   const [localSound, setLocalSound] = useState(initial.localSound);
   const [randomPrize, setRandomPrize] = useState(initial.randomPrize);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(initial.displayMode);
   const [theme, setTheme] = useState<MonitorTheme>(DEFAULT_THEME);
 
   const [prizes, setPrizes] = useState<Prize[]>([]);
@@ -106,10 +109,11 @@ export default function NameSpinPage() {
   const rawPrizeCount = useMemo(() => prizeText.split(/\r?\n|;|\t/).filter((l) => l.trim()).length, [prizeText]);
 
   const idleSegments = useMemo(() => sampleForWheel(names), [names]);
+  const idlePrizeSegments = useMemo(() => sampleForWheel(prizeList), [prizeList]);
 
   useEffect(() => {
-    save({ text, prizeText, removeWinner, title, history, localSound, randomPrize });
-  }, [text, prizeText, removeWinner, title, history, localSound, randomPrize]);
+    save({ text, prizeText, removeWinner, title, history, localSound, randomPrize, displayMode });
+  }, [text, prizeText, removeWinner, title, history, localSound, randomPrize, displayMode]);
 
   // Current Monitor mode
   useEffect(() => {
@@ -129,8 +133,10 @@ export default function NameSpinPage() {
       prizeId: randomPrize ? null : (prizeChoice && prizeChoice !== 'custom' && prizeChoice !== 'random_list' ? prizeChoice : null),
       prizeName: randomPrize ? null : (prizeChoice === 'custom' ? customPrize.trim() || null : null),
       randomPrize,
+      prizeList: randomPrize ? prizeList : undefined,
+      displayMode,
     }),
-    [names, title, prizeChoice, customPrize, randomPrize],
+    [names, title, prizeChoice, customPrize, randomPrize, prizeList, displayMode],
   );
 
   // While the Monitor shows the wheel, keep it in sync with this list (debounced).
@@ -188,6 +194,7 @@ export default function NameSpinPage() {
         title: title.trim() || undefined,
         randomPrize,
         prizeList: randomPrize ? prizeList : undefined,
+        displayMode,
       });
       setSpin(res.data);
     } catch (err) {
@@ -330,6 +337,34 @@ export default function NameSpinPage() {
           </label>
 
           <label className="block space-y-1">
+            <span className="text-xs text-dark-text-tertiary">Mode Tampilan Roda</span>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
+                <input
+                  type="radio"
+                  name="displayMode"
+                  checked={displayMode === 'single'}
+                  onChange={() => setDisplayMode('single')}
+                  className="accent-primary-500"
+                  disabled={spinning}
+                />
+                Roda Tunggal (Spin Nama Saja)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
+                <input
+                  type="radio"
+                  name="displayMode"
+                  checked={displayMode === 'dual'}
+                  onChange={() => setDisplayMode('dual')}
+                  className="accent-primary-500"
+                  disabled={spinning}
+                />
+                Roda Ganda (Spin Nama + Hadiah Bersamaan)
+              </label>
+            </div>
+          </label>
+
+          <label className="block space-y-1">
             <span className="text-xs text-dark-text-tertiary">Mode Hadiah</span>
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
@@ -443,8 +478,11 @@ export default function NameSpinPage() {
             <div className="rounded-2xl border border-dark-border overflow-hidden">
               <NameSpinStage
                 segments={idleSegments}
+                prizeSegments={idlePrizeSegments}
                 totalNames={names.length}
+                totalPrizes={prizeList.length}
                 title={title.trim() || null}
+                displayMode={displayMode}
                 prizeName={
                   spin ? spin.prizeName : (randomPrize ? 'Acak dari daftar' : (prizeChoice === 'custom'
                     ? customPrize.trim() || null

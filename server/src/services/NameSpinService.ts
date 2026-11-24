@@ -10,6 +10,9 @@
  * Now upgraded to Lucky Draw mode: selects both a random participant AND a
  * random prize from available stock in a single atomic transaction.
  * Winner history is saved and prize stock is decremented automatically.
+ *
+ * Dual Wheel Mode: spins both a name wheel and a prize wheel simultaneously,
+ * creating a more dramatic and engaging visual experience for the audience.
  */
 
 import { randomInt, randomUUID } from 'crypto';
@@ -19,6 +22,8 @@ import { ValidationError, NotFoundError } from '../utils';
 import { cleanNames, sampleForWheel } from '../utils/names';
 import { prisma } from '../lib/prisma';
 
+export type DisplayMode = 'single' | 'dual';
+
 export interface NameSpinRequest {
   names: string[];
   prizeId?: string;
@@ -26,6 +31,7 @@ export interface NameSpinRequest {
   title?: string;
   randomPrize?: boolean;
   prizeList?: string[];
+  displayMode?: DisplayMode;
   eventId?: string | null;
 }
 
@@ -40,12 +46,12 @@ export interface NameSpinResult {
   prizeId: string | null;
   title: string | null;
   winnerId: string | null;
-  /**
-   * Wheel segments — the same sample the idle wheel shows (see MonitorService),
-   * guaranteed to contain the winner at `winnerSegment`.
-   */
   segments: string[];
   winnerSegment: number;
+  prizeSegments?: string[];
+  prizeSegment?: number;
+  totalPrizes?: number;
+  displayMode?: DisplayMode;
   durationMs: number;
   revealHoldMs: number;
   startedAt: string;
@@ -71,6 +77,9 @@ export class NameSpinService {
     let prizeTier: string | null = null;
     let prizeId: string | null = null;
     let selectedPrize: any = null;
+    let prizeSegments: string[] | undefined;
+    let prizeSegment: number | undefined;
+    let totalPrizes: number | undefined;
 
     if (data.randomPrize) {
       if (data.prizeList && data.prizeList.length > 0) {
@@ -80,6 +89,15 @@ export class NameSpinService {
         }
         const prizeIndex = randomInt(cleanedPrizeList.length);
         prizeName = cleanedPrizeList[prizeIndex];
+        if (data.displayMode === 'dual') {
+          prizeSegments = sampleForWheel(cleanedPrizeList);
+          prizeSegment = prizeSegments.indexOf(prizeName);
+          if (prizeSegment < 0) {
+            prizeSegment = randomInt(prizeSegments.length);
+            prizeSegments[prizeSegment] = prizeName;
+          }
+          totalPrizes = cleanedPrizeList.length;
+        }
       } else {
         const availablePrizes = await this.prizeRepository.findActive(data.eventId ?? null);
         if (availablePrizes.length === 0) {
@@ -91,6 +109,16 @@ export class NameSpinService {
         prizeName = selectedPrize.name;
         prizeImageUrl = selectedPrize.imageUrl ?? null;
         prizeTier = selectedPrize.tier ?? null;
+        if (data.displayMode === 'dual') {
+          const prizeNames = availablePrizes.map(p => p.name);
+          prizeSegments = sampleForWheel(prizeNames);
+          prizeSegment = prizeSegments.indexOf(prizeName);
+          if (prizeSegment < 0) {
+            prizeSegment = randomInt(prizeSegments.length);
+            prizeSegments[prizeSegment] = prizeName;
+          }
+          totalPrizes = availablePrizes.length;
+        }
       }
     } else if (data.prizeId) {
       const prize = await this.prizeRepository.findById(data.prizeId);
@@ -147,6 +175,10 @@ export class NameSpinService {
       winnerId,
       segments,
       winnerSegment,
+      prizeSegments,
+      prizeSegment,
+      totalPrizes,
+      displayMode: data.displayMode || 'single',
       durationMs: SPIN_DURATION_MS,
       revealHoldMs: REVEAL_HOLD_MS,
       startedAt: new Date().toISOString(),
@@ -156,7 +188,6 @@ export class NameSpinService {
     return result;
   }
 
-  /** @see cleanNames */
   static cleanNames(input: string[]): string[] {
     return cleanNames(input);
   }

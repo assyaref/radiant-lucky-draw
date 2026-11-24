@@ -6,6 +6,10 @@
  * card (crown, prize, "Selamat kepada", winner name, name count) on the right,
  * with "Putar Lagi" / "Bagikan" buttons when the operator is driving it.
  * Used full-screen on the Monitor and as the preview on the operator page.
+ *
+ * Now supports two modes:
+ * - 'single' : Original single wheel spin mode (name only or name+prize card)
+ * - 'dual'   : NEW Dual wheel mode - separate wheels for names and prizes
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -18,6 +22,7 @@ import {
   HiOutlineShare,
   HiOutlineSpeakerWave,
   HiOutlineUsers,
+  HiOutlineGift,
 } from 'react-icons/hi2';
 import { NameSpinWheel } from './NameSpinWheel';
 import { useSpinSound } from './spinSound';
@@ -30,7 +35,9 @@ import defaultLogo from '@assets/images/lucky-draw-logo.png';
 interface Props {
   /** Idle wheel (from the Monitor state or the operator's list). */
   segments: string[];
+  prizeSegments?: string[];
   totalNames: number;
+  totalPrizes?: number;
   title?: string | null;
   prizeName?: string | null;
   prizeImageUrl?: string | null;
@@ -45,6 +52,8 @@ interface Props {
   /** 'screen' fills a monitor; 'embed' fits inside a page. */
   variant?: 'screen' | 'embed';
   onRevealed?: (spinId: string) => void;
+  /** Display mode: single wheel or dual wheels */
+  displayMode?: 'single' | 'dual';
 }
 
 /* ── Decorations ─────────────────────────────────────────────────── */
@@ -60,7 +69,6 @@ function Confetti() {
   const pieces = useMemo(
     () =>
       Array.from({ length: 34 }, (_, i) => {
-        // Keep them around the edges and between wheel and card, not over text.
         const x = seeded(i) * 100;
         const y = 12 + seeded(i + 100) * 80;
         return {
@@ -161,11 +169,24 @@ function Crown({ lit }: { lit: boolean }) {
   );
 }
 
+function DualWheelLabel({ icon, text, color }: { icon: React.ReactNode; text: string; color: string }) {
+  return (
+    <div className="flex items-center justify-center gap-2 mb-4">
+      <span className={`w-8 h-8 rounded-full flex items-center justify-center ${color}`}>
+        {icon}
+      </span>
+      <span className="text-sm font-bold tracking-wider uppercase text-white/80">{text}</span>
+    </div>
+  );
+}
+
 /* ── Scene ───────────────────────────────────────────────────────── */
 
 export function NameSpinStage({
   segments,
+  prizeSegments = [],
   totalNames,
+  totalPrizes = 0,
   title,
   prizeName,
   prizeImageUrl,
@@ -176,10 +197,12 @@ export function NameSpinStage({
   spinDisabled,
   variant = 'screen',
   onRevealed,
+  displayMode = 'single',
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [revealedId, setRevealedId] = useState<string | null>(null);
   const [pointerName, setPointerName] = useState<string | null>(null);
+  const [pointerPrize, setPointerPrize] = useState<string | null>(null);
   const [compact, setCompact] = useState(variant === 'embed');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [shareNote, setShareNote] = useState<string | null>(null);
@@ -192,7 +215,6 @@ export function NameSpinStage({
     winUrl: theme?.winSoundUrl,
   });
 
-  // Layout follows the space we actually get, not the window.
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -209,23 +231,23 @@ export function NameSpinStage({
 
   useEffect(() => setLogoFailed(false), [theme?.logoUrl]);
 
-  // A new spin hides the previous winner and starts the spin sound.
   useEffect(() => {
     if (!spin) return;
     if (spin.spinId !== revealedId) setRevealedId(null);
     const elapsed = spin.startedAt ? Date.now() - Date.parse(spin.startedAt) : 0;
     if (!(elapsed > spin.durationMs - 500)) audio.spinStart();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spin?.spinId]);
 
   const revealed = !!spin && revealedId === spin.spinId;
   const spinning = !!spin && !revealed;
   const wheelSegments = spin ? spin.segments : segments;
+  const prizeWheelSegments = spin?.prizeSegments ?? prizeSegments;
   const shownTitle = spin ? spin.title : title;
   const shownPrize = spin ? spin.prizeName : prizeName;
   const shownPrizeImg = spin ? spin.prizeImageUrl : prizeImageUrl;
   const prizeImg = shownPrizeImg ? normalizeImageUrl(shownPrizeImg) : null;
   const count = spin ? spin.totalNames : totalNames;
+  const prizeCount = spin?.totalPrizes ?? totalPrizes;
   const logo = theme?.logoUrl && !logoFailed ? theme.logoUrl : defaultLogo;
   const label = theme?.eventLabel?.trim() || 'Draw Event';
   const screen = variant === 'screen';
@@ -250,7 +272,6 @@ export function NameSpinStage({
       await navigator.clipboard?.writeText(text);
       setShareNote('Teks pemenang disalin');
     } catch {
-      /* cancelled */
     }
     window.setTimeout(() => setShareNote(null), 2500);
   };
@@ -260,6 +281,93 @@ export function NameSpinStage({
     if (compact) return l > 22 ? 'text-3xl' : l > 12 ? 'text-4xl' : 'text-5xl';
     return l > 22 ? 'text-5xl xl:text-6xl' : l > 12 ? 'text-6xl xl:text-7xl' : 'text-7xl xl:text-8xl';
   };
+
+  const renderSingleWheel = () => (
+    <div className="relative shrink-0">
+      <div
+        className={compact ? 'w-[min(86vw,440px)]' : 'w-[min(76vh,50vw)]'}
+        style={{ filter: 'drop-shadow(0 0 50px rgba(99,102,241,0.35))' }}
+      >
+        <NameSpinWheel
+          segments={wheelSegments}
+          spin={spin ?? null}
+          highlight={revealed && spin ? spin.winnerSegment : null}
+          onTick={audio.tick}
+          onPointerSegment={(i) => setPointerName(wheelSegments[i] ?? null)}
+          onSpinEnd={(id) => {
+            setRevealedId(id);
+            audio.spinEnd();
+            onRevealed?.(id);
+          }}
+        />
+      </div>
+      <div className="absolute left-1/2 -translate-x-1/2 -bottom-4 w-1/2 h-6 rounded-[50%] bg-amber-400/40 blur-xl" />
+    </div>
+  );
+
+  const renderDualWheels = () => (
+    <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10 w-full">
+      <div className="flex flex-col items-center">
+        <DualWheelLabel
+          icon={<HiOutlineUsers className="w-4 h-4 text-indigo-200" />}
+          text="Peserta"
+          color="bg-indigo-500/30 border border-indigo-400/40"
+        />
+        <div className="relative shrink-0">
+          <div
+            className={compact ? 'w-[min(70vw,320px)]' : 'w-[min(50vh,32vw)]'}
+            style={{ filter: 'drop-shadow(0 0 40px rgba(99,102,241,0.35))' }}
+          >
+            <NameSpinWheel
+              segments={wheelSegments}
+              spin={spin ?? null}
+              highlight={revealed && spin ? spin.winnerSegment : null}
+              variant="name"
+              onTick={audio.tick}
+              onPointerSegment={(i) => setPointerName(wheelSegments[i] ?? null)}
+              onSpinEnd={(id) => {
+                setRevealedId(id);
+                audio.spinEnd();
+                onRevealed?.(id);
+              }}
+            />
+          </div>
+          <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-1/2 h-4 rounded-[50%] bg-indigo-400/30 blur-xl" />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center">
+        <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.5)]">
+          <span className="text-2xl md:text-3xl font-black text-white">+</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center">
+        <DualWheelLabel
+          icon={<HiOutlineGift className="w-4 h-4 text-amber-200" />}
+          text="Hadiah"
+          color="bg-amber-500/30 border border-amber-400/40"
+        />
+        <div className="relative shrink-0">
+          <div
+            className={compact ? 'w-[min(70vw,320px)]' : 'w-[min(50vh,32vw)]'}
+            style={{ filter: 'drop-shadow(0 0 40px rgba(245,158,11,0.35))' }}
+          >
+            <NameSpinWheel
+              segments={prizeWheelSegments.length > 0 ? prizeWheelSegments : ['Hadiah 1', 'Hadiah 2', 'Hadiah 3']}
+              spin={spin ?? null}
+              highlight={revealed && spin ? spin.prizeSegment ?? 0 : null}
+              variant="prize"
+              onTick={audio.tick}
+              onPointerSegment={(i) => setPointerPrize(prizeWheelSegments[i] ?? null)}
+              onSpinEnd={() => {}}
+            />
+          </div>
+          <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-1/2 h-4 rounded-[50%] bg-amber-400/30 blur-xl" />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -284,7 +392,6 @@ export function NameSpinStage({
         @keyframes ns-shine { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
       `}</style>
 
-      {/* Background waves */}
       <svg
         className="pointer-events-none absolute bottom-0 left-0 w-full h-[28%]"
         viewBox="0 0 1440 300"
@@ -312,7 +419,6 @@ export function NameSpinStage({
 
       <Confetti />
 
-      {/* Header */}
       <header
         className={`relative z-10 flex items-center justify-between ${
           compact ? 'px-4 pt-4' : 'px-8 xl:px-12 pt-6 xl:pt-8'
@@ -364,39 +470,18 @@ export function NameSpinStage({
         </div>
       </header>
 
-      {/* Body */}
       <div
         className={`relative z-10 flex ${
-          compact
+          displayMode === 'dual'
+            ? 'flex-col items-center gap-8 px-4 pb-6 pt-2'
+            : compact
             ? 'flex-col items-center gap-14 px-4 pb-6 pt-4'
             : 'flex-row items-center justify-center gap-[4vw] px-8 xl:px-12'
         }`}
-        style={compact ? undefined : { height: 'calc(100% - 96px)' }}
+        style={displayMode === 'dual' || compact ? undefined : { height: 'calc(100% - 96px)' }}
       >
-        {/* Wheel */}
-        <div className="relative shrink-0">
-          <div
-            className={compact ? 'w-[min(86vw,440px)]' : 'w-[min(76vh,50vw)]'}
-            style={{ filter: 'drop-shadow(0 0 50px rgba(99,102,241,0.35))' }}
-          >
-            <NameSpinWheel
-              segments={wheelSegments}
-              spin={spin ?? null}
-              highlight={revealed && spin ? spin.winnerSegment : null}
-              onTick={audio.tick}
-              onPointerSegment={(i) => setPointerName(wheelSegments[i] ?? null)}
-              onSpinEnd={(id) => {
-                setRevealedId(id);
-                audio.spinEnd();
-                onRevealed?.(id);
-              }}
-            />
-          </div>
-          {/* Floor glow */}
-          <div className="absolute left-1/2 -translate-x-1/2 -bottom-4 w-1/2 h-6 rounded-[50%] bg-amber-400/40 blur-xl" />
-        </div>
+        {displayMode === 'dual' ? renderDualWheels() : renderSingleWheel()}
 
-        {/* Card + actions */}
         <div className={`flex flex-col gap-6 ${compact ? 'w-full max-w-md' : 'w-[min(36vw,540px)]'}`}>
           <div
             className="relative rounded-[28px] border border-indigo-300/25 px-6 pb-7 pt-12 text-center backdrop-blur-md"
@@ -433,7 +518,7 @@ export function NameSpinStage({
                 compact ? 'text-2xl' : 'text-3xl xl:text-4xl'
               }`}
             >
-              {shownPrize || (revealed ? 'Pemenang' : 'Spin Nama')}
+              {displayMode === 'dual' ? 'Hasil Undian' : (shownPrize || (revealed ? 'Pemenang' : 'Spin Nama'))}
             </p>
 
             <AnimatePresence mode="wait">
@@ -446,7 +531,7 @@ export function NameSpinStage({
                   transition={{ type: 'spring', stiffness: 220, damping: 16 }}
                 >
                   <p className="mt-3 text-amber-300 font-bold tracking-[0.4em] uppercase text-sm md:text-base">
-                    Selamat kepada
+                    {displayMode === 'dual' ? 'Pemenang' : 'Selamat kepada'}
                   </p>
                   <p
                     className={`mt-1 font-black leading-[1.05] tracking-tight break-words ${nameSize(spin.winnerName)}`}
@@ -463,6 +548,11 @@ export function NameSpinStage({
                   >
                     {spin.winnerName}
                   </p>
+                  {displayMode === 'dual' && spin.prizeName && (
+                    <p className="mt-2 text-xl md:text-2xl font-bold text-amber-300">
+                      🎁 {spin.prizeName}
+                    </p>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div
@@ -479,7 +569,7 @@ export function NameSpinStage({
                       compact ? 'text-4xl' : 'text-6xl xl:text-7xl'
                     }`}
                   >
-                    {spinning ? (pointerName ?? '…') : '?'}
+                    {spinning ? (displayMode === 'dual' ? `${pointerName ?? '…'} + ${pointerPrize ?? '…'}` : pointerName ?? '…') : '?'}
                   </p>
                 </motion.div>
               )}
@@ -487,10 +577,18 @@ export function NameSpinStage({
 
             <div className="mx-auto mt-4 h-[3px] w-4/5 rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_14px_rgba(251,191,36,0.8)]" />
 
-            <span className="mt-5 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.06] border border-white/10 text-sm text-white/75">
-              <HiOutlineUsers className="w-4 h-4" />
-              {count} nama
-            </span>
+            <div className="flex flex-wrap justify-center gap-4 mt-5">
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.06] border border-white/10 text-sm text-white/75">
+                <HiOutlineUsers className="w-4 h-4" />
+                {count} peserta
+              </span>
+              {displayMode === 'dual' && prizeCount > 0 && (
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-400/20 text-sm text-amber-200">
+                  <HiOutlineGift className="w-4 h-4" />
+                  {prizeCount} hadiah
+                </span>
+              )}
+            </div>
           </div>
 
           {onSpinAgain && (
@@ -504,24 +602,28 @@ export function NameSpinStage({
                   boxShadow: '0 10px 30px rgba(245,158,11,0.35), inset 0 1px 0 rgba(255,255,255,0.6)',
                 }}
               >
-                <HiOutlineArrowPath className={`w-6 h-6 ${spinning ? 'animate-spin' : ''}`} />
-                {spinning ? 'Mengundi…' : spin ? 'Putar Lagi' : 'Putar'}
+                <HiOutlineArrowPath className="w-6 h-6" />
+                Putar Lagi
               </button>
-              <button
-                onClick={() => void share()}
-                disabled={!revealed}
-                className="flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-semibold text-white border border-amber-300/40 bg-indigo-950/60 hover:bg-indigo-900/70 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
-                <HiOutlineShare className="w-5 h-5" />
-                Bagikan
-              </button>
+              {revealed && (
+                <button
+                  onClick={share}
+                  className="w-16 flex items-center justify-center rounded-full bg-white/[0.08] border border-white/15 text-white hover:bg-white/15 transition"
+                  title="Bagikan hasil"
+                >
+                  <HiOutlineShare className="w-6 h-6" />
+                </button>
+              )}
             </div>
           )}
-          {shareNote && <p className="text-center text-xs text-emerald-300">{shareNote}</p>}
+
+          {shareNote && (
+            <p className="text-center text-sm text-emerald-300 font-medium animate-pulse">
+              {shareNote}
+            </p>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-export default NameSpinStage;

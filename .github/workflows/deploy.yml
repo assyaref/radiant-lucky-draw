@@ -27,9 +27,14 @@ permissions:
 jobs:
   # ─── Deploy to Railway (Backend) ──────────────────────────
   # Backend deploys FIRST to prevent API / schema version
-  # mismatches between the live frontend and backend.
+  # mismatches. Frontend-only pushes can safely skip this job.
   deploy-backend:
     name: Deploy Backend to Railway
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        contains(toJSON(github.event.commits), 'server/')
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     environment:
@@ -169,6 +174,11 @@ jobs:
   # never references an API or schema that does not exist yet.
   deploy-frontend:
     name: Deploy Frontend to Vercel
+    if: >-
+      ${{
+        always() &&
+        (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [deploy-backend]

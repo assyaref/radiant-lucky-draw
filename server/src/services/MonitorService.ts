@@ -25,6 +25,12 @@ export interface WheelDisplay {
   title: string | null;
   prizeName: string | null;
   prizeImageUrl: string | null;
+  /** Prize segments for dual-layer wheel (each unit = 1 segment). */
+  prizeSegments?: string[];
+  /** Total prize units available. */
+  totalPrizes?: number;
+  /** Display mode: 'single' or 'dual'. */
+  displayMode?: 'single' | 'dual';
 }
 
 /** Per-event look & sound of the Spin Nama screen. */
@@ -55,6 +61,9 @@ export interface UpdateMonitorStateRequest {
     title?: string | null;
     prizeId?: string | null;
     prizeName?: string | null;
+    prizeSegments?: string[];
+    totalPrizes?: number;
+    displayMode?: 'single' | 'dual';
   };
   theme?: Partial<MonitorTheme>;
 }
@@ -73,6 +82,9 @@ const EMPTY_WHEEL: WheelDisplay = {
   title: null,
   prizeName: null,
   prizeImageUrl: null,
+  prizeSegments: [],
+  totalPrizes: 0,
+  displayMode: 'single',
 };
 
 export class MonitorService {
@@ -114,6 +126,9 @@ export class MonitorService {
         wheel.totalNames = names.length;
       }
       if (req.wheel.title !== undefined) wheel.title = req.wheel.title?.trim() || null;
+      if (req.wheel.displayMode !== undefined) wheel.displayMode = req.wheel.displayMode;
+      if (req.wheel.prizeSegments !== undefined) wheel.prizeSegments = req.wheel.prizeSegments;
+      if (req.wheel.totalPrizes !== undefined) wheel.totalPrizes = req.wheel.totalPrizes;
       if (req.wheel.prizeId) {
         const prize = await this.prizeRepository.findById(req.wheel.prizeId);
         if (!prize) throw new NotFoundError('Prize', req.wheel.prizeId);

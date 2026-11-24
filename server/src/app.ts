@@ -164,7 +164,7 @@ export function createApp(): AppInstance {
   const userService = new UserService(userRepository, sessionService, auditService);
   const userController = new UserController(userService);
   const nameSpinController = new NameSpinController(
-    new NameSpinService(prizeRepository, realtimeService),
+    new NameSpinService(prizeRepository, winnerRepository, participantRepository, realtimeService),
   );
   const monitorController = new MonitorController(
     new MonitorService(prizeRepository, realtimeService),

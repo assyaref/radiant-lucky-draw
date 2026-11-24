@@ -21,6 +21,9 @@ export const updateMonitorStateSchema = z.object({
           title: z.string().trim().max(120).nullable().optional(),
           prizeId: z.string().uuid().nullable().optional(),
           prizeName: z.string().trim().max(200).nullable().optional(),
+          prizeSegments: z.array(z.string().max(200)).max(60).optional(),
+          totalPrizes: z.number().int().min(0).optional(),
+          displayMode: z.enum(['single', 'dual']).optional(),
         })
         .optional(),
       theme: z

@@ -13,6 +13,7 @@
  *
  * Dual Wheel Mode: spins both a name wheel and a prize wheel simultaneously,
  * creating a more dramatic and engaging visual experience for the audience.
+ * Outer wheel = participants, Inner wheel = prize units (each stock unit = 1 segment).
  */
 
 import { randomInt, randomUUID } from 'crypto';
@@ -59,6 +60,34 @@ export interface NameSpinResult {
 
 const SPIN_DURATION_MS = 9000;
 const REVEAL_HOLD_MS = 12000;
+const MAX_WHEEL_SEGMENTS = 60;
+
+function buildPrizeSegments(prizes: Array<{ id: string; name: string; remaining: number; imageUrl?: string; tier: string }>): { segments: string[]; prizeMap: Map<string, { id: string; name: string; imageUrl?: string; tier: string }>; totalUnits: number } {
+  const segments: string[] = [];
+  const prizeMap = new Map<string, { id: string; name: string; imageUrl?: string; tier: string }>();
+
+  for (const prize of prizes) {
+    const units = Math.min(prize.remaining, MAX_WHEEL_SEGMENTS);
+    for (let i = 0; i < units; i++) {
+      const key = `${prize.id}:${i}`;
+      segments.push(key);
+      prizeMap.set(key, {
+        id: prize.id,
+        name: prize.name,
+        imageUrl: prize.imageUrl,
+        tier: prize.tier,
+      });
+    }
+  }
+
+  return { segments, prizeMap, totalUnits: segments.length };
+}
+
+function samplePrizeSegments(prizeSegments: string[], max = MAX_WHEEL_SEGMENTS): string[] {
+  if (prizeSegments.length <= max) return [...prizeSegments];
+  const step = prizeSegments.length / max;
+  return Array.from({ length: max }, (_, i) => prizeSegments[Math.floor(i * step)]);
+}
 
 export class NameSpinService {
   constructor(
@@ -72,14 +101,16 @@ export class NameSpinService {
     const names = cleanNames(data.names);
     if (names.length < 2) throw new ValidationError('Masukkan minimal 2 nama yang berbeda');
 
-    let prizeName = data.prizeName?.trim() || null;
+    let prizeName: string | null = null;
     let prizeImageUrl: string | null = null;
     let prizeTier: string | null = null;
     let prizeId: string | null = null;
-    let selectedPrize: any = null;
+    let selectedPrize: { id: string; name: string; imageUrl?: string; tier: string; value?: number } | null = null;
     let prizeSegments: string[] | undefined;
     let prizeSegment: number | undefined;
     let totalPrizes: number | undefined;
+
+    const isDualMode = data.displayMode === 'dual';
 
     if (data.randomPrize) {
       if (data.prizeList && data.prizeList.length > 0) {
@@ -89,8 +120,10 @@ export class NameSpinService {
         }
         const prizeIndex = randomInt(cleanedPrizeList.length);
         prizeName = cleanedPrizeList[prizeIndex];
-        if (data.displayMode === 'dual') {
-          prizeSegments = sampleForWheel(cleanedPrizeList);
+
+        if (isDualMode) {
+          const fullSegments = [...cleanedPrizeList];
+          prizeSegments = sampleForWheel(fullSegments);
           prizeSegment = prizeSegments.indexOf(prizeName);
           if (prizeSegment < 0) {
             prizeSegment = randomInt(prizeSegments.length);
@@ -103,21 +136,37 @@ export class NameSpinService {
         if (availablePrizes.length === 0) {
           throw new ValidationError('Tidak ada hadiah yang tersedia dengan stok tersisa');
         }
-        const prizeIndex = randomInt(availablePrizes.length);
-        selectedPrize = availablePrizes[prizeIndex];
-        prizeId = selectedPrize.id;
-        prizeName = selectedPrize.name;
-        prizeImageUrl = selectedPrize.imageUrl ?? null;
-        prizeTier = selectedPrize.tier ?? null;
-        if (data.displayMode === 'dual') {
-          const prizeNames = availablePrizes.map(p => p.name);
-          prizeSegments = sampleForWheel(prizeNames);
-          prizeSegment = prizeSegments.indexOf(prizeName);
-          if (prizeSegment < 0) {
-            prizeSegment = randomInt(prizeSegments.length);
-            prizeSegments[prizeSegment] = prizeName;
+
+        if (isDualMode) {
+          const prizeUnits = availablePrizes.flatMap(p =>
+            Array.from({ length: Math.min(p.remaining, MAX_WHEEL_SEGMENTS) }, () => p)
+          );
+          if (prizeUnits.length === 0) {
+            throw new ValidationError('Tidak ada stok hadiah tersisa untuk mode dual');
           }
-          totalPrizes = availablePrizes.length;
+          const unitIndex = randomInt(prizeUnits.length);
+          selectedPrize = prizeUnits[unitIndex];
+          prizeId = selectedPrize.id;
+          prizeName = selectedPrize.name;
+          prizeImageUrl = selectedPrize.imageUrl ?? null;
+          prizeTier = selectedPrize.tier ?? null;
+
+          const { segments, totalUnits } = buildPrizeSegments(availablePrizes);
+          const sampled = samplePrizeSegments(segments);
+          prizeSegments = sampled;
+          prizeSegment = sampled.indexOf(`${selectedPrize.id}:0`);
+          if (prizeSegment < 0 && sampled.length > 0) {
+            prizeSegment = randomInt(sampled.length);
+            sampled[prizeSegment] = `${selectedPrize.id}:0`;
+          }
+          totalPrizes = totalUnits;
+        } else {
+          const prizeIndex = randomInt(availablePrizes.length);
+          selectedPrize = availablePrizes[prizeIndex];
+          prizeId = selectedPrize.id;
+          prizeName = selectedPrize.name;
+          prizeImageUrl = selectedPrize.imageUrl ?? null;
+          prizeTier = selectedPrize.tier ?? null;
         }
       }
     } else if (data.prizeId) {
@@ -128,6 +177,19 @@ export class NameSpinService {
       prizeImageUrl = prize.imageUrl ?? null;
       prizeTier = prize.tier ?? null;
       selectedPrize = prize;
+
+      if (isDualMode) {
+        const availablePrizes = await this.prizeRepository.findActive(data.eventId ?? null);
+        const { segments, totalUnits } = buildPrizeSegments(availablePrizes);
+        const sampled = samplePrizeSegments(segments);
+        prizeSegments = sampled;
+        prizeSegment = sampled.indexOf(`${prize.id}:0`);
+        if (prizeSegment < 0 && sampled.length > 0) {
+          prizeSegment = randomInt(sampled.length);
+          sampled[prizeSegment] = `${prize.id}:0`;
+        }
+        totalPrizes = totalUnits;
+      }
     }
 
     const winnerIndex = randomInt(names.length);

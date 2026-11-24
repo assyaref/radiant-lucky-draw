@@ -1,15 +1,14 @@
 /**
- * NameSpinStage — the Spin Nama scene.
+ * NameSpinStage — the Spin Nama scene with Dual-Layer Wheel.
  *
- * Layout (like the event mock-up): header with the event logo + label, LIVE
- * badge and full-screen button; the gold-rimmed wheel on the left; the winner
- * card (crown, prize, "Selamat kepada", winner name, name count) on the right,
- * with "Putar Lagi" / "Bagikan" buttons when the operator is driving it.
+ * Layout: header with event logo + label, LIVE badge and fullscreen button;
+ * the dual-layer wheel (outer=names, inner=prizes) as the main visual focus;
+ * winner card on the right with crown, prize, "Selamat kepada", winner name.
  * Used full-screen on the Monitor and as the preview on the operator page.
  *
- * Now supports two modes:
- * - 'single' : Original single wheel spin mode (name only or name+prize card)
- * - 'dual'   : NEW Integrated single wheel mode - names and prizes combined in one wheel
+ * Display modes:
+ * - 'single': Original single wheel spin mode (name only)
+ * - 'dual': NEW Dual-layer wheel - outer ring = participants, inner ring = prizes
  */
 
 import { useMemo, useRef, useState } from 'react';
@@ -32,7 +31,6 @@ import type { MonitorTheme } from '@api/monitor';
 import defaultLogo from '@assets/images/lucky-draw-logo.png';
 
 interface Props {
-  /** Idle wheel (from the Monitor state or the operator's list). */
   segments: string[];
   prizeSegments?: string[];
   totalNames: number;
@@ -40,24 +38,20 @@ interface Props {
   title?: string | null;
   prizeName?: string | null;
   prizeImageUrl?: string | null;
-  /** Active/last spin; while set its segments are shown. */
   spin?: NameSpinResult | null;
   theme?: Partial<MonitorTheme> | null;
-  /** Play sounds on this screen. */
   sound?: boolean;
-  /** Shows the "Putar Lagi" button (operator). */
   onSpinAgain?: () => void;
   spinDisabled?: boolean;
-  /** 'screen' fills a monitor; 'embed' fits inside a page. */
   variant?: 'screen' | 'embed';
   onRevealed?: (spinId: string) => void;
-  /** Display mode: single wheel or integrated dual mode */
   displayMode?: 'single' | 'dual';
 }
 
-/* ── Decorations ─────────────────────────────────────────────────── */
-
-const CONFETTI_COLORS = ['#fbbf24', '#38bdf8', '#818cf8', '#a855f7', '#22d3ee', '#f59e0b', '#60a5fa', '#ec4899', '#10b981'];
+const CONFETTI_COLORS = [
+  '#fbbf24', '#38bdf8', '#818cf8', '#a855f7',
+  '#22d3ee', '#f59e0b', '#60a5fa', '#ec4899', '#10b981',
+];
 
 function seeded(i: number): number {
   const x = Math.sin(i * 9301 + 49297) * 233280;
@@ -67,15 +61,15 @@ function seeded(i: number): number {
 function Confetti() {
   const pieces = useMemo(
     () =>
-      Array.from({ length: 80 }, (_, i) => {
+      Array.from({ length: 100 }, (_, i) => {
         const x = seeded(i) * 100;
         const y = 12 + seeded(i + 100) * 80;
         return {
           id: i,
           left: x,
           top: y,
-          w: 6 + seeded(i + 200) * 10,
-          h: 3 + seeded(i + 300) * 5,
+          w: 6 + seeded(i + 200) * 12,
+          h: 3 + seeded(i + 300) * 6,
           rot: seeded(i + 400) * 360,
           color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
           delay: seeded(i + 500) * 8,
@@ -190,6 +184,40 @@ function GlowOrb({ delay, color, size }: { delay: number; color: string; size: n
   );
 }
 
+function ParticleField() {
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 40 }, (_, i) => ({
+        x: (i * 37) % 100,
+        y: (i * 61) % 100,
+        size: 2 + ((i * 17) % 5),
+        duration: 4 + ((i * 13) % 9),
+        delay: (i * 7) % 6,
+        opacity: 0.03 + ((i * 11) % 8) / 100,
+      })),
+    [],
+  );
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {particles.map((p, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full bg-white"
+          style={{
+            width: p.size,
+            height: p.size,
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            opacity: p.opacity,
+          }}
+          animate={{ y: [0, -30, 0], opacity: [p.opacity, p.opacity * 2, p.opacity] }}
+          transition={{ repeat: Infinity, duration: p.duration, delay: p.delay, ease: 'easeInOut' }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function NameSpinStage({
   segments,
   prizeSegments = [],
@@ -209,9 +237,9 @@ export function NameSpinStage({
   const screen = variant === 'screen';
   const rootRef = useRef<HTMLDivElement>(null);
   const wheelSegments = useMemo(() => (segments.length > 0 ? segments : ['Nama 1', 'Nama 2', 'Nama 3']), [segments]);
-  const prizeWheelSegments = useMemo(() => (prizeSegments.length > 0 ? prizeSegments : ['Hadiah 1', 'Hadiah 2', 'Hadiah 3']), [prizeSegments]);
+  const wheelPrizeSegments = useMemo(() => (prizeSegments.length > 0 ? prizeSegments : ['Hadiah 1', 'Hadiah 2', 'Hadiah 3']), [prizeSegments]);
   const count = wheelSegments.length;
-  const prizeCount = prizeWheelSegments.length;
+  const prizeCount = wheelPrizeSegments.length;
   const logo = theme?.logoUrl || defaultLogo;
   const label = title || 'SPIN NAMA';
   const shownTitle = displayMode === 'dual' ? 'SPIN NAMA & HADIAH' : label;
@@ -220,6 +248,7 @@ export function NameSpinStage({
 
   const [revealedId, setRevealedId] = useState<string | null>(null);
   const [pointerName, setPointerName] = useState<string | null>(null);
+  const [pointerPrize, setPointerPrize] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [shareNote, setShareNote] = useState<string | null>(null);
 
@@ -255,29 +284,31 @@ export function NameSpinStage({
     return 'text-5xl md:text-6xl';
   };
 
-  const renderIntegratedDualWheel = () => (
-    <div className="flex flex-col items-center gap-6 w-full">
-      <div className="relative shrink-0">
-        <div
-          className={compact ? 'w-[min(80vw,400px)]' : 'w-[min(55vh,38vw)]'}
-          style={{ filter: 'drop-shadow(0 0 60px rgba(168,85,247,0.5))' }}
-        >
-          <NameSpinWheel
-            segments={wheelSegments}
-            spin={spin ?? null}
-            highlight={revealed && spin ? spin.winnerSegment : null}
-            variant="dual"
-            onTick={audio.tick}
-            onPointerSegment={(i) => setPointerName(wheelSegments[i] ?? null)}
-            onSpinEnd={(id) => {
-              setRevealedId(id);
-              audio.spinEnd();
-              onRevealed?.(id);
-            }}
-          />
-        </div>
-        <div className="absolute left-1/2 -translate-x-1/2 -bottom-4 w-3/4 h-8 rounded-full bg-gradient-to-r from-purple-500/40 via-pink-500/40 to-amber-500/40 blur-2xl" />
+  const renderDualWheel = () => (
+    <div className="relative shrink-0">
+      <div
+        className={compact ? 'w-[min(90vw,500px)]' : 'w-[min(70vh,50vw)]'}
+        style={{ filter: 'drop-shadow(0 0 80px rgba(168,85,247,0.4)) drop-shadow(0 0 40px rgba(251,191,36,0.3))' }}
+      >
+        <NameSpinWheel
+          segments={wheelSegments}
+          prizeSegments={wheelPrizeSegments}
+          spin={spin ?? null}
+          highlight={revealed && spin ? spin.winnerSegment : null}
+          prizeHighlight={revealed && spin && displayMode === 'dual' ? spin.prizeSegment ?? null : null}
+          variant="dual"
+          onTick={audio.tick}
+          onPrizeTick={audio.tick}
+          onPointerSegment={(i) => setPointerName(wheelSegments[i] ?? null)}
+          onPrizePointerSegment={(i) => setPointerPrize(wheelPrizeSegments[i] ?? null)}
+          onSpinEnd={(id) => {
+            setRevealedId(id);
+            audio.spinEnd();
+            onRevealed?.(id);
+          }}
+        />
       </div>
+      <div className="absolute left-1/2 -translate-x-1/2 -bottom-5 w-4/5 h-10 rounded-full bg-gradient-to-r from-purple-500/40 via-pink-500/40 to-amber-500/40 blur-2xl" />
     </div>
   );
 
@@ -309,53 +340,58 @@ export function NameSpinStage({
     <div
       ref={rootRef}
       className={`ns-scene relative w-full h-full overflow-hidden text-white ${
-        screen ? '' : 'rounded-2xl min-h-[600px]'
+        screen ? '' : 'rounded-2xl min-h-[650px]'
       }`}
       style={{
         fontFamily: 'Poppins, Inter, system-ui, sans-serif',
         background:
-          'radial-gradient(ellipse 70% 80% at 30% 50%, rgba(168,85,247,0.35), transparent 75%),' +
-          'radial-gradient(ellipse 50% 50% at 85% 10%, rgba(236,72,153,0.30), transparent 75%),' +
-          'radial-gradient(ellipse 55% 55% at 80% 90%, rgba(251,191,36,0.25), transparent 75%),' +
-          'linear-gradient(180deg,#1a0f4e 0%,#0f0a30 40%,#140b3d 100%)',
+          'radial-gradient(ellipse 80% 90% at 25% 40%, rgba(30,58,138,0.45), transparent 70%),' +
+          'radial-gradient(ellipse 60% 70% at 85% 15%, rgba(124,58,237,0.35), transparent 70%),' +
+          'radial-gradient(ellipse 50% 60% at 15% 85%, rgba(6,182,212,0.25), transparent 70%),' +
+          'radial-gradient(ellipse 40% 50% at 80% 80%, rgba(168,85,247,0.2), transparent 65%),' +
+          'linear-gradient(180deg, #0c0a1e 0%, #0f172a 30%, #1e1b4b 60%, #0c0a1e 100%)',
       }}
     >
       <style>{`
-        @keyframes ns-float { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)); } 50% { transform: translateY(-18px) rotate(calc(var(--r,0deg) + 50deg)); } }
+        @keyframes ns-float { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)); } 50% { transform: translateY(-20px) rotate(calc(var(--r,0deg) + 50deg)); } }
         .ns-confetti { animation-name: ns-float; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
         @keyframes ns-twinkle { 0%,100% { opacity: .4; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.2); } }
         .ns-twinkle { animation: ns-twinkle 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
         @keyframes ns-shine { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-        @keyframes ns-pulse-glow { 0%,100% { box-shadow: 0 0 20px rgba(168,85,247,0.4); } 50% { box-shadow: 0 0 40px rgba(168,85,247,0.8); } }
+        @keyframes ns-pulse-glow { 0%,100% { box-shadow: 0 0 30px rgba(168,85,247,0.3); } 50% { box-shadow: 0 0 60px rgba(168,85,247,0.6); } }
+        @keyframes ns-ring-pulse { 0%,100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.05); } }
       `}</style>
 
-      <GlowOrb delay={0} color="rgba(168,85,247,0.4)" size={300} />
-      <GlowOrb delay={1.5} color="rgba(236,72,153,0.35)" size={250} />
-      <GlowOrb delay={3} color="rgba(251,191,36,0.3)" size={280} />
+      <GlowOrb delay={0} color="rgba(30,58,138,0.5)" size={400} />
+      <GlowOrb delay={1.5} color="rgba(124,58,237,0.4)" size={320} />
+      <GlowOrb delay={3} color="rgba(6,182,212,0.35)" size={350} />
+      <GlowOrb delay={4.5} color="rgba(168,85,247,0.3)" size={280} />
+
+      <ParticleField />
 
       <svg
-        className="pointer-events-none absolute bottom-0 left-0 w-full h-[32%]"
-        viewBox="0 0 1440 300"
+        className="pointer-events-none absolute bottom-0 left-0 w-full h-[28%]"
+        viewBox="0 0 1440 280"
         preserveAspectRatio="none"
         aria-hidden="true"
       >
         <defs>
           <linearGradient id="ns-wave" x1="0" x2="1">
-            <stop offset="0" stopColor="#8b5cf6" stopOpacity="0.6" />
-            <stop offset="0.5" stopColor="#a855f7" stopOpacity="0.4" />
-            <stop offset="1" stopColor="#ec4899" stopOpacity="0.55" />
+            <stop offset="0" stopColor="#1e3a8a" stopOpacity="0.6" />
+            <stop offset="0.5" stopColor="#7c3aed" stopOpacity="0.4" />
+            <stop offset="1" stopColor="#06b6d4" stopOpacity="0.5" />
           </linearGradient>
         </defs>
-        <path d="M0 180 C350 100 600 280 900 190 C1150 130 1300 220 1440 160 V300 H0 Z" fill="url(#ns-wave)" />
-        <path d="M0 230 C320 180 650 300 950 240 C1200 200 1350 250 1440 230 V300 H0 Z" fill="#1e1b4b" opacity="0.9" />
+        <path d="M0 160 C350 80 600 260 900 170 C1150 110 1300 200 1440 140 V280 H0 Z" fill="url(#ns-wave)" />
+        <path d="M0 220 C320 160 650 280 950 220 C1200 180 1350 240 1440 220 V280 H0 Z" fill="#0c0a1e" opacity="0.95" />
       </svg>
       <svg
-        className="pointer-events-none absolute top-0 right-0 w-[60%] h-[35%]"
+        className="pointer-events-none absolute top-0 right-0 w-[55%] h-[35%]"
         viewBox="0 0 800 200"
         preserveAspectRatio="none"
         aria-hidden="true"
       >
-        <path d="M100 0 C280 100 550 50 800 130 V0 Z" fill="#4c1d95" opacity="0.35" />
+        <path d="M100 0 C280 80 550 40 800 120 V0 Z" fill="#1e3a8a" opacity="0.4" />
       </svg>
 
       <Confetti />
@@ -369,12 +405,12 @@ export function NameSpinStage({
           <img
             src={logo}
             alt="Logo event"
-            className={`${compact ? 'h-10 max-w-[150px]' : 'h-14 xl:h-16 max-w-[240px]'} w-auto object-contain drop-shadow-[0_0_20px_rgba(168,85,247,0.6)]`}
+            className={`${compact ? 'h-10 max-w-[150px]' : 'h-14 xl:h-16 max-w-[240px]'} w-auto object-contain drop-shadow-[0_0_20px_rgba(139,92,246,0.6)]`}
           />
           <span className="h-10 w-px bg-white/25 shrink-0" />
           <span className="flex items-center gap-3 min-w-0">
-            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 flex items-center justify-center shrink-0 backdrop-blur-sm">
-              <HiOutlineCalendarDays className="w-5 h-5 text-purple-200" />
+            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-400/30 flex items-center justify-center shrink-0 backdrop-blur-sm">
+              <HiOutlineCalendarDays className="w-5 h-5 text-blue-200" />
             </span>
             <span className="text-sm md:text-base font-bold tracking-[0.35em] uppercase text-white/85 truncate">
               {shownTitle}
@@ -414,16 +450,16 @@ export function NameSpinStage({
         className={`relative z-10 flex ${
           compact
             ? 'flex-col items-center gap-10 px-4 pb-6 pt-4'
-            : 'flex-row items-center justify-center gap-[5vw] px-8 xl:px-14'
+            : 'flex-row items-center justify-center gap-[4vw] px-8 xl:px-14'
         }`}
-        style={compact ? undefined : { height: 'calc(100% - 120px)' }}
+        style={compact ? undefined : { height: 'calc(100% - 130px)' }}
       >
-        {displayMode === 'dual' ? renderIntegratedDualWheel() : renderSingleWheel()}
+        {displayMode === 'dual' ? renderDualWheel() : renderSingleWheel()}
 
-        <div className={`flex flex-col gap-8 ${compact ? 'w-full max-w-md' : 'w-[min(38vw,580px)]'}`}>
+        <div className={`flex flex-col gap-8 ${compact ? 'w-full max-w-md' : 'w-[min(36vw,560px)]'}`}>
           <div
             className="relative rounded-[32px] border border-purple-300/30 px-8 pb-10 pt-14 text-center backdrop-blur-xl bg-gradient-to-br from-white/5 to-white/2"
-            style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)' }}
+            style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)' }}
           >
             <div className="absolute -top-8 left-1/2 -translate-x-1/2">
               <Crown lit={revealed} />
@@ -464,7 +500,7 @@ export function NameSpinStage({
                   transition={{ type: 'spring', stiffness: 200, damping: 14 }}
                 >
                   <p className="mt-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-pink-300 to-amber-300 font-bold tracking-[0.45em] uppercase text-base md:text-lg">
-                    {displayMode === 'dual' ? '🎉 PEMENANG 🎉' : '✨ SELAMAT KEPADA ✨'}
+                    {displayMode === 'dual' ? '🎉 PEMENANG & HADIAH 🎉' : '✨ SELAMAT KEPADA ✨'}
                   </p>
                   <p
                     className={`mt-2 font-black leading-[1.05] tracking-tight break-words ${nameSize(spin.winnerName)}`}
@@ -510,7 +546,11 @@ export function NameSpinStage({
                       compact ? 'text-5xl' : 'text-7xl xl:text-8xl'
                     }`}
                   >
-                    {spinning ? (displayMode === 'dual' ? `${pointerName ?? '…'}` : pointerName ?? '…') : '?'}
+                    {spinning
+                      ? displayMode === 'dual'
+                        ? `${pointerName ?? '…'} + ${pointerPrize ?? '…'}`
+                        : pointerName ?? '…'
+                      : '?'}
                   </p>
                 </motion.div>
               )}
@@ -526,7 +566,7 @@ export function NameSpinStage({
               {displayMode === 'dual' && prizeCount > 0 && (
                 <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-amber-500/15 to-orange-500/10 border border-amber-400/25 text-sm text-amber-200 backdrop-blur-sm">
                   <HiOutlineGift className="w-5 h-5 text-amber-300" />
-                  {prizeCount} hadiah
+                  {prizeCount} unit hadiah
                 </span>
               )}
             </div>
@@ -573,3 +613,5 @@ export function NameSpinStage({
     </div>
   );
 }
+
+export default NameSpinStage;

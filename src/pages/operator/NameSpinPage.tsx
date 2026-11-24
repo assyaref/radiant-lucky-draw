@@ -1,19 +1,26 @@
 // ============================================================
-// Spin Nama — undian cepat dari daftar nama yang diinput operator.
-// Pemenang dipilih server lalu ditayangkan juga di layar Monitor (roda putar).
-// Hasil TIDAK disimpan ke database (tanpa catatan pemenang / stok).
+// Spin — Dual-Layer Wheel (Nama Peserta + Hadiah)
+// Operator page with tabbed config for Participants & Prizes
+// Real-time sync to Monitor, stock management, winner history
 // ============================================================
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   HiOutlineSparkles,
   HiOutlineTrash,
   HiOutlineClipboard,
   HiOutlineTv,
+  HiOutlinePlus,
+  HiOutlinePencil,
+  HiOutlineCheck,
+  HiOutlineXMark,
+  HiOutlineUsers,
+  HiOutlineGift,
 } from 'react-icons/hi2';
 
 import { nameSpinApi, cleanNames, type NameSpinResult, type DisplayMode } from '@api/nameSpin';
-import { prizeApi, type Prize } from '@api/prize';
+import { prizeApi, type Prize, type CreatePrizePayload, type UpdatePrizePayload } from '@api/prize';
 import { ApiClientError } from '@api/client';
 import { NameSpinStage } from '@components/namespin/NameSpinStage';
 import {
@@ -25,7 +32,7 @@ import {
 } from '@api/monitor';
 import { ThemeSettings } from '@components/namespin/ThemeSettings';
 
-const STORAGE_KEY = 'radiant:namespin:v1';
+const STORAGE_KEY = 'radiant:namespin:v2';
 
 interface HistoryItem {
   spinId: string;
@@ -37,14 +44,12 @@ interface HistoryItem {
 
 interface Saved {
   text: string;
-  prizeText: string;
   removeWinner: boolean;
   title: string;
   history: HistoryItem[];
-  /** Play sounds in the preview on this device too. */
   localSound: boolean;
-  randomPrize: boolean;
   displayMode: DisplayMode;
+  // Prize config is now managed via Prize API, not localStorage
 }
 
 function load(): Saved {
@@ -53,12 +58,10 @@ function load(): Saved {
     if (raw) {
       return {
         text: '',
-        prizeText: '',
         removeWinner: true,
         title: '',
         history: [],
         localSound: false,
-        randomPrize: false,
         displayMode: 'single' as DisplayMode,
         ...JSON.parse(raw),
       };
@@ -66,7 +69,7 @@ function load(): Saved {
   } catch {
     /* storage unavailable */
   }
-  return { text: '', prizeText: '', removeWinner: true, title: '', history: [], localSound: false, randomPrize: false, displayMode: 'single' as DisplayMode };
+  return { text: '', removeWinner: true, title: '', history: [], localSound: false, displayMode: 'single' as DisplayMode };
 }
 
 function save(v: Saved): void {
@@ -80,22 +83,51 @@ function save(v: Saved): void {
 const inputCls =
   'w-full px-3 py-2 rounded-lg bg-dark-surface border border-dark-border text-white placeholder-dark-text-tertiary outline-none focus:border-primary-500/50 transition-colors text-sm';
 
+interface PrizeFormData {
+  name: string;
+  description: string;
+  value: number;
+  currency: string;
+  quantity: number;
+  imageUrl: string;
+  sponsor: string;
+  tier: 'doorprize' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'grand';
+  probability: number;
+  isActive: boolean;
+}
+
+const DEFAULT_PRIZE_FORM: PrizeFormData = {
+  name: '',
+  description: '',
+  value: 0,
+  currency: 'IDR',
+  quantity: 1,
+  imageUrl: '',
+  sponsor: '',
+  tier: 'doorprize',
+  probability: 10,
+  isActive: true,
+};
+
 export default function NameSpinPage() {
   const initial = useMemo(load, []);
   const [text, setText] = useState(initial.text);
-  const [prizeText, setPrizeText] = useState(initial.prizeText);
   const [removeWinner, setRemoveWinner] = useState(initial.removeWinner);
   const [title, setTitle] = useState(initial.title);
   const [history, setHistory] = useState<HistoryItem[]>(initial.history);
   const [localSound, setLocalSound] = useState(initial.localSound);
-  const [randomPrize, setRandomPrize] = useState(initial.randomPrize);
   const [displayMode, setDisplayMode] = useState<DisplayMode>(initial.displayMode);
   const [theme, setTheme] = useState<MonitorTheme>(DEFAULT_THEME);
 
+  // Prize management state
   const [prizes, setPrizes] = useState<Prize[]>([]);
-  const [prizeChoice, setPrizeChoice] = useState<string>(''); // '' none | 'custom' | prize id | 'random_list'
-  const [customPrize, setCustomPrize] = useState('');
+  const [activeTab, setActiveTab] = useState<'participants' | 'prizes'>('participants');
+  const [prizeForm, setPrizeForm] = useState<PrizeFormData>(DEFAULT_PRIZE_FORM);
+  const [editingPrizeId, setEditingPrizeId] = useState<string | null>(null);
+  const [prizeError, setPrizeError] = useState<string | null>(null);
+  const [showPrizeForm, setShowPrizeForm] = useState(false);
 
+  // Spin state
   const [spin, setSpin] = useState<NameSpinResult | null>(null);
   const [monitorMode, setMonitorMode] = useState<MonitorMode | null>(null);
   const [modeBusy, setModeBusy] = useState(false);
@@ -105,15 +137,31 @@ export default function NameSpinPage() {
 
   const names = useMemo(() => cleanNames(text), [text]);
   const rawCount = useMemo(() => text.split(/\r?\n|;|\t/).filter((l) => l.trim()).length, [text]);
-  const prizeList = useMemo(() => cleanNames(prizeText), [prizeText]);
-  const rawPrizeCount = useMemo(() => prizeText.split(/\r?\n|;|\t/).filter((l) => l.trim()).length, [prizeText]);
 
   const idleSegments = useMemo(() => sampleForWheel(names), [names]);
-  const idlePrizeSegments = useMemo(() => sampleForWheel(prizeList), [prizeList]);
+  const idlePrizeSegments = useMemo(() => {
+    const segments: string[] = [];
+    prizes.forEach((p) => {
+      const units = Math.min(p.remaining, 60);
+      for (let i = 0; i < units; i++) {
+        segments.push(`${p.id}:${i}`);
+      }
+    });
+    return sampleForWheel(segments);
+  }, [prizes]);
 
+  // Persist UI preferences
   useEffect(() => {
-    save({ text, prizeText, removeWinner, title, history, localSound, randomPrize, displayMode });
-  }, [text, prizeText, removeWinner, title, history, localSound, randomPrize, displayMode]);
+    save({ text, removeWinner, title, history, localSound, displayMode });
+  }, [text, removeWinner, title, history, localSound, displayMode]);
+
+  // Load prizes on mount
+  useEffect(() => {
+    prizeApi
+      .list({ page: 1, limit: 100 })
+      .then((r) => setPrizes(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setPrizes([]));
+  }, []);
 
   // Current Monitor mode
   useEffect(() => {
@@ -131,19 +179,14 @@ export default function NameSpinPage() {
       names,
       totalNames: names.length,
       title: title.trim() || null,
-      prizeId: randomPrize ? null : (prizeChoice && prizeChoice !== 'custom' && prizeChoice !== 'random_list' ? prizeChoice : null),
-      prizeName: randomPrize ? null : (prizeChoice === 'custom' ? customPrize.trim() || null : null),
-      prizeImageUrl: randomPrize ? null : (prizes.find((p) => p.id === prizeChoice)?.imageUrl ?? null),
-      randomPrize,
-      prizeList: randomPrize ? prizeList : undefined,
       prizeSegments: displayMode === 'dual' ? idlePrizeSegments : undefined,
-      totalPrizes: displayMode === 'dual' ? prizeList.length : undefined,
+      totalPrizes: displayMode === 'dual' ? prizes.reduce((sum, p) => sum + p.remaining, 0) : undefined,
       displayMode,
     }),
-    [names, title, prizeChoice, customPrize, randomPrize, prizeList, displayMode, idlePrizeSegments, prizes],
+    [names, title, displayMode, idlePrizeSegments, prizes],
   );
 
-  // While the Monitor shows the wheel, keep it in sync with this list (debounced).
+  // Sync wheel to Monitor when in namespin mode
   useEffect(() => {
     if (monitorMode !== 'namespin' || spinning) return;
     const t = setTimeout(() => {
@@ -170,35 +213,30 @@ export default function NameSpinPage() {
     }
   };
 
-  // Show the spin + winner for duration + hold, then back to the idle wheel.
+  // Show spin + winner for duration + hold, then back to idle wheel
   useEffect(() => {
     if (!spin) return;
     const t = setTimeout(() => setSpin(null), spin.durationMs + spin.revealHoldMs);
     return () => clearTimeout(t);
   }, [spin]);
 
-  useEffect(() => {
-    prizeApi
-      .list({ page: 1, limit: 100 })
-      .then((r) => setPrizes(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setPrizes([]));
-  }, []);
-
   const doSpin = async () => {
     if (spinning) return;
     setError(null);
     if (names.length < 2) return setError('Masukkan minimal 2 nama yang berbeda');
-    if (randomPrize && prizeList.length < 1) return setError('Masukkan daftar hadiah untuk mode acak');
+
+    if (displayMode === 'dual') {
+      const totalStock = prizes.reduce((sum, p) => sum + p.remaining, 0);
+      if (totalStock < 1) return setError('Tidak ada stok hadiah tersisa untuk mode dual');
+    }
+
     setSpinning(true);
     try {
       const res = await nameSpinApi.spin({
         names,
-        prizeId: randomPrize ? undefined : (prizeChoice && prizeChoice !== 'custom' && prizeChoice !== 'random_list' ? prizeChoice : undefined),
-        prizeName: randomPrize ? undefined : (prizeChoice === 'custom' ? customPrize.trim() || undefined : undefined),
         title: title.trim() || undefined,
-        randomPrize,
-        prizeList: randomPrize ? prizeList : undefined,
         displayMode,
+        randomPrize: true,
       });
       setSpin(res.data);
     } catch (err) {
@@ -234,6 +272,11 @@ export default function NameSpinPage() {
           .join('\n'),
       );
     }
+    // Refresh prizes after spin to get updated stock
+    prizeApi
+      .list({ page: 1, limit: 100 })
+      .then((r) => setPrizes(Array.isArray(r.data) ? r.data : []))
+      .catch(() => {});
   }, [spin, removeWinner]);
 
   const copyHistory = () => {
@@ -249,11 +292,119 @@ export default function NameSpinPage() {
     const monitorWindow = window.open(
       monitorUrl,
       'RadiantMonitor',
-      'width=1920,height=1080,fullscreen=yes,menubar=no,toolbar=no,location=no,status=no,scrollbars=no'
+      'width=1920,height=1080,fullscreen=yes,menubar=no,toolbar=no,location=no,status=no,scrollbars=no',
     );
     if (monitorWindow) {
       monitorWindow.focus();
     }
+  };
+
+  // Prize management functions
+  const handlePrizeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPrizeError(null);
+    try {
+      if (editingPrizeId) {
+        const payload: UpdatePrizePayload = {
+          name: prizeForm.name,
+          description: prizeForm.description,
+          value: prizeForm.value,
+          currency: prizeForm.currency,
+          quantity: prizeForm.quantity,
+          imageUrl: prizeForm.imageUrl || undefined,
+          sponsor: prizeForm.sponsor || undefined,
+          tier: prizeForm.tier,
+          probability: prizeForm.probability,
+          isActive: prizeForm.isActive,
+        };
+        await prizeApi.update(editingPrizeId, payload);
+      } else {
+        const payload: CreatePrizePayload = {
+          name: prizeForm.name,
+          description: prizeForm.description,
+          value: prizeForm.value,
+          currency: prizeForm.currency,
+          quantity: prizeForm.quantity,
+          imageUrl: prizeForm.imageUrl || undefined,
+          sponsor: prizeForm.sponsor || undefined,
+          tier: prizeForm.tier,
+          probability: prizeForm.probability,
+        };
+        await prizeApi.create(payload);
+      }
+      setShowPrizeForm(false);
+      setEditingPrizeId(null);
+      setPrizeForm(DEFAULT_PRIZE_FORM);
+      // Refresh list
+      const r = await prizeApi.list({ page: 1, limit: 100 });
+      setPrizes(Array.isArray(r.data) ? r.data : []);
+    } catch (err) {
+      setPrizeError(err instanceof Error ? err.message : 'Gagal menyimpan hadiah');
+    }
+  };
+
+  const handleEditPrize = (prize: Prize) => {
+    setEditingPrizeId(prize.id);
+    setPrizeForm({
+      name: prize.name,
+      description: prize.description ?? '',
+      value: prize.value,
+      currency: prize.currency,
+      quantity: prize.quantity,
+      imageUrl: prize.imageUrl ?? '',
+      sponsor: prize.sponsor ?? '',
+      tier: prize.tier as PrizeFormData['tier'],
+      probability: prize.probability,
+      isActive: prize.isActive,
+    });
+    setShowPrizeForm(true);
+  };
+
+  const handleDeletePrize = async (id: string) => {
+    if (!window.confirm('Hapus hadiah ini? Tindakan ini tidak bisa dibatalkan.')) return;
+    try {
+      await prizeApi.remove(id);
+      setPrizes((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      setPrizeError(err instanceof Error ? err.message : 'Gagal menghapus hadiah');
+    }
+  };
+
+  const handleNewPrize = () => {
+    setEditingPrizeId(null);
+    setPrizeForm(DEFAULT_PRIZE_FORM);
+    setShowPrizeForm(true);
+  };
+
+  const cancelPrizeForm = () => {
+    setShowPrizeForm(false);
+    setEditingPrizeId(null);
+    setPrizeForm(DEFAULT_PRIZE_FORM);
+    setPrizeError(null);
+  };
+
+  const TIER_LABELS: Record<string, string> = {
+    grand: 'Grand Prize',
+    diamond: 'Diamond',
+    platinum: 'Platinum',
+    gold: 'Gold',
+    silver: 'Silver',
+    bronze: 'Bronze',
+    doorprize: 'Doorprize',
+  };
+
+  const TIER_COLORS: Record<string, string> = {
+    grand: 'bg-gradient-to-r from-amber-500 to-yellow-500',
+    diamond: 'bg-gradient-to-r from-cyan-500 to-blue-500',
+    platinum: 'bg-gradient-to-r from-slate-400 to-slate-600',
+    gold: 'bg-gradient-to-r from-amber-400 to-yellow-400',
+    silver: 'bg-gradient-to-r from-gray-300 to-gray-500',
+    bronze: 'bg-gradient-to-r from-orange-500 to-amber-700',
+    doorprize: 'bg-gradient-to-r from-blue-500 to-cyan-500',
+  };
+
+  const formatCurrency = (value: number, currency: string) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency, minimumFractionDigits: 0 }).format(value);
   };
 
   return (
@@ -261,7 +412,8 @@ export default function NameSpinPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Spin</h1>
         <p className="text-sm text-dark-text-tertiary mt-1">
-          Undian cepat dari daftar nama dengan roda putar, tampil juga di layar Monitor. Hasil disimpan sebagai pemenang dan stok hadiah berkurang secara otomatis.
+          Dual-Layer Wheel: Outer ring = Nama Peserta, Inner ring = Hadiah (per unit stok).
+          Keduanya berputar bersamaan. Pemenang & hadiah terpilih otomatis, stok berkurang, riwayat tersimpan.
         </p>
       </div>
 
@@ -272,7 +424,7 @@ export default function NameSpinPage() {
           {(
             [
               ['event', 'Event (Lucky Draw Booth)'],
-              ['namespin', 'Spin Nama (Roda)'],
+              ['namespin', 'Spin (Dual-Layer Wheel)'],
             ] as const
           ).map(([mode, label]) => (
             <button
@@ -298,192 +450,385 @@ export default function NameSpinPage() {
         </button>
         <span className="text-xs text-dark-text-tertiary">
           {monitorMode === 'namespin'
-            ? (syncNote ?? 'Daftar nama di bawah tampil sebagai roda di Monitor.')
-            : 'Saat SPIN ditekan, roda tetap muncul sebagai layar penuh di Monitor.'}
+            ? (syncNote ?? 'Daftar nama & hadiah di bawah tampil sebagai Dual-Layer Wheel di Monitor.')
+            : 'Saat SPIN ditekan, Dual-Layer Wheel muncul sebagai layar penuh di Monitor.'}
         </span>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-        {/* ── Input + look & sound ── */}
+        {/* ── Left Panel: Config ── */}
         <div className="space-y-6">
-          <div className="space-y-4 rounded-xl border border-dark-border bg-dark-surface-secondary p-5">
-          <label className="block space-y-1">
-            <span className="flex justify-between text-xs text-dark-text-tertiary">
-              <span>Daftar nama (satu per baris)</span>
-              <span>
-                {names.length} nama
-                {rawCount > names.length ? ` · ${rawCount - names.length} duplikat diabaikan` : ''}
-              </span>
-            </span>
-            <textarea
-              className={`${inputCls} h-48 font-mono leading-relaxed`}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={'Budi Santoso\nSiti Aminah\nAndi Wijaya\n…'}
-              disabled={spinning}
-            />
-            <span className="text-xs text-dark-text-tertiary">
-              Bisa tempel langsung dari kolom Excel / Google Sheets.
-            </span>
-          </label>
-
-          <label className="block space-y-1">
-            <span className="flex justify-between text-xs text-dark-text-tertiary">
-              <span>Daftar hadiah (satu per baris)</span>
-              <span>
-                {prizeList.length} hadiah
-                {rawPrizeCount > prizeList.length ? ` · ${rawPrizeCount - prizeList.length} duplikat diabaikan` : ''}
-              </span>
-            </span>
-            <textarea
-              className={`${inputCls} h-32 font-mono leading-relaxed`}
-              value={prizeText}
-              onChange={(e) => setPrizeText(e.target.value)}
-              placeholder={'Voucher Rp 100.000\nPowerbank\nTumbler\n…'}
-              disabled={spinning}
-            />
-            <span className="text-xs text-dark-text-tertiary">
-              Digunakan untuk mode "Pilih hadiah secara acak".
-            </span>
-          </label>
-
-          <label className="block space-y-1">
-            <span className="text-xs text-dark-text-tertiary">Judul (opsional)</span>
-            <input
-              className={inputCls}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="mis. Doorprize Sesi 1"
-              maxLength={120}
-              disabled={spinning}
-            />
-          </label>
-
-          <label className="block space-y-1">
-            <span className="text-xs text-dark-text-tertiary">Mode Tampilan Roda</span>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
-                <input
-                  type="radio"
-                  name="displayMode"
-                  checked={displayMode === 'single'}
-                  onChange={() => setDisplayMode('single')}
-                  className="accent-primary-500"
-                  disabled={spinning}
-                />
-                Roda Tunggal (Spin Nama Saja)
-              </label>
-              <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
-                <input
-                  type="radio"
-                  name="displayMode"
-                  checked={displayMode === 'dual'}
-                  onChange={() => setDisplayMode('dual')}
-                  className="accent-primary-500"
-                  disabled={spinning}
-                />
-                Roda Ganda (Spin Nama + Hadiah Bersamaan)
-              </label>
-            </div>
-          </label>
-
-          <label className="block space-y-1">
-            <span className="text-xs text-dark-text-tertiary">Mode Hadiah</span>
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
-                <input
-                  type="radio"
-                  name="prizeMode"
-                  checked={!randomPrize && !prizeChoice}
-                  onChange={() => { setRandomPrize(false); setPrizeChoice(''); }}
-                  className="accent-primary-500"
-                  disabled={spinning}
-                />
-                Tanpa hadiah
-              </label>
-              <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
-                <input
-                  type="radio"
-                  name="prizeMode"
-                  checked={!randomPrize && !!prizeChoice}
-                  onChange={() => { setRandomPrize(false); if (!prizeChoice) setPrizeChoice(prizes[0]?.id || 'custom'); }}
-                  className="accent-primary-500"
-                  disabled={spinning}
-                />
-                Pilih hadiah manual
-              </label>
-              <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
-                <input
-                  type="radio"
-                  name="prizeMode"
-                  checked={randomPrize}
-                  onChange={() => { setRandomPrize(true); setPrizeChoice(''); }}
-                  className="accent-primary-500"
-                  disabled={spinning}
-                />
-                Pilih hadiah secara acak dari daftar
-              </label>
-            </div>
-          </label>
-          {!randomPrize && !!prizeChoice && (
-            <label className="block space-y-1">
-              <span className="text-xs text-dark-text-tertiary">Pilih Hadiah</span>
-              <select
-                className={inputCls}
-                value={prizeChoice}
-                onChange={(e) => setPrizeChoice(e.target.value)}
-                disabled={spinning}
+          {/* Tab Navigation */}
+          <div className="rounded-xl border border-dark-border bg-dark-surface-secondary p-1">
+            <div className="flex" role="tablist">
+              <button
+                role="tab"
+                aria-selected={activeTab === 'participants'}
+                onClick={() => setActiveTab('participants')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'participants'
+                    ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30 shadow-sm'
+                    : 'text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary'
+                }`}
               >
-                {prizes.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.remaining !== undefined ? `(stok: ${p.remaining})` : ''}
-                  </option>
-                ))}
-                <option value="custom">Ketik nama hadiah…</option>
-              </select>
-            </label>
-          )}
-          {!randomPrize && prizeChoice === 'custom' && (
-            <input
-              className={inputCls}
-              value={customPrize}
-              onChange={(e) => setCustomPrize(e.target.value)}
-              placeholder="Nama hadiah"
-              maxLength={200}
-              disabled={spinning}
-            />
-          )}
+                <HiOutlineUsers className="w-5 h-5" />
+                Peserta
+                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary-500/20 text-primary-400">
+                  {names.length}
+                </span>
+              </button>
+              <button
+                role="tab"
+                aria-selected={activeTab === 'prizes'}
+                onClick={() => setActiveTab('prizes')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'prizes'
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 shadow-sm'
+                    : 'text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary'
+                }`}
+              >
+                <HiOutlineGift className="w-5 h-5" />
+                Hadiah
+                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/20 text-amber-400">
+                  {prizes.reduce((sum, p) => sum + p.remaining, 0)} unit
+                </span>
+              </button>
+            </div>
+          </div>
 
-          <label className="flex items-center gap-2 text-sm text-dark-text-secondary">
-            <input
-              type="checkbox"
-              checked={removeWinner}
-              onChange={(e) => setRemoveWinner(e.target.checked)}
-              className="accent-primary-500"
-            />
-            Keluarkan nama pemenang dari daftar setelah spin
-          </label>
+          {/* Tab Content */}
+          <div className="space-y-4 rounded-xl border border-dark-border bg-dark-surface-secondary p-5">
+            {activeTab === 'participants' && (
+              <div className="space-y-4">
+                <label className="block space-y-1">
+                  <span className="flex justify-between text-xs text-dark-text-tertiary">
+                    <span>Daftar nama peserta (satu per baris)</span>
+                    <span>
+                      {names.length} nama aktif
+                      {rawCount > names.length ? ` · ${rawCount - names.length} duplikat diabaikan` : ''}
+                    </span>
+                  </span>
+                  <textarea
+                    className={`${inputCls} h-64 font-mono leading-relaxed`}
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder={'Budi Santoso\nSiti Aminah\nAndi Wijaya\n…'}
+                    disabled={spinning}
+                  />
+                  <span className="text-xs text-dark-text-tertiary">
+                    Bisa tempel langsung dari kolom Excel / Google Sheets. Duplikat (case-insensitive) diabaikan otomatis.
+                  </span>
+                </label>
 
-          {error && (
-            <p className="text-sm text-danger-400 bg-danger-500/10 border border-danger-500/20 rounded-lg px-3 py-2">
-              {error}
-            </p>
-          )}
+                <label className="block space-y-1">
+                  <span className="text-xs text-dark-text-tertiary">Judul undian (opsional)</span>
+                  <input
+                    className={inputCls}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="mis. Doorprize Sesi 1"
+                    maxLength={120}
+                    disabled={spinning}
+                  />
+                </label>
 
-          <button
-            onClick={() => void doSpin()}
-            disabled={spinning || names.length < 2}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-base font-bold bg-gradient-to-r from-amber-500 to-yellow-400 text-black disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 transition"
-          >
-            <HiOutlineSparkles className="w-5 h-5" />
-            {spinning ? 'Mengundi…' : 'SPIN'}
-          </button>
+                <label className="block space-y-1">
+                  <span className="text-xs text-dark-text-tertiary">Mode Tampilan Roda</span>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
+                      <input
+                        type="radio"
+                        name="displayMode"
+                        checked={displayMode === 'single'}
+                        onChange={() => setDisplayMode('single')}
+                        className="accent-primary-500"
+                        disabled={spinning}
+                      />
+                      Roda Tunggal (Spin Nama Saja)
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
+                      <input
+                        type="radio"
+                        name="displayMode"
+                        checked={displayMode === 'dual'}
+                        onChange={() => setDisplayMode('dual')}
+                        className="accent-primary-500"
+                        disabled={spinning}
+                      />
+                      Dual-Layer Wheel (Spin Nama + Hadiah Bersamaan)
+                    </label>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2 text-sm text-dark-text-secondary">
+                  <input
+                    type="checkbox"
+                    checked={removeWinner}
+                    onChange={(e) => setRemoveWinner(e.target.checked)}
+                    className="accent-primary-500"
+                  />
+                  Keluarkan nama pemenang dari daftar setelah spin
+                </label>
+
+                {error && (
+                  <p className="text-sm text-danger-400 bg-danger-500/10 border border-danger-500/20 rounded-lg px-3 py-2">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  onClick={() => void doSpin()}
+                  disabled={spinning || names.length < 2 || (displayMode === 'dual' && prizes.reduce((s, p) => s + p.remaining, 0) < 1)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-xl text-lg font-black bg-gradient-to-r from-amber-500 to-yellow-400 text-black disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 transition shadow-lg shadow-amber-500/30"
+                >
+                  <HiOutlineSparkles className="w-6 h-6" />
+                  {spinning ? 'Mengundi…' : 'SPIN'}
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'prizes' && (
+              <div className="space-y-4">
+                {/* Prize Form */}
+                {showPrizeForm && (
+                  <motion.form
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    onSubmit={handlePrizeSubmit}
+                    className="space-y-4 p-4 rounded-xl bg-dark-surface border border-primary-500/20"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-semibold text-white">
+                        {editingPrizeId ? 'Edit Hadiah' : 'Tambah Hadiah Baru'}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={cancelPrizeForm}
+                        className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary"
+                      >
+                        <HiOutlineXMark className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {prizeError && (
+                      <p className="text-sm text-danger-400 bg-danger-500/10 border border-danger-500/20 rounded-lg px-3 py-2">
+                        {prizeError}
+                      </p>
+                    )}
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="block space-y-1">
+                        <span className="text-xs text-dark-text-tertiary">Nama Hadiah *</span>
+                        <input
+                          className={inputCls}
+                          value={prizeForm.name}
+                          onChange={(e) => setPrizeForm({ ...prizeForm, name: e.target.value })}
+                          placeholder="mis. Tumbler Premium"
+                          required
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-xs text-dark-text-tertiary">Tier *</span>
+                        <select
+                          className={inputCls}
+                          value={prizeForm.tier}
+                          onChange={(e) => setPrizeForm({ ...prizeForm, tier: e.target.value as PrizeFormData['tier'] })}
+                        >
+                          <option value="grand">Grand Prize</option>
+                          <option value="diamond">Diamond</option>
+                          <option value="platinum">Platinum</option>
+                          <option value="gold">Gold</option>
+                          <option value="silver">Silver</option>
+                          <option value="bronze">Bronze</option>
+                          <option value="doorprize">Doorprize</option>
+                        </select>
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-xs text-dark-text-tertiary">Stok (Quantity) *</span>
+                        <input
+                          type="number"
+                          min="1"
+                          className={inputCls}
+                          value={prizeForm.quantity}
+                          onChange={(e) => setPrizeForm({ ...prizeForm, quantity: parseInt(e.target.value) || 1 })}
+                          required
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-xs text-dark-text-tertiary">Probabilitas (%)</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          className={inputCls}
+                          value={prizeForm.probability}
+                          onChange={(e) => setPrizeForm({ ...prizeForm, probability: parseInt(e.target.value) || 10 })}
+                        />
+                      </label>
+                      <label className="block space-y-1 sm:col-span-2">
+                        <span className="text-xs text-dark-text-tertiary">Deskripsi</span>
+                        <textarea
+                          className={`${inputCls} h-20`}
+                          value={prizeForm.description}
+                          onChange={(e) => setPrizeForm({ ...prizeForm, description: e.target.value })}
+                          placeholder="Deskripsi singkat hadiah..."
+                        />
+                      </label>
+                      <label className="block space-y-1 sm:col-span-2">
+                        <span className="text-xs text-dark-text-tertiary">URL Gambar (opsional)</span>
+                        <input
+                          className={inputCls}
+                          value={prizeForm.imageUrl}
+                          onChange={(e) => setPrizeForm({ ...prizeForm, imageUrl: e.target.value })}
+                          placeholder="https://example.com/image.jpg"
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-xs text-dark-text-tertiary">Nilai</span>
+                        <input
+                          type="number"
+                          min="0"
+                          className={inputCls}
+                          value={prizeForm.value}
+                          onChange={(e) => setPrizeForm({ ...prizeForm, value: parseInt(e.target.value) || 0 })}
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-xs text-dark-text-tertiary">Mata Uang</span>
+                        <input
+                          className={inputCls}
+                          value={prizeForm.currency}
+                          onChange={(e) => setPrizeForm({ ...prizeForm, currency: e.target.value.toUpperCase() })}
+                          maxLength={3}
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-xs text-dark-text-tertiary">Sponsor (opsional)</span>
+                        <input
+                          className={inputCls}
+                          value={prizeForm.sponsor}
+                          onChange={(e) => setPrizeForm({ ...prizeForm, sponsor: e.target.value })}
+                          placeholder="Nama sponsor"
+                        />
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-dark-text-secondary sm:col-span-2">
+                        <input
+                          type="checkbox"
+                          checked={prizeForm.isActive}
+                          onChange={(e) => setPrizeForm({ ...prizeForm, isActive: e.target.checked })}
+                          className="accent-primary-500"
+                        />
+                        Aktif (masuk ke undian)
+                      </label>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="submit"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-base font-bold bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:brightness-110 transition"
+                      >
+                        <HiOutlineCheck className="w-5 h-5" />
+                        {editingPrizeId ? 'Simpan Perubahan' : 'Tambah Hadiah'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelPrizeForm}
+                        className="px-4 py-3 rounded-xl text-base font-medium text-dark-text-tertiary hover:text-white hover:bg-dark-surface-tertiary transition border border-dark-border"
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  </motion.form>
+                )}
+
+                {/* Add Prize Button (when form hidden) */}
+                {!showPrizeForm && (
+                  <button
+                    onClick={handleNewPrize}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-base font-medium bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 hover:from-amber-500/30 hover:to-orange-500/30 transition border border-amber-500/30"
+                  >
+                    <HiOutlinePlus className="w-5 h-5" />
+                    Tambah Hadiah Baru
+                  </button>
+                )}
+
+                {/* Prize List */}
+                <div className="rounded-xl border border-dark-border bg-dark-surface overflow-hidden">
+                  <div className="px-4 py-3 border-b border-dark-border">
+                    <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                      <HiOutlineGift className="w-4 h-4 text-amber-400" />
+                      Daftar Hadiah ({prizes.length} item, {prizes.reduce((s, p) => s + p.remaining, 0)} unit stok)
+                    </h3>
+                  </div>
+                  {prizes.length === 0 ? (
+                    <div className="p-8 text-center text-dark-text-tertiary">
+                      <HiOutlineGift className="w-12 h-12 mx-auto mb-2 text-dark-text-tertiary/30" />
+                      <p>Belum ada hadiah. Klik "Tambah Hadiah Baru" untuk memulai.</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-dark-border/50 max-h-[400px] overflow-y-auto">
+                      {prizes.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center gap-4 px-4 py-3 hover:bg-dark-surface-tertiary/50 transition-colors"
+                        >
+                          <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center border border-white/10">
+                            {p.imageUrl ? (
+                              <img
+                                src={p.imageUrl}
+                                alt={p.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <HiOutlineGift className="w-6 h-6 text-white/30" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-white font-medium truncate">{p.name}</p>
+                              <span
+                                className={`px-2 py-0.5 text-[10px] font-bold rounded-full text-white ${TIER_COLORS[p.tier] ?? 'bg-gray-500'}`}
+                              >
+                                {TIER_LABELS[p.tier] ?? p.tier}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-dark-text-tertiary">
+                              <span>Stok: <span className="text-white font-mono">{p.remaining}</span> / {p.quantity}</span>
+                              <span>Prob: {p.probability}%</span>
+                              {p.sponsor && <span>Sponsor: {p.sponsor}</span>}
+                              {p.value > 0 && <span>Nilai: {formatCurrency(p.value, p.currency)}</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleEditPrize(p)}
+                              className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-primary-400 hover:bg-primary-500/10 transition"
+                              title="Edit"
+                            >
+                              <HiOutlinePencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePrize(p.id)}
+                              className="p-1.5 rounded-lg text-dark-text-tertiary hover:text-danger-400 hover:bg-danger-500/10 transition"
+                              title="Hapus"
+                            >
+                              <HiOutlineTrash className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <ThemeSettings theme={theme} onChange={setTheme} />
         </div>
 
-        {/* ── Stage + history ── */}
+        {/* ── Right Panel: Stage + History ── */}
         <div className="space-y-6">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -503,21 +848,17 @@ export default function NameSpinPage() {
                 segments={idleSegments}
                 prizeSegments={idlePrizeSegments}
                 totalNames={names.length}
-                totalPrizes={prizeList.length}
+                totalPrizes={prizes.reduce((s, p) => s + p.remaining, 0)}
                 title={title.trim() || null}
                 displayMode={displayMode}
-                prizeName={
-                  spin ? spin.prizeName : (randomPrize ? 'Acak dari daftar' : (prizeChoice === 'custom'
-                    ? customPrize.trim() || null
-                    : (prizes.find((p) => p.id === prizeChoice)?.name ?? null)))
-                }
-                prizeImageUrl={spin ? spin.prizeImageUrl : (randomPrize ? null : (prizes.find((p) => p.id === prizeChoice)?.imageUrl ?? null))}
+                prizeName={spin?.prizeName ?? null}
+                prizeImageUrl={spin?.prizeImageUrl ?? null}
                 spin={spin}
                 theme={theme}
                 sound={localSound}
                 variant="embed"
                 onSpinAgain={() => void doSpin()}
-                spinDisabled={spinning || names.length < 2}
+                spinDisabled={spinning || names.length < 2 || (displayMode === 'dual' && prizes.reduce((s, p) => s + p.remaining, 0) < 1)}
                 onRevealed={onRevealed}
               />
             </div>

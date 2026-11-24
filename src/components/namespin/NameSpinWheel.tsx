@@ -90,6 +90,12 @@ function mod(a: number, n: number): number {
   return ((a % n) + n) % n;
 }
 
+function readableTangent(angle: number): number {
+  const tangent = angle + Math.PI / 2;
+  const normalized = mod(tangent, TAU);
+  return tangent + (normalized > Math.PI / 2 && normalized < (Math.PI * 3) / 2 ? Math.PI : 0);
+}
+
 export function planTarget(
   from: number,
   winnerSegment: number,
@@ -139,12 +145,14 @@ function drawSegment(
   ctx.stroke();
 
   ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(a0 + segAngle / 2);
+  const middle = a0 + segAngle / 2;
+  const labelRadius = (rInner + rOuter) / 2;
+  ctx.translate(cx + labelRadius * Math.cos(middle), cy + labelRadius * Math.sin(middle));
+  ctx.rotate(readableTangent(middle));
   let text = label;
   ctx.font = `800 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
   ctx.textBaseline = 'middle';
-  ctx.textAlign = 'right';
+  ctx.textAlign = 'center';
   if (ctx.measureText(text).width > maxTextWidth) {
     while (text.length > 1 && ctx.measureText(`${text}…`).width > maxTextWidth) {
       text = text.slice(0, -1);
@@ -155,7 +163,7 @@ function drawSegment(
   ctx.shadowBlur = 5;
   ctx.shadowOffsetY = 1;
   ctx.fillStyle = isHighlight ? '#1f1300' : '#ffffff';
-  ctx.fillText(text, rOuter * 0.88, 0);
+  ctx.fillText(text, 0, 0);
   ctx.restore();
 }
 
@@ -188,23 +196,26 @@ function drawSegmentWithIcon(
   ctx.stroke();
 
   ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(a0 + segAngle / 2);
+  const middle = a0 + segAngle / 2;
+  const textRadius = rInner + (rOuter - rInner) * 0.38;
 
-  // Draw icon first (above text)
-  const iconSize = fontSize * 1.3;
   if (icon) {
+    const iconRadius = rInner + (rOuter - rInner) * 0.7;
+    ctx.save();
+    ctx.translate(cx + iconRadius * Math.cos(middle), cy + iconRadius * Math.sin(middle));
     ctx.font = `${fontSize * 1.2}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
-    ctx.fillText(icon, 0, -iconSize * 0.6);
+    ctx.fillText(icon, 0, 0);
+    ctx.restore();
   }
 
-  // Draw text
+  ctx.translate(cx + textRadius * Math.cos(middle), cy + textRadius * Math.sin(middle));
+  ctx.rotate(readableTangent(middle));
   let text = label;
   ctx.font = `800 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
   ctx.textBaseline = 'middle';
-  ctx.textAlign = 'right';
+  ctx.textAlign = 'center';
   if (ctx.measureText(text).width > maxTextWidth) {
     while (text.length > 1 && ctx.measureText(`${text}…`).width > maxTextWidth) {
       text = text.slice(0, -1);
@@ -215,7 +226,7 @@ function drawSegmentWithIcon(
   ctx.shadowBlur = 5;
   ctx.shadowOffsetY = 1;
   ctx.fillStyle = isHighlight ? '#1f1300' : '#ffffff';
-  ctx.fillText(text, rOuter * 0.88, icon ? iconSize * 0.4 : 0);
+  ctx.fillText(text, 0, 0);
   ctx.restore();
 }
 
@@ -237,7 +248,8 @@ function drawWheelLayer(
   const cy = size / 2;
   const seg = TAU / n;
   const fontSize = Math.max(11, Math.min(rOuter * 0.1, seg * rOuter * 0.55));
-  const maxText = (rOuter - rInner) * 0.85;
+  const labelRadius = (rInner + rOuter) / 2;
+  const maxText = 2 * labelRadius * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.78;
 
   for (let i = 0; i < n; i++) {
     const a0 = rotation + i * seg;
@@ -270,7 +282,8 @@ function drawPrizeWheelLayer(
   const cy = size / 2;
   const seg = TAU / n;
   const fontSize = Math.max(10, Math.min(rOuter * 0.09, seg * rOuter * 0.5));
-  const maxText = (rOuter - rInner) * 0.8;
+  const textRadius = rInner + (rOuter - rInner) * 0.38;
+  const maxText = 2 * textRadius * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.78;
 
   for (let i = 0; i < n; i++) {
     const a0 = rotation + i * seg;
@@ -457,7 +470,7 @@ export function drawSingleWheel(
     ctx.font = `800 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'right';
-    const maxText = r * 0.62;
+    const maxText = 2 * r * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.78;
 
     for (let i = 0; i < n; i++) {
       const a0 = rotation + i * seg;
@@ -480,8 +493,11 @@ export function drawSingleWheel(
       }
 
       ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(a0 + seg / 2);
+      const middle = a0 + seg / 2;
+      const labelRadius = r * 0.68;
+      ctx.translate(cx + labelRadius * Math.cos(middle), cy + labelRadius * Math.sin(middle));
+      ctx.rotate(readableTangent(middle));
+      ctx.textAlign = 'center';
       let label = names[i];
       if (ctx.measureText(label).width > maxText) {
         while (label.length > 1 && ctx.measureText(`${label}…`).width > maxText) {
@@ -493,7 +509,7 @@ export function drawSingleWheel(
       ctx.shadowBlur = 5;
       ctx.shadowOffsetY = 1;
       ctx.fillStyle = isHi ? '#1f1300' : '#ffffff';
-      ctx.fillText(label, r * 0.88, 0);
+      ctx.fillText(label, 0, 0);
       ctx.restore();
     }
 

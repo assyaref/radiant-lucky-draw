@@ -23,6 +23,7 @@ import {
   HiOutlineUsers,
   HiOutlineGift,
   HiOutlineTrophy,
+  HiOutlineUserCircle,
 } from 'react-icons/hi2';
 import { NameSpinWheel, type PrizeSegment } from './NameSpinWheel';
 import { useSpinSound } from './spinSound';
@@ -340,9 +341,9 @@ export function NameSpinStage({
   };
 
   const renderDualWheel = () => (
-    <div className="relative shrink-0">
+    <div className={`relative min-w-0 ${compact ? 'w-full max-w-[620px] lg:flex-[1.2]' : 'shrink-0'}`}>
       <div
-        className={compact ? 'w-[min(90vw,500px)]' : 'w-[min(70vh,50vw)]'}
+        className={compact ? 'w-full' : 'w-[min(82vh,50vw,760px)]'}
         style={{ filter: 'drop-shadow(0 0 100px rgba(168,85,247,0.5)) drop-shadow(0 0 50px rgba(251,191,36,0.4))' }}
       >
         <NameSpinWheel
@@ -415,12 +416,11 @@ export function NameSpinStage({
       style={{
         fontFamily: 'Poppins, Inter, system-ui, sans-serif',
         background:
-          'radial-gradient(ellipse 100% 100% at 50% 50%, rgba(15, 23, 42, 1) 0%, rgba(12, 10, 30, 1) 50%, rgba(8, 8, 20, 1) 100%),' +
-          'radial-gradient(ellipse 80% 90% at 20% 30%, rgba(30, 58, 138, 0.5), transparent 70%),' +
-          'radial-gradient(ellipse 60% 70% at 85% 15%, rgba(124, 58, 237, 0.4), transparent 70%),' +
-          'radial-gradient(ellipse 50% 60% at 15% 85%, rgba(6, 182, 212, 0.3), transparent 70%),' +
-          'radial-gradient(ellipse 40% 50% at 80% 80%, rgba(168, 85, 247, 0.25), transparent 65%),' +
-          'linear-gradient(180deg, #080814 0%, #0c0a1e 30%, #1e1b4b 60%, #0c0a1e 100%)',
+          'radial-gradient(ellipse 80% 90% at 20% 35%, rgba(37, 99, 235, 0.45), transparent 70%),' +
+          'radial-gradient(ellipse 60% 70% at 85% 15%, rgba(124, 58, 237, 0.42), transparent 70%),' +
+          'radial-gradient(ellipse 50% 60% at 15% 85%, rgba(6, 182, 212, 0.28), transparent 70%),' +
+          'radial-gradient(ellipse 40% 50% at 80% 80%, rgba(168, 85, 247, 0.24), transparent 65%),' +
+          'linear-gradient(135deg, #071942 0%, #0b1550 48%, #100833 100%)',
       }}
     >
       <style>{`
@@ -469,9 +469,9 @@ export function NameSpinStage({
         <path d="M100 0 C280 90 550 50 800 140 V0 Z" fill="#1e3a8a" opacity="0.5" />
       </svg>
 
-      {/* Confetti - only show when revealed */}
+      {/* Celebratory confetti in dual mode and after a reveal */}
       <AnimatePresence>
-        {revealed && <Confetti />}
+        {(revealed || displayMode === 'dual') && <Confetti />}
       </AnimatePresence>
 
       <header
@@ -523,15 +523,22 @@ export function NameSpinStage({
       </header>
 
       <div
-        className={`relative z-10 flex ${compact ? 'flex-col items-center gap-10 px-4 pb-6 pt-4' : 'flex-row items-center justify-center gap-[4vw] px-8 xl:px-14'}`}
+        className={`relative z-10 flex ${compact ? 'flex-col items-center gap-8 px-4 pb-6 pt-4 lg:flex-row lg:justify-center lg:gap-6 lg:px-6 lg:py-6' : 'flex-row items-center justify-center gap-[4vw] px-8 xl:px-14'}`}
         style={compact ? undefined : { height: 'calc(100% - 130px)' }}
       >
         {displayMode === 'dual' ? renderDualWheel() : renderSingleWheel()}
 
-        <div className={`flex flex-col gap-8 ${compact ? 'w-full max-w-md' : 'w-[min(38vw,600px)]'}`}>
+        <div
+          className={`flex min-w-0 flex-col gap-8 ${
+            compact ? 'w-full max-w-md lg:w-0 lg:max-w-[430px] lg:flex-[0.85]' : 'w-[min(34vw,520px)]'
+          }`}
+        >
           <div
             className="relative rounded-[32px] border border-amber-400/30 px-8 pb-10 pt-14 text-center backdrop-blur-xl bg-gradient-to-br from-slate-900/80 via-slate-950/90 to-slate-900/80"
-            style={{ boxShadow: '0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.3)', borderColor: 'rgba(251,191,36,0.4)' }}
+            style={{
+              boxShadow: '0 30px 80px rgba(0,0,0,0.6), 0 0 48px rgba(124,58,237,0.22), inset 0 1px 0 rgba(255,255,255,0.1)',
+              borderColor: 'rgba(251,191,36,0.5)',
+            }}
           >
             {/* Crown */}
             <div className="absolute -top-10 left-1/2 -translate-x-1/2">
@@ -586,6 +593,15 @@ export function NameSpinStage({
                       <div className="w-24 h-px bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
                     </div>
                   </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 220, damping: 18, delay: 0.1 }}
+                      className="mx-auto my-5 flex h-24 w-24 items-center justify-center rounded-full border-2 border-cyan-300/70 bg-gradient-to-br from-blue-500/30 to-indigo-950 shadow-[0_0_36px_rgba(56,189,248,0.5)] md:h-28 md:w-28"
+                    >
+                      <HiOutlineUserCircle className="h-20 w-20 text-blue-100 drop-shadow-[0_0_12px_rgba(96,165,250,0.8)] md:h-24 md:w-24" />
+                    </motion.div>
 
                   {/* Winner Name */}
                   <motion.div

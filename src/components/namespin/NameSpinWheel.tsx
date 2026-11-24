@@ -247,9 +247,9 @@ function drawWheelLayer(
   const cx = size / 2;
   const cy = size / 2;
   const seg = TAU / n;
-  const fontSize = Math.max(11, Math.min(rOuter * 0.1, seg * rOuter * 0.55));
+  const fontSize = Math.max(16, Math.min(rOuter * 0.15, seg * rOuter * 0.75));
   const labelRadius = (rInner + rOuter) / 2;
-  const maxText = 2 * labelRadius * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.78;
+  const maxText = 2 * labelRadius * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.9;
 
   for (let i = 0; i < n; i++) {
     const a0 = rotation + i * seg;
@@ -281,9 +281,9 @@ function drawPrizeWheelLayer(
   const cx = size / 2;
   const cy = size / 2;
   const seg = TAU / n;
-  const fontSize = Math.max(10, Math.min(rOuter * 0.09, seg * rOuter * 0.5));
+  const fontSize = Math.max(14, Math.min(rOuter * 0.13, seg * rOuter * 0.65));
   const textRadius = rInner + (rOuter - rInner) * 0.38;
-  const maxText = 2 * textRadius * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.78;
+  const maxText = 2 * textRadius * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.9;
 
   for (let i = 0; i < n; i++) {
     const a0 = rotation + i * seg;
@@ -466,11 +466,11 @@ export function drawSingleWheel(
     ctx.fillText(variant === 'prize' ? 'Belum ada hadiah' : 'Belum ada nama', cx, cy + r * 0.3);
   } else {
     const seg = TAU / n;
-    const fontSize = Math.max(11, Math.min(r * 0.095, seg * r * 0.55));
+    const fontSize = Math.max(16, Math.min(r * 0.15, seg * r * 0.75));
     ctx.font = `800 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'right';
-    const maxText = 2 * r * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.78;
+    const maxText = 2 * r * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.9;
 
     for (let i = 0; i < n; i++) {
       const a0 = rotation + i * seg;

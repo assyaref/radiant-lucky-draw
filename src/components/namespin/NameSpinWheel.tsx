@@ -144,11 +144,11 @@ function drawSegment(
     }
     text = `${text}…`;
   }
-  ctx.shadowColor = 'rgba(0,0,0,0.5)';
-  ctx.shadowBlur = 4;
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 5;
   ctx.shadowOffsetY = 1;
   ctx.fillStyle = isHighlight ? '#1f1300' : '#ffffff';
-  ctx.fillText(text, rOuter * 0.92, 0);
+  ctx.fillText(text, rOuter * 0.88, 0);
   ctx.restore();
 }
 
@@ -169,7 +169,7 @@ function drawWheelLayer(
   const cx = size / 2;
   const cy = size / 2;
   const seg = TAU / n;
-  const fontSize = Math.max(9, Math.min(rOuter * 0.09, seg * rOuter * 0.5));
+  const fontSize = Math.max(11, Math.min(rOuter * 0.1, seg * rOuter * 0.55));
   const maxText = (rOuter - rInner) * 0.85;
 
   for (let i = 0; i < n; i++) {
@@ -339,7 +339,7 @@ export function drawSingleWheel(
     ctx.fillText(variant === 'prize' ? 'Belum ada hadiah' : 'Belum ada nama', cx, cy + r * 0.3);
   } else {
     const seg = TAU / n;
-    const fontSize = Math.max(9, Math.min(r * 0.085, seg * r * 0.5));
+    const fontSize = Math.max(11, Math.min(r * 0.095, seg * r * 0.55));
     ctx.font = `800 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'right';
@@ -375,8 +375,8 @@ export function drawSingleWheel(
         }
         label = `${label}…`;
       }
-      ctx.shadowColor = 'rgba(0,0,0,0.45)';
-      ctx.shadowBlur = 4;
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 5;
       ctx.shadowOffsetY = 1;
       ctx.fillStyle = isHi ? '#1f1300' : '#ffffff';
       ctx.fillText(label, r * 0.88, 0);

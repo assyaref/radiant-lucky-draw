@@ -28,6 +28,7 @@ const EnterpriseDashboard = lazy(() =>
     default: DashboardPage,
   })),
 );
+const SpinPage = lazy(() => import('@pages/SpinPage'));
 
 // ─── Operator Pages ──────────────────────────────────────────────────
 const AdminLayout = lazy(() => import('@layouts/AdminLayout'));
@@ -162,6 +163,10 @@ const routes: RouteObject[] = [
   {
     path: '/booth-kiosk',
     element: <LazyPage Component={BoothKioskPage} />,
+  },
+  {
+    path: '/spin',
+    element: <LazyPage Component={SpinPage} />,
   },
   {
     path: '/prizes',

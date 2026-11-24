@@ -15,5 +15,6 @@ export const nameSpinSchema = z.object({
       prizeName: z.string().trim().max(200).optional(),
       title: z.string().trim().max(120).optional(),
       randomPrize: z.boolean().optional(),
+      prizeList: z.array(z.string().max(200, 'Nama hadiah maksimal 200 karakter')).optional(),
     }),
 });

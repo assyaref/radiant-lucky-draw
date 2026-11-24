@@ -12,6 +12,7 @@ export interface NameSpinPayload {
   prizeName?: string;
   title?: string;
   randomPrize?: boolean;
+  prizeList?: string[];
 }
 
 export interface NameSpinResult {

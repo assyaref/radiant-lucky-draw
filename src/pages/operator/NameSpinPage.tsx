@@ -1,7 +1,6 @@
 // ============================================================
 // Spin Nama — undian cepat dari daftar nama yang diinput operator.
 // Pemenang dipilih server lalu ditayangkan juga di layar Monitor (roda putar).
-// Dari sini operator juga memilih tampilan Monitor: Event atau Spin Nama.
 // Hasil TIDAK disimpan ke database (tanpa catatan pemenang / stok).
 // ============================================================
 
@@ -38,6 +37,7 @@ interface HistoryItem {
 
 interface Saved {
   text: string;
+  prizeText: string;
   removeWinner: boolean;
   title: string;
   history: HistoryItem[];
@@ -52,6 +52,7 @@ function load(): Saved {
     if (raw) {
       return {
         text: '',
+        prizeText: '',
         removeWinner: true,
         title: '',
         history: [],
@@ -63,7 +64,7 @@ function load(): Saved {
   } catch {
     /* storage unavailable */
   }
-  return { text: '', removeWinner: true, title: '', history: [], localSound: false, randomPrize: false };
+  return { text: '', prizeText: '', removeWinner: true, title: '', history: [], localSound: false, randomPrize: false };
 }
 
 function save(v: Saved): void {
@@ -80,6 +81,7 @@ const inputCls =
 export default function NameSpinPage() {
   const initial = useMemo(load, []);
   const [text, setText] = useState(initial.text);
+  const [prizeText, setPrizeText] = useState(initial.prizeText);
   const [removeWinner, setRemoveWinner] = useState(initial.removeWinner);
   const [title, setTitle] = useState(initial.title);
   const [history, setHistory] = useState<HistoryItem[]>(initial.history);
@@ -88,7 +90,7 @@ export default function NameSpinPage() {
   const [theme, setTheme] = useState<MonitorTheme>(DEFAULT_THEME);
 
   const [prizes, setPrizes] = useState<Prize[]>([]);
-  const [prizeChoice, setPrizeChoice] = useState<string>(''); // '' none | 'custom' | prize id
+  const [prizeChoice, setPrizeChoice] = useState<string>(''); // '' none | 'custom' | prize id | 'random_list'
   const [customPrize, setCustomPrize] = useState('');
 
   const [spin, setSpin] = useState<NameSpinResult | null>(null);
@@ -100,12 +102,14 @@ export default function NameSpinPage() {
 
   const names = useMemo(() => cleanNames(text), [text]);
   const rawCount = useMemo(() => text.split(/\r?\n|;|\t/).filter((l) => l.trim()).length, [text]);
+  const prizeList = useMemo(() => cleanNames(prizeText), [prizeText]);
+  const rawPrizeCount = useMemo(() => prizeText.split(/\r?\n|;|\t/).filter((l) => l.trim()).length, [prizeText]);
 
   const idleSegments = useMemo(() => sampleForWheel(names), [names]);
 
   useEffect(() => {
-    save({ text, removeWinner, title, history, localSound, randomPrize });
-  }, [text, removeWinner, title, history, localSound, randomPrize]);
+    save({ text, prizeText, removeWinner, title, history, localSound, randomPrize });
+  }, [text, prizeText, removeWinner, title, history, localSound, randomPrize]);
 
   // Current Monitor mode
   useEffect(() => {
@@ -122,7 +126,7 @@ export default function NameSpinPage() {
     () => ({
       names,
       title: title.trim() || null,
-      prizeId: randomPrize ? null : (prizeChoice && prizeChoice !== 'custom' ? prizeChoice : null),
+      prizeId: randomPrize ? null : (prizeChoice && prizeChoice !== 'custom' && prizeChoice !== 'random_list' ? prizeChoice : null),
       prizeName: randomPrize ? null : (prizeChoice === 'custom' ? customPrize.trim() || null : null),
       randomPrize,
     }),
@@ -174,14 +178,16 @@ export default function NameSpinPage() {
     if (spinning) return;
     setError(null);
     if (names.length < 2) return setError('Masukkan minimal 2 nama yang berbeda');
+    if (randomPrize && prizeList.length < 1) return setError('Masukkan daftar hadiah untuk mode acak');
     setSpinning(true);
     try {
       const res = await nameSpinApi.spin({
         names,
-        prizeId: randomPrize ? undefined : (prizeChoice && prizeChoice !== 'custom' ? prizeChoice : undefined),
+        prizeId: randomPrize ? undefined : (prizeChoice && prizeChoice !== 'custom' && prizeChoice !== 'random_list' ? prizeChoice : undefined),
         prizeName: randomPrize ? undefined : (prizeChoice === 'custom' ? customPrize.trim() || undefined : undefined),
         title: title.trim() || undefined,
         randomPrize,
+        prizeList: randomPrize ? prizeList : undefined,
       });
       setSpin(res.data);
     } catch (err) {
@@ -280,7 +286,7 @@ export default function NameSpinPage() {
               </span>
             </span>
             <textarea
-              className={`${inputCls} h-64 font-mono leading-relaxed`}
+              className={`${inputCls} h-48 font-mono leading-relaxed`}
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={'Budi Santoso\nSiti Aminah\nAndi Wijaya\n…'}
@@ -288,6 +294,26 @@ export default function NameSpinPage() {
             />
             <span className="text-xs text-dark-text-tertiary">
               Bisa tempel langsung dari kolom Excel / Google Sheets.
+            </span>
+          </label>
+
+          <label className="block space-y-1">
+            <span className="flex justify-between text-xs text-dark-text-tertiary">
+              <span>Daftar hadiah (satu per baris)</span>
+              <span>
+                {prizeList.length} hadiah
+                {rawPrizeCount > prizeList.length ? ` · ${rawPrizeCount - prizeList.length} duplikat diabaikan` : ''}
+              </span>
+            </span>
+            <textarea
+              className={`${inputCls} h-32 font-mono leading-relaxed`}
+              value={prizeText}
+              onChange={(e) => setPrizeText(e.target.value)}
+              placeholder={'Voucher Rp 100.000\nPowerbank\nTumbler\n…'}
+              disabled={spinning}
+            />
+            <span className="text-xs text-dark-text-tertiary">
+              Digunakan untuk mode "Pilih hadiah secara acak".
             </span>
           </label>
 
@@ -337,7 +363,7 @@ export default function NameSpinPage() {
                   className="accent-primary-500"
                   disabled={spinning}
                 />
-                Pilih hadiah secara acak
+                Pilih hadiah secara acak dari daftar
               </label>
             </div>
           </label>
@@ -420,7 +446,7 @@ export default function NameSpinPage() {
                 totalNames={names.length}
                 title={title.trim() || null}
                 prizeName={
-                  spin ? spin.prizeName : (randomPrize ? 'Acak' : (prizeChoice === 'custom'
+                  spin ? spin.prizeName : (randomPrize ? 'Acak dari daftar' : (prizeChoice === 'custom'
                     ? customPrize.trim() || null
                     : (prizes.find((p) => p.id === prizeChoice)?.name ?? null)))
                 }

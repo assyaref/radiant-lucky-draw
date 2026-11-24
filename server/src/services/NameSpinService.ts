@@ -25,6 +25,7 @@ export interface NameSpinRequest {
   prizeName?: string;
   title?: string;
   randomPrize?: boolean;
+  prizeList?: string[];
   eventId?: string | null;
 }
 
@@ -72,16 +73,25 @@ export class NameSpinService {
     let selectedPrize: any = null;
 
     if (data.randomPrize) {
-      const availablePrizes = await this.prizeRepository.findActive(data.eventId ?? null);
-      if (availablePrizes.length === 0) {
-        throw new ValidationError('Tidak ada hadiah yang tersedia dengan stok tersisa');
+      if (data.prizeList && data.prizeList.length > 0) {
+        const cleanedPrizeList = cleanNames(data.prizeList);
+        if (cleanedPrizeList.length === 0) {
+          throw new ValidationError('Daftar hadiah tidak boleh kosong untuk mode acak');
+        }
+        const prizeIndex = randomInt(cleanedPrizeList.length);
+        prizeName = cleanedPrizeList[prizeIndex];
+      } else {
+        const availablePrizes = await this.prizeRepository.findActive(data.eventId ?? null);
+        if (availablePrizes.length === 0) {
+          throw new ValidationError('Tidak ada hadiah yang tersedia dengan stok tersisa');
+        }
+        const prizeIndex = randomInt(availablePrizes.length);
+        selectedPrize = availablePrizes[prizeIndex];
+        prizeId = selectedPrize.id;
+        prizeName = selectedPrize.name;
+        prizeImageUrl = selectedPrize.imageUrl ?? null;
+        prizeTier = selectedPrize.tier ?? null;
       }
-      const prizeIndex = randomInt(availablePrizes.length);
-      selectedPrize = availablePrizes[prizeIndex];
-      prizeId = selectedPrize.id;
-      prizeName = selectedPrize.name;
-      prizeImageUrl = selectedPrize.imageUrl ?? null;
-      prizeTier = selectedPrize.tier ?? null;
     } else if (data.prizeId) {
       const prize = await this.prizeRepository.findById(data.prizeId);
       if (!prize) throw new NotFoundError('Prize', data.prizeId);

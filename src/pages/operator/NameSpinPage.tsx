@@ -184,8 +184,10 @@ export default function NameSpinPage() {
       names,
       totalNames: names.length,
       title: title.trim() || null,
-      prizeSegments: displayMode === 'dual' ? idlePrizeSegments.map(s => s.id) : undefined,
-      totalPrizes: displayMode === 'dual' ? prizes.reduce((sum, p) => sum + p.remaining, 0) : undefined,
+      prizeSegments:
+        displayMode === 'dual' ? idlePrizeSegments.map((segment) => segment.name) : undefined,
+      totalPrizes:
+        displayMode === 'dual' ? prizes.reduce((sum, p) => sum + p.remaining, 0) : undefined,
       displayMode,
     }),
     [names, title, displayMode, idlePrizeSegments, prizes],

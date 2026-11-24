@@ -1434,17 +1434,14 @@ export default function MonitorPage() {
   useEffect(() => () => stopCountdown(), [stopCountdown]);
 
   // ─── Dual-Layer Wheel helper: extract prize segments for display ──────
-  const dualWheelPrizeSegments = useMemo(() => {
-    if (!nameSpin || !monitorState?.wheel.displayMode || monitorState.wheel.displayMode !== 'dual') return [];
-    const rawSegments = monitorState.wheel.prizeSegments ?? [];
-    // Convert string[] to PrizeSegment[] - extract prize name from nameSpin data
-    const prizeName = nameSpin.prizeName;
-    return rawSegments.map((seg, idx) => ({
-      id: seg,
-      name: prizeName ?? `Hadiah ${idx + 1}`,
-      icon: '🎁',
-    }));
-  }, [nameSpin, monitorState?.wheel.displayMode, monitorState?.wheel.prizeSegments]);
+  const dualWheelPrizeSegments =
+    monitorState?.wheel.displayMode === 'dual'
+      ? (monitorState.wheel.prizeSegments ?? []).map((seg, idx) => ({
+          id: seg,
+          name: /^[0-9a-f-]{36}:\d+$/i.test(seg) ? `Hadiah ${idx + 1}` : seg,
+          icon: '🎁',
+        }))
+      : [];
 
   // ─── Render ─────────────────────────────────────────────────────────
   return (

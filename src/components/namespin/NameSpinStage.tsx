@@ -265,6 +265,8 @@ function PrizeDisplay({ prizeName, prizeIcon, prizeImageUrl }: { prizeName: stri
 export function NameSpinStage({
   segments,
   prizeSegments = [],
+  totalNames,
+  totalPrizes,
   title,
   spin,
   theme,
@@ -278,8 +280,14 @@ export function NameSpinStage({
   const compact = variant === 'embed';
   const screen = variant === 'screen';
   const rootRef = useRef<HTMLDivElement>(null);
-  const wheelSegments = useMemo(() => (segments.length > 0 ? segments : ['Nama 1', 'Nama 2', 'Nama 3']), [segments]);
-  const wheelPrizeSegments = useMemo(() => (prizeSegments.length > 0 ? prizeSegments : [{ id: '1', name: 'Hadiah 1', icon: '🎁' }, { id: '2', name: 'Hadiah 2', icon: '🏆' }, { id: '3', name: 'Hadiah 3', icon: '💎' }]), [prizeSegments]);
+  const wheelSegments = useMemo(
+    () => {
+      if (segments.length > 0) return segments;
+      return displayMode === 'dual' ? [] : ['Nama 1', 'Nama 2', 'Nama 3'];
+    },
+    [segments, displayMode],
+  );
+  const wheelPrizeSegments = useMemo(() => prizeSegments, [prizeSegments]);
   const count = wheelSegments.length;
   const prizeCount = wheelPrizeSegments.length;
   const logo = theme?.logoUrl || defaultLogo;
@@ -294,8 +302,14 @@ export function NameSpinStage({
   const [shareNote, setShareNote] = useState<string | null>(null);
 
   const audio = useSpinSound({ enabled: sound });
-  const spinning = !!spin && revealedId === null;
   const revealed = !!spin && spin.spinId === revealedId;
+  const spinning = !!spin && !revealed;
+  const canSpin =
+    !!onSpinAgain &&
+    !spinDisabled &&
+    !spinning &&
+    count >= 2 &&
+    (displayMode !== 'dual' || prizeCount > 0);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -348,6 +362,23 @@ export function NameSpinStage({
             onRevealed?.(id);
           }}
         />
+        <motion.button
+          type="button"
+          onClick={onSpinAgain}
+          disabled={!canSpin}
+          whileHover={canSpin ? { scale: 1.06 } : undefined}
+          whileTap={canSpin ? { scale: 0.96 } : undefined}
+          aria-label={canSpin ? 'Mulai spin nama dan hadiah' : 'SPIN dikendalikan dari halaman operator'}
+          title={canSpin ? 'Mulai spin' : 'SPIN dikendalikan dari halaman operator'}
+          className="absolute left-1/2 top-1/2 z-20 flex aspect-square w-[27%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-[3px] border-amber-200/90 text-[#3b1b00] shadow-[0_0_26px_rgba(251,191,36,0.75),inset_0_2px_4px_rgba(255,255,255,0.85),inset_0_-5px_8px_rgba(146,64,14,0.28)] transition-[filter,opacity] disabled:cursor-not-allowed"
+          style={{
+            background: 'radial-gradient(circle at 35% 25%, #fff7c2 0%, #fcd34d 38%, #f59e0b 72%, #b45309 100%)',
+            opacity: onSpinAgain && !spinDisabled && !spinning ? 1 : 0.96,
+          }}
+        >
+          <HiOutlineArrowPath className="h-[24%] w-[24%] drop-shadow-sm" />
+          <span className="mt-1 text-[clamp(10px,2.1vw,24px)] font-black leading-none tracking-wide">SPIN</span>
+        </motion.button>
       </div>
       <div className="absolute left-1/2 -translate-x-1/2 -bottom-5 w-4/5 h-12 rounded-full bg-gradient-to-r from-purple-500/50 via-pink-500/50 to-amber-500/50 blur-3xl" />
     </div>
@@ -641,36 +672,38 @@ export function NameSpinStage({
             <div className="flex flex-wrap justify-center gap-4 mt-8">
               <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-white/10 to-white/5 border border-white/15 text-sm text-white/85 backdrop-blur-sm">
                 <HiOutlineUsers className="w-5 h-5 text-purple-300" />
-                {count} peserta
+                {totalNames || count} peserta
               </span>
-              {displayMode === 'dual' && prizeCount > 0 && (
+              {displayMode === 'dual' && (
                 <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-500/15 to-orange-500/10 border border-amber-400/30 text-sm text-amber-200 backdrop-blur-sm">
                   <HiOutlineGift className="w-5 h-5 text-amber-300" />
-                  {prizeCount} unit hadiah
+                  {totalPrizes ?? prizeCount} unit hadiah
                 </span>
               )}
             </div>
           </div>
 
-          {onSpinAgain && (
+          {((onSpinAgain && displayMode !== 'dual') || (revealed && !!spin)) && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: revealed ? 0.6 : 0 }}
               className="flex gap-4"
             >
-              <button
-                onClick={onSpinAgain}
-                disabled={spinDisabled}
-                className="flex-1 flex items-center justify-center gap-3 rounded-full py-5 text-xl font-black text-[#1f1300] disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 hover:scale-[1.02] transition-all"
-                style={{
-                  background: 'linear-gradient(180deg,#fef3c7 0%,#fcd34d 30%,#f59e0b 65%,#d97706 100%)',
-                  boxShadow: '0 20px 50px rgba(245,158,11,0.5), inset 0 2px 0 rgba(255,255,255,0.7), inset 0 -2px 0 rgba(0,0,0,0.1)',
-                }}
-              >
-                <HiOutlineArrowPath className="w-7 h-7" />
-                PUTAR LAGI
-              </button>
+              {onSpinAgain && displayMode !== 'dual' && (
+                <button
+                  onClick={onSpinAgain}
+                  disabled={spinDisabled}
+                  className="flex-1 flex items-center justify-center gap-3 rounded-full py-5 text-xl font-black text-[#1f1300] disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 hover:scale-[1.02] transition-all"
+                  style={{
+                    background: 'linear-gradient(180deg,#fef3c7 0%,#fcd34d 30%,#f59e0b 65%,#d97706 100%)',
+                    boxShadow: '0 20px 50px rgba(245,158,11,0.5), inset 0 2px 0 rgba(255,255,255,0.7), inset 0 -2px 0 rgba(0,0,0,0.1)',
+                  }}
+                >
+                  <HiOutlineArrowPath className="w-7 h-7" />
+                  PUTAR LAGI
+                </button>
+              )}
               {revealed && (
                 <motion.button
                   whileHover={{ scale: 1.05 }}

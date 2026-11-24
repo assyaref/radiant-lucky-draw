@@ -11,6 +11,7 @@ export interface NameSpinPayload {
   prizeId?: string;
   prizeName?: string;
   title?: string;
+  randomPrize?: boolean;
 }
 
 export interface NameSpinResult {
@@ -21,6 +22,8 @@ export interface NameSpinResult {
   prizeName: string | null;
   prizeImageUrl: string | null;
   prizeTier: string | null;
+  prizeId: string | null;
+  winnerId: string | null;
   title: string | null;
   /** Wheel segments (same sample as the idle wheel); winner at `winnerSegment`. */
   segments: string[];

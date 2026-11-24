@@ -14,5 +14,6 @@ export const nameSpinSchema = z.object({
       prizeId: z.string().uuid('ID hadiah tidak valid').optional(),
       prizeName: z.string().trim().max(200).optional(),
       title: z.string().trim().max(120).optional(),
+      randomPrize: z.boolean().optional(),
     }),
 });

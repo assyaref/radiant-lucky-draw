@@ -82,7 +82,7 @@ const navItems: NavItem[] = [
     icon: <HiOutlineServer className="w-5 h-5" />,
   },
   {
-    label: 'Spin Nama',
+    label: 'Spin',
     path: '/operator/name-spin',
     icon: <HiOutlineSparkles className="w-5 h-5" />,
     permission: PERMISSIONS.DRAW_EXECUTE,

@@ -43,6 +43,7 @@ interface Saved {
   history: HistoryItem[];
   /** Play sounds in the preview on this device too. */
   localSound: boolean;
+  randomPrize: boolean;
 }
 
 function load(): Saved {
@@ -55,13 +56,14 @@ function load(): Saved {
         title: '',
         history: [],
         localSound: false,
+        randomPrize: false,
         ...JSON.parse(raw),
       };
     }
   } catch {
     /* storage unavailable */
   }
-  return { text: '', removeWinner: true, title: '', history: [], localSound: false };
+  return { text: '', removeWinner: true, title: '', history: [], localSound: false, randomPrize: false };
 }
 
 function save(v: Saved): void {
@@ -82,6 +84,7 @@ export default function NameSpinPage() {
   const [title, setTitle] = useState(initial.title);
   const [history, setHistory] = useState<HistoryItem[]>(initial.history);
   const [localSound, setLocalSound] = useState(initial.localSound);
+  const [randomPrize, setRandomPrize] = useState(initial.randomPrize);
   const [theme, setTheme] = useState<MonitorTheme>(DEFAULT_THEME);
 
   const [prizes, setPrizes] = useState<Prize[]>([]);
@@ -101,8 +104,8 @@ export default function NameSpinPage() {
   const idleSegments = useMemo(() => sampleForWheel(names), [names]);
 
   useEffect(() => {
-    save({ text, removeWinner, title, history, localSound });
-  }, [text, removeWinner, title, history, localSound]);
+    save({ text, removeWinner, title, history, localSound, randomPrize });
+  }, [text, removeWinner, title, history, localSound, randomPrize]);
 
   // Current Monitor mode
   useEffect(() => {
@@ -119,10 +122,11 @@ export default function NameSpinPage() {
     () => ({
       names,
       title: title.trim() || null,
-      prizeId: prizeChoice && prizeChoice !== 'custom' ? prizeChoice : null,
-      prizeName: prizeChoice === 'custom' ? customPrize.trim() || null : null,
+      prizeId: randomPrize ? null : (prizeChoice && prizeChoice !== 'custom' ? prizeChoice : null),
+      prizeName: randomPrize ? null : (prizeChoice === 'custom' ? customPrize.trim() || null : null),
+      randomPrize,
     }),
-    [names, title, prizeChoice, customPrize],
+    [names, title, prizeChoice, customPrize, randomPrize],
   );
 
   // While the Monitor shows the wheel, keep it in sync with this list (debounced).
@@ -174,9 +178,10 @@ export default function NameSpinPage() {
     try {
       const res = await nameSpinApi.spin({
         names,
-        prizeId: prizeChoice && prizeChoice !== 'custom' ? prizeChoice : undefined,
-        prizeName: prizeChoice === 'custom' ? customPrize.trim() || undefined : undefined,
+        prizeId: randomPrize ? undefined : (prizeChoice && prizeChoice !== 'custom' ? prizeChoice : undefined),
+        prizeName: randomPrize ? undefined : (prizeChoice === 'custom' ? customPrize.trim() || undefined : undefined),
         title: title.trim() || undefined,
+        randomPrize,
       });
       setSpin(res.data);
     } catch (err) {
@@ -225,10 +230,9 @@ export default function NameSpinPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Spin Nama</h1>
+        <h1 className="text-2xl font-bold text-white">Spin</h1>
         <p className="text-sm text-dark-text-tertiary mt-1">
-          Undian cepat dari daftar nama dengan roda putar, tampil juga di layar Monitor. Hasil
-          tidak disimpan sebagai pemenang dan tidak mengurangi stok hadiah.
+          Undian cepat dari daftar nama dengan roda putar, tampil juga di layar Monitor. Hasil disimpan sebagai pemenang dan stok hadiah berkurang secara otomatis.
         </p>
       </div>
 
@@ -300,23 +304,62 @@ export default function NameSpinPage() {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-xs text-dark-text-tertiary">Hadiah</span>
-            <select
-              className={inputCls}
-              value={prizeChoice}
-              onChange={(e) => setPrizeChoice(e.target.value)}
-              disabled={spinning}
-            >
-              <option value="">— Tanpa hadiah —</option>
-              {prizes.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-              <option value="custom">Ketik nama hadiah…</option>
-            </select>
+            <span className="text-xs text-dark-text-tertiary">Mode Hadiah</span>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
+                <input
+                  type="radio"
+                  name="prizeMode"
+                  checked={!randomPrize && !prizeChoice}
+                  onChange={() => { setRandomPrize(false); setPrizeChoice(''); }}
+                  className="accent-primary-500"
+                  disabled={spinning}
+                />
+                Tanpa hadiah
+              </label>
+              <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
+                <input
+                  type="radio"
+                  name="prizeMode"
+                  checked={!randomPrize && !!prizeChoice}
+                  onChange={() => { setRandomPrize(false); if (!prizeChoice) setPrizeChoice(prizes[0]?.id || 'custom'); }}
+                  className="accent-primary-500"
+                  disabled={spinning}
+                />
+                Pilih hadiah manual
+              </label>
+              <label className="flex items-center gap-2 text-sm text-dark-text-secondary cursor-pointer">
+                <input
+                  type="radio"
+                  name="prizeMode"
+                  checked={randomPrize}
+                  onChange={() => { setRandomPrize(true); setPrizeChoice(''); }}
+                  className="accent-primary-500"
+                  disabled={spinning}
+                />
+                Pilih hadiah secara acak
+              </label>
+            </div>
           </label>
-          {prizeChoice === 'custom' && (
+          {!randomPrize && !!prizeChoice && (
+            <label className="block space-y-1">
+              <span className="text-xs text-dark-text-tertiary">Pilih Hadiah</span>
+              <select
+                className={inputCls}
+                value={prizeChoice}
+                onChange={(e) => setPrizeChoice(e.target.value)}
+                disabled={spinning}
+              >
+                {prizes.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.remaining !== undefined ? `(stok: ${p.remaining})` : ''}
+                  </option>
+                ))}
+                <option value="custom">Ketik nama hadiah…</option>
+              </select>
+            </label>
+          )}
+          {!randomPrize && prizeChoice === 'custom' && (
             <input
               className={inputCls}
               value={customPrize}
@@ -377,11 +420,11 @@ export default function NameSpinPage() {
                 totalNames={names.length}
                 title={title.trim() || null}
                 prizeName={
-                  prizeChoice === 'custom'
+                  spin ? spin.prizeName : (randomPrize ? 'Acak' : (prizeChoice === 'custom'
                     ? customPrize.trim() || null
-                    : (prizes.find((p) => p.id === prizeChoice)?.name ?? null)
+                    : (prizes.find((p) => p.id === prizeChoice)?.name ?? null)))
                 }
-                prizeImageUrl={prizes.find((p) => p.id === prizeChoice)?.imageUrl ?? null}
+                prizeImageUrl={spin ? spin.prizeImageUrl : (randomPrize ? null : (prizes.find((p) => p.id === prizeChoice)?.imageUrl ?? null))}
                 spin={spin}
                 theme={theme}
                 sound={localSound}

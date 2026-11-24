@@ -7,21 +7,25 @@
  * spin to every Monitor over Supabase Realtime (`namespin:started`), where it
  * is shown on the name wheel.
  *
- * By design nothing is stored: no winner record, no stock change. A prize may
- * be referenced by id only to show its name/image (read-only).
+ * Now upgraded to Lucky Draw mode: selects both a random participant AND a
+ * random prize from available stock in a single atomic transaction.
+ * Winner history is saved and prize stock is decremented automatically.
  */
 
 import { randomInt, randomUUID } from 'crypto';
-import { PrizeRepository } from '../repositories';
+import { PrizeRepository, WinnerRepository, ParticipantRepository } from '../repositories';
 import { RealtimeService, NAME_SPIN_EVENTS } from '../realtime';
 import { ValidationError, NotFoundError } from '../utils';
 import { cleanNames, sampleForWheel } from '../utils/names';
+import { prisma } from '../lib/prisma';
 
 export interface NameSpinRequest {
   names: string[];
   prizeId?: string;
   prizeName?: string;
   title?: string;
+  randomPrize?: boolean;
+  eventId?: string | null;
 }
 
 export interface NameSpinResult {
@@ -32,7 +36,9 @@ export interface NameSpinResult {
   prizeName: string | null;
   prizeImageUrl: string | null;
   prizeTier: string | null;
+  prizeId: string | null;
   title: string | null;
+  winnerId: string | null;
   /**
    * Wheel segments — the same sample the idle wheel shows (see MonitorService),
    * guaranteed to contain the winner at `winnerSegment`.
@@ -50,6 +56,8 @@ const REVEAL_HOLD_MS = 12000;
 export class NameSpinService {
   constructor(
     private prizeRepository: PrizeRepository,
+    private winnerRepository: WinnerRepository,
+    private participantRepository: ParticipantRepository,
     private realtimeService: RealtimeService,
   ) {}
 
@@ -60,23 +68,60 @@ export class NameSpinService {
     let prizeName = data.prizeName?.trim() || null;
     let prizeImageUrl: string | null = null;
     let prizeTier: string | null = null;
-    if (data.prizeId) {
+    let prizeId: string | null = null;
+    let selectedPrize: any = null;
+
+    if (data.randomPrize) {
+      const availablePrizes = await this.prizeRepository.findActive(data.eventId ?? null);
+      if (availablePrizes.length === 0) {
+        throw new ValidationError('Tidak ada hadiah yang tersedia dengan stok tersisa');
+      }
+      const prizeIndex = randomInt(availablePrizes.length);
+      selectedPrize = availablePrizes[prizeIndex];
+      prizeId = selectedPrize.id;
+      prizeName = selectedPrize.name;
+      prizeImageUrl = selectedPrize.imageUrl ?? null;
+      prizeTier = selectedPrize.tier ?? null;
+    } else if (data.prizeId) {
       const prize = await this.prizeRepository.findById(data.prizeId);
       if (!prize) throw new NotFoundError('Prize', data.prizeId);
+      prizeId = prize.id;
       prizeName = prize.name;
       prizeImageUrl = prize.imageUrl ?? null;
       prizeTier = prize.tier ?? null;
+      selectedPrize = prize;
     }
 
     const winnerIndex = randomInt(names.length);
     const winnerName = names[winnerIndex];
 
-    // Wheel: same sample as the idle wheel; make sure the winner is on it.
     const segments = sampleForWheel(names);
     let winnerSegment = segments.indexOf(winnerName);
     if (winnerSegment < 0) {
       winnerSegment = randomInt(segments.length);
       segments[winnerSegment] = winnerName;
+    }
+
+    let winnerId: string | null = null;
+
+    if (prizeId) {
+      const updatedPrize = await this.prizeRepository.decrementRemaining(prizeId);
+      if (!updatedPrize) {
+        throw new ValidationError('Stok hadiah sudah habis, silakan pilih hadiah lain');
+      }
+
+      const winnerRecord = await prisma.winner.create({
+        data: {
+          id: randomUUID(),
+          participantId: null,
+          prizeId: prizeId,
+          prizeTier: prizeTier ?? 'standard',
+          prizeValue: selectedPrize?.value ?? 0,
+          claimStatus: 'unclaimed',
+          announcedAt: new Date(),
+        },
+      });
+      winnerId = winnerRecord.id;
     }
 
     const result: NameSpinResult = {
@@ -87,7 +132,9 @@ export class NameSpinService {
       prizeName,
       prizeImageUrl,
       prizeTier,
+      prizeId,
       title: data.title?.trim() || null,
+      winnerId,
       segments,
       winnerSegment,
       durationMs: SPIN_DURATION_MS,

@@ -110,6 +110,16 @@ const DEFAULT_PRIZE_FORM: PrizeFormData = {
   isActive: true,
 };
 
+const TIER_ICONS: Record<string, string> = {
+  grand: '🏆',
+  diamond: '💎',
+  platinum: '🥈',
+  gold: '🥇',
+  silver: '🥉',
+  bronze: '🎖️',
+  doorprize: '🎁',
+};
+
 export default function NameSpinPage() {
   const initial = useMemo(load, []);
   const [text, setText] = useState(initial.text);
@@ -408,16 +418,6 @@ export default function NameSpinPage() {
     silver: 'bg-gradient-to-r from-gray-300 to-gray-500',
     bronze: 'bg-gradient-to-r from-orange-500 to-amber-700',
     doorprize: 'bg-gradient-to-r from-blue-500 to-cyan-500',
-  };
-
-  const TIER_ICONS: Record<string, string> = {
-    grand: '🏆',
-    diamond: '💎',
-    platinum: '🥈',
-    gold: '🥇',
-    silver: '🥉',
-    bronze: '🎖️',
-    doorprize: '🎁',
   };
 
   const formatCurrency = (value: number, currency: string) => {

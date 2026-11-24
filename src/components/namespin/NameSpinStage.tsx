@@ -9,10 +9,10 @@
  *
  * Now supports two modes:
  * - 'single' : Original single wheel spin mode (name only or name+prize card)
- * - 'dual'   : NEW Dual wheel mode - separate wheels for names and prizes
+ * - 'dual'   : NEW Integrated single wheel mode - names and prizes combined in one wheel
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   HiOutlineArrowPath,
@@ -27,7 +27,6 @@ import {
 import { NameSpinWheel } from './NameSpinWheel';
 import { useSpinSound } from './spinSound';
 import { MonitorImage } from '@pages/monitor/MonitorImage';
-import { normalizeImageUrl } from '@/utils';
 import type { NameSpinResult } from '@api/nameSpin';
 import type { MonitorTheme } from '@api/monitor';
 import defaultLogo from '@assets/images/lucky-draw-logo.png';
@@ -52,13 +51,13 @@ interface Props {
   /** 'screen' fills a monitor; 'embed' fits inside a page. */
   variant?: 'screen' | 'embed';
   onRevealed?: (spinId: string) => void;
-  /** Display mode: single wheel or dual wheels */
+  /** Display mode: single wheel or integrated dual mode */
   displayMode?: 'single' | 'dual';
 }
 
 /* ── Decorations ─────────────────────────────────────────────────── */
 
-const CONFETTI_COLORS = ['#fbbf24', '#38bdf8', '#818cf8', '#a855f7', '#22d3ee', '#f59e0b', '#60a5fa'];
+const CONFETTI_COLORS = ['#fbbf24', '#38bdf8', '#818cf8', '#a855f7', '#22d3ee', '#f59e0b', '#60a5fa', '#ec4899', '#10b981'];
 
 function seeded(i: number): number {
   const x = Math.sin(i * 9301 + 49297) * 233280;
@@ -68,19 +67,19 @@ function seeded(i: number): number {
 function Confetti() {
   const pieces = useMemo(
     () =>
-      Array.from({ length: 34 }, (_, i) => {
+      Array.from({ length: 80 }, (_, i) => {
         const x = seeded(i) * 100;
         const y = 12 + seeded(i + 100) * 80;
         return {
           id: i,
           left: x,
           top: y,
-          w: 6 + seeded(i + 200) * 8,
-          h: 3 + seeded(i + 300) * 4,
+          w: 6 + seeded(i + 200) * 10,
+          h: 3 + seeded(i + 300) * 5,
           rot: seeded(i + 400) * 360,
           color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-          delay: seeded(i + 500) * 6,
-          dur: 5 + seeded(i + 600) * 6,
+          delay: seeded(i + 500) * 8,
+          dur: 6 + seeded(i + 600) * 8,
         };
       }),
     [],
@@ -97,9 +96,9 @@ function Confetti() {
             width: p.w,
             height: p.h,
             background: p.color,
-            opacity: 0.75,
+            opacity: 0.85,
             ['--r' as string]: `${p.rot}deg`,
-            boxShadow: `0 0 6px ${p.color}66`,
+            boxShadow: `0 0 10px ${p.color}aa`,
             animationDelay: `${p.delay}s`,
             animationDuration: `${p.dur}s`,
           }}
@@ -112,7 +111,7 @@ function Confetti() {
 function Crown({ lit }: { lit: boolean }) {
   return (
     <div className="relative flex items-end justify-center" aria-hidden="true">
-      <svg viewBox="0 0 200 70" className="absolute -top-3 w-[190%] max-w-none opacity-90">
+      <svg viewBox="0 0 200 70" className="absolute -top-3 w-[190%] max-w-none opacity-95">
         {[
           [20, 40, 7],
           [42, 18, 5],
@@ -128,7 +127,7 @@ function Crown({ lit }: { lit: boolean }) {
             style={{ animationDelay: `${i * 0.35}s` }}
           />
         ))}
-        <path d="M30 62 Q100 40 170 62" stroke="url(#crown-arc)" strokeWidth="1.5" fill="none" />
+        <path d="M30 62 Q100 40 170 62" stroke="url(#crown-arc)" strokeWidth="2" fill="none" />
         <defs>
           <linearGradient id="crown-arc" x1="0" x2="1">
             <stop offset="0" stopColor="#fbbf24" stopOpacity="0" />
@@ -139,54 +138,61 @@ function Crown({ lit }: { lit: boolean }) {
       </svg>
       <svg
         viewBox="0 0 64 44"
-        className="relative w-20 md:w-24"
+        className="relative w-24 md:w-28"
         style={{
           filter: lit
-            ? 'drop-shadow(0 0 14px rgba(251,191,36,0.9))'
-            : 'drop-shadow(0 0 6px rgba(251,191,36,0.35))',
-          opacity: lit ? 1 : 0.6,
+            ? 'drop-shadow(0 0 24px rgba(251,191,36,1))'
+            : 'drop-shadow(0 0 8px rgba(251,191,36,0.4))',
+          opacity: lit ? 1 : 0.7,
         }}
       >
         <defs>
-          <linearGradient id="crown-gold" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#fff3b0" />
-            <stop offset="0.45" stopColor="#fbbf24" />
-            <stop offset="1" stopColor="#c2410c" />
+          <linearGradient id="crown-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fef3c7" />
+            <stop offset="30%" stopColor="#fcd34d" />
+            <stop offset="60%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#fbbf24" />
           </linearGradient>
         </defs>
         <path
-          d="M6 14 L18 26 L32 6 L46 26 L58 14 L54 36 H10 Z"
+          d="M4 22 L12 8 L20 18 L32 2 L44 18 L52 8 L60 22 L56 38 L8 38 Z"
           fill="url(#crown-gold)"
-          stroke="#92400e"
+          stroke="#fcd34d"
           strokeWidth="1"
         />
-        <rect x="9" y="36" width="46" height="6" rx="2" fill="url(#crown-gold)" />
-        <circle cx="6" cy="13" r="3.5" fill="#fde68a" />
-        <circle cx="32" cy="5" r="3.5" fill="#fde68a" />
-        <circle cx="58" cy="13" r="3.5" fill="#fde68a" />
+        <circle cx="32" cy="14" r="4" fill="#fff" className={lit ? 'ns-twinkle' : ''} style={{ animationDelay: '0.1s' }} />
       </svg>
     </div>
   );
 }
 
-function DualWheelLabel({ icon, text, color }: { icon: React.ReactNode; text: string; color: string }) {
+function GlowOrb({ delay, color, size }: { delay: number; color: string; size: number }) {
   return (
-    <div className="flex items-center justify-center gap-2 mb-4">
-      <span className={`w-8 h-8 rounded-full flex items-center justify-center ${color}`}>
-        {icon}
-      </span>
-      <span className="text-sm font-bold tracking-wider uppercase text-white/80">{text}</span>
-    </div>
+    <motion.div
+      className="absolute rounded-full blur-3xl"
+      style={{
+        width: size,
+        height: size,
+        background: color,
+        opacity: 0.3,
+      }}
+      animate={{
+        scale: [1, 1.3, 1],
+        opacity: [0.2, 0.5, 0.2],
+      }}
+      transition={{
+        duration: 4 + delay,
+        repeat: Infinity,
+        ease: 'easeInOut',
+        delay: delay,
+      }}
+    />
   );
 }
-
-/* ── Scene ───────────────────────────────────────────────────────── */
 
 export function NameSpinStage({
   segments,
   prizeSegments = [],
-  totalNames,
-  totalPrizes = 0,
   title,
   prizeName,
   prizeImageUrl,
@@ -194,104 +200,98 @@ export function NameSpinStage({
   theme,
   sound = true,
   onSpinAgain,
-  spinDisabled,
+  spinDisabled = false,
   variant = 'screen',
   onRevealed,
   displayMode = 'single',
 }: Props) {
+  const compact = variant === 'embed';
+  const screen = variant === 'screen';
   const rootRef = useRef<HTMLDivElement>(null);
+  const wheelSegments = useMemo(() => (segments.length > 0 ? segments : ['Nama 1', 'Nama 2', 'Nama 3']), [segments]);
+  const prizeWheelSegments = useMemo(() => (prizeSegments.length > 0 ? prizeSegments : ['Hadiah 1', 'Hadiah 2', 'Hadiah 3']), [prizeSegments]);
+  const count = wheelSegments.length;
+  const prizeCount = prizeWheelSegments.length;
+  const logo = theme?.logoUrl || defaultLogo;
+  const label = title || 'SPIN NAMA';
+  const shownTitle = displayMode === 'dual' ? 'SPIN NAMA & HADIAH' : label;
+  const shownPrize = displayMode === 'dual' ? (spin?.prizeName || prizeName) : prizeName;
+  const prizeImg = prizeImageUrl || (spin?.prizeImageUrl ?? null);
+
   const [revealedId, setRevealedId] = useState<string | null>(null);
   const [pointerName, setPointerName] = useState<string | null>(null);
-  const [pointerPrize, setPointerPrize] = useState<string | null>(null);
-  const [compact, setCompact] = useState(variant === 'embed');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [shareNote, setShareNote] = useState<string | null>(null);
-  const [logoFailed, setLogoFailed] = useState(false);
 
-  const soundOn = sound && (theme?.soundEnabled ?? true);
-  const audio = useSpinSound({
-    enabled: soundOn,
-    spinUrl: theme?.spinSoundUrl,
-    winUrl: theme?.winSoundUrl,
-  });
-
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setCompact(el.clientWidth < 880));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const onFs = () => setIsFullscreen(document.fullscreenElement === rootRef.current);
-    document.addEventListener('fullscreenchange', onFs);
-    return () => document.removeEventListener('fullscreenchange', onFs);
-  }, []);
-
-  useEffect(() => setLogoFailed(false), [theme?.logoUrl]);
-
-  useEffect(() => {
-    if (!spin) return;
-    if (spin.spinId !== revealedId) setRevealedId(null);
-    const elapsed = spin.startedAt ? Date.now() - Date.parse(spin.startedAt) : 0;
-    if (!(elapsed > spin.durationMs - 500)) audio.spinStart();
-  }, [spin?.spinId]);
-
-  const revealed = !!spin && revealedId === spin.spinId;
-  const spinning = !!spin && !revealed;
-  const wheelSegments = spin ? spin.segments : segments;
-  const prizeWheelSegments = spin?.prizeSegments ?? prizeSegments;
-  const shownTitle = spin ? spin.title : title;
-  const shownPrize = spin ? spin.prizeName : prizeName;
-  const shownPrizeImg = spin ? spin.prizeImageUrl : prizeImageUrl;
-  const prizeImg = shownPrizeImg ? normalizeImageUrl(shownPrizeImg) : null;
-  const count = spin ? spin.totalNames : totalNames;
-  const prizeCount = spin?.totalPrizes ?? totalPrizes;
-  const logo = theme?.logoUrl && !logoFailed ? theme.logoUrl : defaultLogo;
-  const label = theme?.eventLabel?.trim() || 'Draw Event';
-  const screen = variant === 'screen';
+  const audio = useSpinSound({ enabled: sound });
+  const spinning = !!spin && revealedId === null;
+  const revealed = !!spin && spin.spinId === revealedId;
 
   const toggleFullscreen = () => {
-    const el = rootRef.current;
-    if (!el) return;
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else void el.requestFullscreen?.().catch(() => undefined);
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
   };
 
-  const share = async () => {
-    if (!spin || !revealed) return;
-    const text = `🎉 Selamat kepada ${spin.winnerName}${spin.prizeName ? ` — pemenang ${spin.prizeName}` : ''}${
-      spin.title ? ` (${spin.title})` : ''
-    }!`;
-    try {
-      if (navigator.share) {
-        await navigator.share({ text });
-        return;
-      }
-      await navigator.clipboard?.writeText(text);
-      setShareNote('Teks pemenang disalin');
-    } catch {
-    }
-    window.setTimeout(() => setShareNote(null), 2500);
+  const share = () => {
+    const text = displayMode === 'dual'
+      ? `🎉 Selamat kepada ${spin?.winnerName} yang memenangkan ${spin?.prizeName}! 🎁`
+      : `🎉 Selamat kepada ${spin?.winnerName}! 🎉`;
+    navigator.clipboard?.writeText(text).then(() => {
+      setShareNote('Teks hasil disalin ke papan klip!');
+      setTimeout(() => setShareNote(null), 2500);
+    });
   };
 
   const nameSize = (name: string) => {
-    const l = name.length;
-    if (compact) return l > 22 ? 'text-3xl' : l > 12 ? 'text-4xl' : 'text-5xl';
-    return l > 22 ? 'text-5xl xl:text-6xl' : l > 12 ? 'text-6xl xl:text-7xl' : 'text-7xl xl:text-8xl';
+    const len = name.length;
+    if (len > 25) return 'text-2xl md:text-3xl';
+    if (len > 18) return 'text-3xl md:text-4xl';
+    if (len > 12) return 'text-4xl md:text-5xl';
+    return 'text-5xl md:text-6xl';
   };
+
+  const renderIntegratedDualWheel = () => (
+    <div className="flex flex-col items-center gap-6 w-full">
+      <div className="relative shrink-0">
+        <div
+          className={compact ? 'w-[min(80vw,400px)]' : 'w-[min(55vh,38vw)]'}
+          style={{ filter: 'drop-shadow(0 0 60px rgba(168,85,247,0.5))' }}
+        >
+          <NameSpinWheel
+            segments={wheelSegments}
+            spin={spin ?? null}
+            highlight={revealed && spin ? spin.winnerSegment : null}
+            variant="dual"
+            onTick={audio.tick}
+            onPointerSegment={(i) => setPointerName(wheelSegments[i] ?? null)}
+            onSpinEnd={(id) => {
+              setRevealedId(id);
+              audio.spinEnd();
+              onRevealed?.(id);
+            }}
+          />
+        </div>
+        <div className="absolute left-1/2 -translate-x-1/2 -bottom-4 w-3/4 h-8 rounded-full bg-gradient-to-r from-purple-500/40 via-pink-500/40 to-amber-500/40 blur-2xl" />
+      </div>
+    </div>
+  );
 
   const renderSingleWheel = () => (
     <div className="relative shrink-0">
       <div
-        className={compact ? 'w-[min(86vw,440px)]' : 'w-[min(76vh,50vw)]'}
-        style={{ filter: 'drop-shadow(0 0 50px rgba(99,102,241,0.35))' }}
+        className={compact ? 'w-[min(80vw,400px)]' : 'w-[min(55vh,38vw)]'}
+        style={{ filter: 'drop-shadow(0 0 50px rgba(251,191,36,0.45))' }}
       >
         <NameSpinWheel
           segments={wheelSegments}
           spin={spin ?? null}
           highlight={revealed && spin ? spin.winnerSegment : null}
+          variant="name"
           onTick={audio.tick}
           onPointerSegment={(i) => setPointerName(wheelSegments[i] ?? null)}
           onSpinEnd={(id) => {
@@ -301,71 +301,7 @@ export function NameSpinStage({
           }}
         />
       </div>
-      <div className="absolute left-1/2 -translate-x-1/2 -bottom-4 w-1/2 h-6 rounded-[50%] bg-amber-400/40 blur-xl" />
-    </div>
-  );
-
-  const renderDualWheels = () => (
-    <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10 w-full">
-      <div className="flex flex-col items-center">
-        <DualWheelLabel
-          icon={<HiOutlineUsers className="w-4 h-4 text-indigo-200" />}
-          text="Peserta"
-          color="bg-indigo-500/30 border border-indigo-400/40"
-        />
-        <div className="relative shrink-0">
-          <div
-            className={compact ? 'w-[min(70vw,320px)]' : 'w-[min(50vh,32vw)]'}
-            style={{ filter: 'drop-shadow(0 0 40px rgba(99,102,241,0.35))' }}
-          >
-            <NameSpinWheel
-              segments={wheelSegments}
-              spin={spin ?? null}
-              highlight={revealed && spin ? spin.winnerSegment : null}
-              variant="name"
-              onTick={audio.tick}
-              onPointerSegment={(i) => setPointerName(wheelSegments[i] ?? null)}
-              onSpinEnd={(id) => {
-                setRevealedId(id);
-                audio.spinEnd();
-                onRevealed?.(id);
-              }}
-            />
-          </div>
-          <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-1/2 h-4 rounded-[50%] bg-indigo-400/30 blur-xl" />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center">
-        <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.5)]">
-          <span className="text-2xl md:text-3xl font-black text-white">+</span>
-        </div>
-      </div>
-
-      <div className="flex flex-col items-center">
-        <DualWheelLabel
-          icon={<HiOutlineGift className="w-4 h-4 text-amber-200" />}
-          text="Hadiah"
-          color="bg-amber-500/30 border border-amber-400/40"
-        />
-        <div className="relative shrink-0">
-          <div
-            className={compact ? 'w-[min(70vw,320px)]' : 'w-[min(50vh,32vw)]'}
-            style={{ filter: 'drop-shadow(0 0 40px rgba(245,158,11,0.35))' }}
-          >
-            <NameSpinWheel
-              segments={prizeWheelSegments.length > 0 ? prizeWheelSegments : ['Hadiah 1', 'Hadiah 2', 'Hadiah 3']}
-              spin={spin ?? null}
-              highlight={revealed && spin ? spin.prizeSegment ?? 0 : null}
-              variant="prize"
-              onTick={audio.tick}
-              onPointerSegment={(i) => setPointerPrize(prizeWheelSegments[i] ?? null)}
-              onSpinEnd={() => {}}
-            />
-          </div>
-          <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-1/2 h-4 rounded-[50%] bg-amber-400/30 blur-xl" />
-        </div>
-      </div>
+      <div className="absolute left-1/2 -translate-x-1/2 -bottom-3 w-3/4 h-6 rounded-full bg-amber-400/30 blur-xl" />
     </div>
   );
 
@@ -373,98 +309,102 @@ export function NameSpinStage({
     <div
       ref={rootRef}
       className={`ns-scene relative w-full h-full overflow-hidden text-white ${
-        screen ? '' : 'rounded-2xl min-h-[560px]'
+        screen ? '' : 'rounded-2xl min-h-[600px]'
       }`}
       style={{
         fontFamily: 'Poppins, Inter, system-ui, sans-serif',
         background:
-          'radial-gradient(ellipse 60% 70% at 28% 55%, rgba(99,102,241,0.30), transparent 70%),' +
-          'radial-gradient(ellipse 45% 40% at 88% 8%, rgba(59,130,246,0.28), transparent 70%),' +
-          'radial-gradient(ellipse 50% 45% at 85% 95%, rgba(124,58,237,0.25), transparent 70%),' +
-          'linear-gradient(160deg,#0c1446 0%,#080d33 45%,#0b1040 100%)',
+          'radial-gradient(ellipse 70% 80% at 30% 50%, rgba(168,85,247,0.35), transparent 75%),' +
+          'radial-gradient(ellipse 50% 50% at 85% 10%, rgba(236,72,153,0.30), transparent 75%),' +
+          'radial-gradient(ellipse 55% 55% at 80% 90%, rgba(251,191,36,0.25), transparent 75%),' +
+          'linear-gradient(180deg,#1a0f4e 0%,#0f0a30 40%,#140b3d 100%)',
       }}
     >
       <style>{`
-        @keyframes ns-float { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)); } 50% { transform: translateY(-14px) rotate(calc(var(--r,0deg) + 40deg)); } }
+        @keyframes ns-float { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)); } 50% { transform: translateY(-18px) rotate(calc(var(--r,0deg) + 50deg)); } }
         .ns-confetti { animation-name: ns-float; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
-        @keyframes ns-twinkle { 0%,100% { opacity: .35; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.1); } }
-        .ns-twinkle { animation: ns-twinkle 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+        @keyframes ns-twinkle { 0%,100% { opacity: .4; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.2); } }
+        .ns-twinkle { animation: ns-twinkle 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
         @keyframes ns-shine { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+        @keyframes ns-pulse-glow { 0%,100% { box-shadow: 0 0 20px rgba(168,85,247,0.4); } 50% { box-shadow: 0 0 40px rgba(168,85,247,0.8); } }
       `}</style>
 
+      <GlowOrb delay={0} color="rgba(168,85,247,0.4)" size={300} />
+      <GlowOrb delay={1.5} color="rgba(236,72,153,0.35)" size={250} />
+      <GlowOrb delay={3} color="rgba(251,191,36,0.3)" size={280} />
+
       <svg
-        className="pointer-events-none absolute bottom-0 left-0 w-full h-[28%]"
+        className="pointer-events-none absolute bottom-0 left-0 w-full h-[32%]"
         viewBox="0 0 1440 300"
         preserveAspectRatio="none"
         aria-hidden="true"
       >
         <defs>
           <linearGradient id="ns-wave" x1="0" x2="1">
-            <stop offset="0" stopColor="#4338ca" stopOpacity="0.55" />
-            <stop offset="0.5" stopColor="#6d28d9" stopOpacity="0.35" />
-            <stop offset="1" stopColor="#1d4ed8" stopOpacity="0.5" />
+            <stop offset="0" stopColor="#8b5cf6" stopOpacity="0.6" />
+            <stop offset="0.5" stopColor="#a855f7" stopOpacity="0.4" />
+            <stop offset="1" stopColor="#ec4899" stopOpacity="0.55" />
           </linearGradient>
         </defs>
-        <path d="M0 190 C320 120 560 260 860 200 C1120 150 1280 210 1440 170 V300 H0 Z" fill="url(#ns-wave)" />
-        <path d="M0 240 C300 200 620 290 940 250 C1180 220 1320 260 1440 240 V300 H0 Z" fill="#0b1040" opacity="0.85" />
+        <path d="M0 180 C350 100 600 280 900 190 C1150 130 1300 220 1440 160 V300 H0 Z" fill="url(#ns-wave)" />
+        <path d="M0 230 C320 180 650 300 950 240 C1200 200 1350 250 1440 230 V300 H0 Z" fill="#1e1b4b" opacity="0.9" />
       </svg>
       <svg
-        className="pointer-events-none absolute top-0 right-0 w-[55%] h-[30%]"
+        className="pointer-events-none absolute top-0 right-0 w-[60%] h-[35%]"
         viewBox="0 0 800 200"
         preserveAspectRatio="none"
         aria-hidden="true"
       >
-        <path d="M120 0 C260 90 520 40 800 120 V0 Z" fill="#1e3a8a" opacity="0.28" />
+        <path d="M100 0 C280 100 550 50 800 130 V0 Z" fill="#4c1d95" opacity="0.35" />
       </svg>
 
       <Confetti />
 
       <header
-        className={`relative z-10 flex items-center justify-between ${
-          compact ? 'px-4 pt-4' : 'px-8 xl:px-12 pt-6 xl:pt-8'
+        className={`relative z-20 flex items-center justify-between ${
+          compact ? 'px-4 pt-4' : 'px-8 xl:px-14 pt-6 xl:pt-10'
         }`}
       >
         <div className="flex items-center gap-4 min-w-0">
           <img
             src={logo}
             alt="Logo event"
-            onError={() => setLogoFailed(true)}
-            className={`${compact ? 'h-9 max-w-[140px]' : 'h-12 xl:h-14 max-w-[220px]'} w-auto object-contain drop-shadow-[0_0_14px_rgba(139,92,246,0.45)]`}
+            className={`${compact ? 'h-10 max-w-[150px]' : 'h-14 xl:h-16 max-w-[240px]'} w-auto object-contain drop-shadow-[0_0_20px_rgba(168,85,247,0.6)]`}
           />
-          <span className="h-8 w-px bg-white/20 shrink-0" />
+          <span className="h-10 w-px bg-white/25 shrink-0" />
           <span className="flex items-center gap-3 min-w-0">
-            <span className="w-9 h-9 rounded-full bg-white/[0.07] border border-white/10 flex items-center justify-center shrink-0">
-              <HiOutlineCalendarDays className="w-4 h-4 text-white/70" />
+            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-400/30 flex items-center justify-center shrink-0 backdrop-blur-sm">
+              <HiOutlineCalendarDays className="w-5 h-5 text-purple-200" />
             </span>
-            <span className="text-xs md:text-sm font-semibold tracking-[0.3em] uppercase text-white/70 truncate">
-              {label}
+            <span className="text-sm md:text-base font-bold tracking-[0.35em] uppercase text-white/85 truncate">
+              {shownTitle}
             </span>
           </span>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          {soundOn && audio.locked && (
+        <div className="flex items-center gap-4 shrink-0">
+          {sound && audio.locked && (
             <button
               onClick={() => void audio.unlock()}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-400/15 text-amber-200 border border-amber-300/30 hover:bg-amber-400/25"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-200 border border-amber-300/30 hover:from-amber-500/30 hover:to-orange-500/30 backdrop-blur-sm"
               title="Browser memblokir suara sampai layar diklik sekali"
             >
-              <HiOutlineSpeakerWave className="w-4 h-4" />
+              <HiOutlineSpeakerWave className="w-5 h-5" />
               Aktifkan suara
             </button>
           )}
-          <span className="flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 text-emerald-300 text-sm font-bold tracking-wider shadow-[0_0_18px_rgba(16,185,129,0.25)]">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="flex items-center gap-3 px-5 py-2.5 rounded-2xl border border-emerald-400/50 bg-gradient-to-r from-emerald-500/15 to-green-500/15 text-emerald-300 text-sm font-bold tracking-wider shadow-[0_0_25px_rgba(16,185,129,0.35)] backdrop-blur-sm">
+            <span className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
             LIVE
           </span>
           <button
             onClick={toggleFullscreen}
-            className="w-10 h-10 rounded-xl bg-white/[0.07] border border-white/10 flex items-center justify-center text-white/80 hover:bg-white/15"
+            className="w-11 h-11 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 flex items-center justify-center text-white/85 hover:bg-white/20 transition-all backdrop-blur-sm"
             title={isFullscreen ? 'Keluar layar penuh' : 'Layar penuh'}
           >
             {isFullscreen ? (
-              <HiOutlineArrowsPointingIn className="w-5 h-5" />
+              <HiOutlineArrowsPointingIn className="w-6 h-6" />
             ) : (
-              <HiOutlineArrowsPointingOut className="w-5 h-5" />
+              <HiOutlineArrowsPointingOut className="w-6 h-6" />
             )}
           </button>
         </div>
@@ -472,86 +412,87 @@ export function NameSpinStage({
 
       <div
         className={`relative z-10 flex ${
-          displayMode === 'dual'
-            ? 'flex-col items-center gap-8 px-4 pb-6 pt-2'
-            : compact
-            ? 'flex-col items-center gap-14 px-4 pb-6 pt-4'
-            : 'flex-row items-center justify-center gap-[4vw] px-8 xl:px-12'
+          compact
+            ? 'flex-col items-center gap-10 px-4 pb-6 pt-4'
+            : 'flex-row items-center justify-center gap-[5vw] px-8 xl:px-14'
         }`}
-        style={displayMode === 'dual' || compact ? undefined : { height: 'calc(100% - 96px)' }}
+        style={compact ? undefined : { height: 'calc(100% - 120px)' }}
       >
-        {displayMode === 'dual' ? renderDualWheels() : renderSingleWheel()}
+        {displayMode === 'dual' ? renderIntegratedDualWheel() : renderSingleWheel()}
 
-        <div className={`flex flex-col gap-6 ${compact ? 'w-full max-w-md' : 'w-[min(36vw,540px)]'}`}>
+        <div className={`flex flex-col gap-8 ${compact ? 'w-full max-w-md' : 'w-[min(38vw,580px)]'}`}>
           <div
-            className="relative rounded-[28px] border border-indigo-300/25 px-6 pb-7 pt-12 text-center backdrop-blur-md"
-            style={{
-              background:
-                'linear-gradient(180deg, rgba(79,70,229,0.22) 0%, rgba(30,27,75,0.55) 55%, rgba(15,23,72,0.65) 100%)',
-              boxShadow:
-                'inset 0 1px 0 rgba(255,255,255,0.12), inset 0 0 40px rgba(99,102,241,0.18), 0 20px 60px rgba(2,6,23,0.55)',
-            }}
+            className="relative rounded-[32px] border border-purple-300/30 px-8 pb-10 pt-14 text-center backdrop-blur-xl bg-gradient-to-br from-white/5 to-white/2"
+            style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)' }}
           >
-            <div className="absolute left-1/2 -translate-x-1/2 -top-11 md:-top-14">
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2">
               <Crown lit={revealed} />
             </div>
 
             {shownTitle && (
-              <p className="text-[11px] md:text-xs font-semibold tracking-[0.3em] uppercase text-white/45 mb-1 truncate">
+              <p className="text-[11px] md:text-xs font-bold tracking-[0.35em] uppercase text-white/50 mb-2 truncate">
                 {shownTitle}
               </p>
             )}
 
             {prizeImg && (
-              <div className="mx-auto mb-2 w-20 h-20 rounded-2xl overflow-hidden border border-amber-300/30 bg-white/[0.05]">
+              <div className="mx-auto mb-4 w-24 h-24 rounded-2xl overflow-hidden border border-amber-300/40 bg-gradient-to-br from-white/10 to-white/5 shadow-[0_0_30px_rgba(251,191,36,0.3)]">
                 <MonitorImage
                   src={prizeImg}
                   alt={shownPrize ?? 'Hadiah'}
-                  className="w-full h-full object-contain p-1.5"
-                  displaySize={80}
+                  className="w-full h-full object-contain p-2"
+                  displaySize={96}
                 />
               </div>
             )}
 
             <p
               className={`font-extrabold text-white leading-tight break-words ${
-                compact ? 'text-2xl' : 'text-3xl xl:text-4xl'
+                compact ? 'text-2xl' : 'text-3xl xl:text-5xl'
               }`}
             >
-              {displayMode === 'dual' ? 'Hasil Undian' : (shownPrize || (revealed ? 'Pemenang' : 'Spin Nama'))}
+              {displayMode === 'dual' ? 'HASIL UNDIAN' : (shownPrize || (revealed ? 'PEMENANG' : 'SPIN NAMA'))}
             </p>
 
             <AnimatePresence mode="wait">
               {revealed && spin ? (
                 <motion.div
                   key={`win-${spin.spinId}`}
-                  initial={{ opacity: 0, scale: 0.8, y: 14 }}
+                  initial={{ opacity: 0, scale: 0.7, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 220, damping: 16 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 14 }}
                 >
-                  <p className="mt-3 text-amber-300 font-bold tracking-[0.4em] uppercase text-sm md:text-base">
-                    {displayMode === 'dual' ? 'Pemenang' : 'Selamat kepada'}
+                  <p className="mt-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-pink-300 to-amber-300 font-bold tracking-[0.45em] uppercase text-base md:text-lg">
+                    {displayMode === 'dual' ? '🎉 PEMENANG 🎉' : '✨ SELAMAT KEPADA ✨'}
                   </p>
                   <p
-                    className={`mt-1 font-black leading-[1.05] tracking-tight break-words ${nameSize(spin.winnerName)}`}
+                    className={`mt-2 font-black leading-[1.05] tracking-tight break-words ${nameSize(spin.winnerName)}`}
                     style={{
                       backgroundImage:
-                        'linear-gradient(100deg,#fff7c2 0%,#fcd34d 30%,#f59e0b 55%,#fde68a 75%,#fbbf24 100%)',
+                        'linear-gradient(120deg,#fff9e6 0%,#fde68a 25%,#fbbf24 50%,#f59e0b 75%,#fde68a 100%)',
                       backgroundSize: '200% 100%',
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
-                      filter: 'drop-shadow(0 4px 18px rgba(245,158,11,0.45))',
-                      animation: 'ns-shine 4s linear infinite',
+                      filter: 'drop-shadow(0 6px 25px rgba(245,158,11,0.55))',
+                      animation: 'ns-shine 3s linear infinite',
                     }}
                   >
                     {spin.winnerName}
                   </p>
                   {displayMode === 'dual' && spin.prizeName && (
-                    <p className="mt-2 text-xl md:text-2xl font-bold text-amber-300">
-                      🎁 {spin.prizeName}
-                    </p>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="mt-4 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30 backdrop-blur-sm"
+                    >
+                      <span className="text-3xl">🎁</span>
+                      <p className="text-xl md:text-2xl font-bold text-amber-300">
+                        {spin.prizeName}
+                      </p>
+                    </motion.div>
                   )}
                 </motion.div>
               ) : (
@@ -561,30 +502,30 @@ export function NameSpinStage({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                 >
-                  <p className="mt-3 text-amber-300/80 font-bold tracking-[0.4em] uppercase text-sm md:text-base">
-                    {spinning ? 'Mengundi…' : count > 0 ? 'Siap diundi' : 'Menunggu daftar nama'}
+                  <p className="mt-4 text-white/70 font-bold tracking-[0.45em] uppercase text-base md:text-lg">
+                    {spinning ? '🎯 MENGUNDI…' : count > 0 ? '🎯 SIAP DIUNDI' : '🎯 MENUNGGU DAFTAR NAMA'}
                   </p>
                   <p
-                    className={`mt-1 font-black leading-[1.05] tracking-tight truncate text-white/30 ${
-                      compact ? 'text-4xl' : 'text-6xl xl:text-7xl'
+                    className={`mt-2 font-black leading-[1.05] tracking-tight truncate text-white/35 ${
+                      compact ? 'text-5xl' : 'text-7xl xl:text-8xl'
                     }`}
                   >
-                    {spinning ? (displayMode === 'dual' ? `${pointerName ?? '…'} + ${pointerPrize ?? '…'}` : pointerName ?? '…') : '?'}
+                    {spinning ? (displayMode === 'dual' ? `${pointerName ?? '…'}` : pointerName ?? '…') : '?'}
                   </p>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <div className="mx-auto mt-4 h-[3px] w-4/5 rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_14px_rgba(251,191,36,0.8)]" />
+            <div className="mx-auto mt-6 h-[4px] w-4/5 rounded-full bg-gradient-to-r from-transparent via-purple-400 via-amber-400 to-transparent shadow-[0_0_20px_rgba(168,85,247,0.6)]" />
 
-            <div className="flex flex-wrap justify-center gap-4 mt-5">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.06] border border-white/10 text-sm text-white/75">
-                <HiOutlineUsers className="w-4 h-4" />
+            <div className="flex flex-wrap justify-center gap-4 mt-6">
+              <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-white/10 to-white/5 border border-white/15 text-sm text-white/85 backdrop-blur-sm">
+                <HiOutlineUsers className="w-5 h-5 text-purple-300" />
                 {count} peserta
               </span>
               {displayMode === 'dual' && prizeCount > 0 && (
-                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-400/20 text-sm text-amber-200">
-                  <HiOutlineGift className="w-4 h-4" />
+                <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-amber-500/15 to-orange-500/10 border border-amber-400/25 text-sm text-amber-200 backdrop-blur-sm">
+                  <HiOutlineGift className="w-5 h-5 text-amber-300" />
                   {prizeCount} hadiah
                 </span>
               )}
@@ -596,31 +537,36 @@ export function NameSpinStage({
               <button
                 onClick={onSpinAgain}
                 disabled={spinDisabled}
-                className="flex-1 flex items-center justify-center gap-3 rounded-full py-4 text-lg font-bold text-[#1f1300] disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition"
+                className="flex-1 flex items-center justify-center gap-3 rounded-full py-5 text-xl font-black text-[#1f1300] disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 hover:scale-[1.02] transition-all"
                 style={{
-                  background: 'linear-gradient(180deg,#fde68a 0%,#fbbf24 45%,#f59e0b 100%)',
-                  boxShadow: '0 10px 30px rgba(245,158,11,0.35), inset 0 1px 0 rgba(255,255,255,0.6)',
+                  background: 'linear-gradient(180deg,#fef3c7 0%,#fcd34d 35%,#f59e0b 70%,#d97706 100%)',
+                  boxShadow: '0 15px 40px rgba(245,158,11,0.45), inset 0 2px 0 rgba(255,255,255,0.7)',
                 }}
               >
-                <HiOutlineArrowPath className="w-6 h-6" />
-                Putar Lagi
+                <HiOutlineArrowPath className="w-7 h-7" />
+                PUTAR LAGI
               </button>
               {revealed && (
                 <button
                   onClick={share}
-                  className="w-16 flex items-center justify-center rounded-full bg-white/[0.08] border border-white/15 text-white hover:bg-white/15 transition"
+                  className="w-16 flex items-center justify-center rounded-full bg-gradient-to-br from-white/15 to-white/8 border border-white/20 text-white hover:bg-white/25 hover:scale-105 transition-all backdrop-blur-sm"
                   title="Bagikan hasil"
                 >
-                  <HiOutlineShare className="w-6 h-6" />
+                  <HiOutlineShare className="w-7 h-7" />
                 </button>
               )}
             </div>
           )}
 
           {shareNote && (
-            <p className="text-center text-sm text-emerald-300 font-medium animate-pulse">
-              {shareNote}
-            </p>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-center text-base text-emerald-300 font-bold animate-pulse"
+            >
+              ✅ {shareNote}
+            </motion.p>
           )}
         </div>
       </div>

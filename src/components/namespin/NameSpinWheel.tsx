@@ -30,7 +30,7 @@ interface Props {
   /** Segment under the pointer changed (any time). */
   onPointerSegment?: (segment: number) => void;
   className?: string;
-  variant?: 'name' | 'prize';
+  variant?: 'name' | 'prize' | 'dual';
 }
 
 /** Segment colours: [light, dark] for a soft radial gradient. */
@@ -54,12 +54,24 @@ const PRIZE_PALETTE: Array<[string, string]> = [
   ['#fbbf24', '#d97706'], // gold
   ['#fb923c', '#ea580c'], // orange 2
 ];
+const DUAL_PALETTE: Array<[string, string]> = [
+  ['#a855f7', '#6d28d9'], // violet
+  ['#ec4899', '#be185d'], // pink
+  ['#f59e0b', '#b45309'], // amber
+  ['#8b5cf6', '#5b21b6'], // purple
+  ['#f97316', '#c2410c'], // orange
+  ['#d946ef', '#a21caf'], // fuchsia
+  ['#fbbf24', '#d97706'], // gold
+  ['#fb7185', '#be123c'], // rose
+];
 const WINNER: [string, string] = ['#fde047', '#f59e0b'];
 const PRIZE_WINNER: [string, string] = ['#fef08a', '#eab308'];
+const DUAL_WINNER: [string, string] = ['#f0abfc', '#c026d3'];
 const TAU = Math.PI * 2;
 const POINTER = -Math.PI / 2; // top
 const IDLE_SPEED = 0.12; // rad/s
 const PRIZE_IDLE_SPEED = 0.10; // rad/s
+const DUAL_IDLE_SPEED = 0.11; // rad/s
 
 function hash(s: string): number {
   let h = 2166136261;
@@ -86,14 +98,14 @@ export function planTarget(
   segmentCount: number,
   spinId: string,
   durationMs: number,
-  variant: 'name' | 'prize' = 'name',
+  variant: 'name' | 'prize' | 'dual' = 'name',
 ): number {
   const n = Math.max(1, segmentCount);
   const seg = TAU / n;
   // Land inside the winner segment, slightly off-centre.
   const jitter = (hash(spinId + variant) - 0.5) * seg * 0.6;
   const desired = POINTER - (winnerSegment + 0.5) * seg + jitter;
-  const turns = variant === 'prize' ? 4 + Math.round(durationMs / 2500) : 6 + Math.round(durationMs / 2000);
+  const turns = variant === 'prize' || variant === 'dual' ? 5 + Math.round(durationMs / 2200) : 6 + Math.round(durationMs / 2000);
   return from + turns * TAU + mod(desired - from, TAU);
 }
 
@@ -110,7 +122,7 @@ export function drawWheel(
   names: string[],
   rotation: number,
   highlight: number | null,
-  variant: 'name' | 'prize' = 'name',
+  variant: 'name' | 'prize' | 'dual' = 'name',
 ): void {
   const n = names.length;
   const cx = size / 2;
@@ -150,8 +162,8 @@ export function drawWheel(
   ctx.fillStyle = '#1a1033';
   ctx.fill();
 
-  const palette = variant === 'prize' ? PRIZE_PALETTE : PALETTE;
-  const winnerColor = variant === 'prize' ? PRIZE_WINNER : WINNER;
+  const palette = variant === 'prize' ? PRIZE_PALETTE : variant === 'dual' ? DUAL_PALETTE : PALETTE;
+  const winnerColor = variant === 'prize' ? PRIZE_WINNER : variant === 'dual' ? DUAL_WINNER : WINNER;
 
   if (n === 0) {
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
@@ -349,7 +361,7 @@ export function NameSpinWheel({
           onEndRef.current?.(s.id);
         }
       } else if (highlightRef.current === null) {
-        const idleSpeed = variant === 'prize' ? PRIZE_IDLE_SPEED : IDLE_SPEED;
+        const idleSpeed = variant === 'prize' ? PRIZE_IDLE_SPEED : variant === 'dual' ? DUAL_IDLE_SPEED : IDLE_SPEED;
         rotation.current += idleSpeed * dt;
       }
 

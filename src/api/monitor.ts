@@ -78,10 +78,10 @@ export const monitorApi = {
 };
 
 /** Same evenly spaced sample the server uses for the wheel (max 60 segments). */
-export function sampleForWheel(names: string[], max = 60): string[] {
-  if (names.length <= max) return [...names];
-  const step = names.length / max;
-  return Array.from({ length: max }, (_, i) => names[Math.floor(i * step)]);
+export function sampleForWheel<T>(items: T[], max = 60): T[] {
+  if (items.length <= max) return [...items];
+  const step = items.length / max;
+  return Array.from({ length: max }, (_, i) => items[Math.floor(i * step)]);
 }
 
 export default monitorApi;

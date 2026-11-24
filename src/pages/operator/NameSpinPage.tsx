@@ -23,6 +23,7 @@ import { nameSpinApi, cleanNames, type NameSpinResult, type DisplayMode } from '
 import { prizeApi, type Prize, type CreatePrizePayload, type UpdatePrizePayload } from '@api/prize';
 import { ApiClientError } from '@api/client';
 import { NameSpinStage } from '@components/namespin/NameSpinStage';
+import { type PrizeSegment } from '@components/namespin/NameSpinWheel';
 import {
   monitorApi,
   sampleForWheel,
@@ -140,11 +141,15 @@ export default function NameSpinPage() {
 
   const idleSegments = useMemo(() => sampleForWheel(names), [names]);
   const idlePrizeSegments = useMemo(() => {
-    const segments: string[] = [];
+    const segments: PrizeSegment[] = [];
     prizes.forEach((p) => {
       const units = Math.min(p.remaining, 60);
       for (let i = 0; i < units; i++) {
-        segments.push(`${p.id}:${i}`);
+        segments.push({
+          id: `${p.id}:${i}`,
+          name: p.name,
+          icon: TIER_ICONS[p.tier] ?? '🎁',
+        });
       }
     });
     return sampleForWheel(segments);
@@ -179,7 +184,7 @@ export default function NameSpinPage() {
       names,
       totalNames: names.length,
       title: title.trim() || null,
-      prizeSegments: displayMode === 'dual' ? idlePrizeSegments : undefined,
+      prizeSegments: displayMode === 'dual' ? idlePrizeSegments.map(s => s.id) : undefined,
       totalPrizes: displayMode === 'dual' ? prizes.reduce((sum, p) => sum + p.remaining, 0) : undefined,
       displayMode,
     }),
@@ -401,6 +406,16 @@ export default function NameSpinPage() {
     silver: 'bg-gradient-to-r from-gray-300 to-gray-500',
     bronze: 'bg-gradient-to-r from-orange-500 to-amber-700',
     doorprize: 'bg-gradient-to-r from-blue-500 to-cyan-500',
+  };
+
+  const TIER_ICONS: Record<string, string> = {
+    grand: '🏆',
+    diamond: '💎',
+    platinum: '🥈',
+    gold: '🥇',
+    silver: '🥉',
+    bronze: '🎖️',
+    doorprize: '🎁',
   };
 
   const formatCurrency = (value: number, currency: string) => {
@@ -851,8 +866,6 @@ export default function NameSpinPage() {
                 totalPrizes={prizes.reduce((s, p) => s + p.remaining, 0)}
                 title={title.trim() || null}
                 displayMode={displayMode}
-                prizeName={spin?.prizeName ?? null}
-                prizeImageUrl={spin?.prizeImageUrl ?? null}
                 spin={spin}
                 theme={theme}
                 sound={localSound}

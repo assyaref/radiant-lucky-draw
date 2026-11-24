@@ -21,9 +21,16 @@ export interface WheelSpin {
   startedAt?: string;
 }
 
+export interface PrizeSegment {
+  id: string;
+  name: string;
+  icon?: string; // emoji or image URL
+  color?: string;
+}
+
 interface Props {
   segments: string[];
-  prizeSegments?: string[];
+  prizeSegments?: PrizeSegment[];
   spin?: WheelSpin | null;
   highlight?: number | null;
   prizeHighlight?: number | null;
@@ -152,6 +159,66 @@ function drawSegment(
   ctx.restore();
 }
 
+function drawSegmentWithIcon(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  rInner: number,
+  rOuter: number,
+  a0: number,
+  segAngle: number,
+  fillStyle: CanvasGradient,
+  label: string,
+  icon: string | undefined,
+  fontSize: number,
+  isHighlight: boolean,
+  maxTextWidth: number,
+): void {
+  ctx.beginPath();
+  ctx.moveTo(cx + rInner * Math.cos(a0), cy + rInner * Math.sin(a0));
+  ctx.arc(cx, cy, rOuter, a0, a0 + segAngle);
+  ctx.lineTo(cx + rInner * Math.cos(a0 + segAngle), cy + rInner * Math.sin(a0 + segAngle));
+  ctx.arc(cx, cy, rInner, a0 + segAngle, a0, true);
+  ctx.closePath();
+  ctx.fillStyle = fillStyle;
+  ctx.fill();
+
+  ctx.lineWidth = Math.max(1, rOuter * 0.003);
+  ctx.strokeStyle = 'rgba(15,10,40,0.4)';
+  ctx.stroke();
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(a0 + segAngle / 2);
+
+  // Draw icon first (above text)
+  const iconSize = fontSize * 1.3;
+  if (icon) {
+    ctx.font = `${fontSize * 1.2}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.fillText(icon, 0, -iconSize * 0.6);
+  }
+
+  // Draw text
+  let text = label;
+  ctx.font = `800 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right';
+  if (ctx.measureText(text).width > maxTextWidth) {
+    while (text.length > 1 && ctx.measureText(`${text}…`).width > maxTextWidth) {
+      text = text.slice(0, -1);
+    }
+    text = `${text}…`;
+  }
+  ctx.shadowColor = 'rgba(0,0,0,0.6)';
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetY = 1;
+  ctx.fillStyle = isHighlight ? '#1f1300' : '#ffffff';
+  ctx.fillText(text, rOuter * 0.88, icon ? iconSize * 0.4 : 0);
+  ctx.restore();
+}
+
 function drawWheelLayer(
   ctx: CanvasRenderingContext2D,
   size: number,
@@ -185,11 +252,45 @@ function drawWheelLayer(
   }
 }
 
+function drawPrizeWheelLayer(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  prizes: PrizeSegment[],
+  rotation: number,
+  highlight: number | null,
+  rInner: number,
+  rOuter: number,
+  palette: Array<[string, string]>,
+  winnerColor: [string, string],
+): void {
+  const n = prizes.length;
+  if (n === 0) return;
+
+  const cx = size / 2;
+  const cy = size / 2;
+  const seg = TAU / n;
+  const fontSize = Math.max(10, Math.min(rOuter * 0.09, seg * rOuter * 0.5));
+  const maxText = (rOuter - rInner) * 0.8;
+
+  for (let i = 0; i < n; i++) {
+    const a0 = rotation + i * seg;
+    const isHi = highlight === i;
+    const prize = prizes[i];
+    const [light, dark] = isHi ? winnerColor : (prize.color ? [prize.color, prize.color] : palette[i % palette.length]);
+    const g = ctx.createRadialGradient(cx, cy, rInner, cx, cy, rOuter);
+    g.addColorStop(0, dark);
+    g.addColorStop(0.55, light);
+    g.addColorStop(1, dark);
+
+    drawSegmentWithIcon(ctx, cx, cy, rInner, rOuter, a0, seg, g, prize.name, prize.icon, fontSize, isHi, maxText);
+  }
+}
+
 export function drawDualWheel(
   ctx: CanvasRenderingContext2D,
   size: number,
   outerNames: string[],
-  innerNames: string[],
+  innerPrizes: PrizeSegment[],
   outerRotation: number,
   innerRotation: number,
   outerHighlight: number | null,
@@ -208,8 +309,8 @@ export function drawDualWheel(
 
   // Outer gold rim with glow
   ctx.save();
-  ctx.shadowColor = 'rgba(251,191,36,0.75)';
-  ctx.shadowBlur = size * 0.05;
+  ctx.shadowColor = 'rgba(251,191,36,0.85)';
+  ctx.shadowBlur = size * 0.06;
   const outerRimGrad = ctx.createLinearGradient(cx - outerRadius, cy - outerRadius, cx + outerRadius, cy + outerRadius);
   outerRimGrad.addColorStop(0, '#fff3b0');
   outerRimGrad.addColorStop(0.25, '#fbbf24');
@@ -222,48 +323,61 @@ export function drawDualWheel(
   ctx.fill();
   ctx.restore();
 
-  // Dark inner edge of outer rim
+  // Outer rim inner bevel
   ctx.beginPath();
   ctx.arc(cx, cy, outerFaceOuter - rimWidth + 1.5, 0, TAU);
-  ctx.fillStyle = '#1a1033';
+  ctx.fillStyle = '#0d0a1a';
   ctx.fill();
 
   // Draw outer wheel (names)
   drawWheelLayer(ctx, size, outerNames, outerRotation, outerHighlight, outerFaceInner, outerFaceOuter, OUTER_PALETTE, OUTER_WINNER);
 
-  // Inner rim separator
+  // Inner rim separator (gold)
   ctx.beginPath();
-  ctx.arc(cx, cy, innerFaceOuter + 1, 0, TAU);
-  ctx.fillStyle = '#1a1033';
+  ctx.arc(cx, cy, innerFaceOuter + 2, 0, TAU);
+  const separatorGrad = ctx.createLinearGradient(cx - innerFaceOuter, cy, cx + innerFaceOuter, cy);
+  separatorGrad.addColorStop(0, '#d97706');
+  separatorGrad.addColorStop(0.5, '#fbbf24');
+  separatorGrad.addColorStop(1, '#d97706');
+  ctx.strokeStyle = separatorGrad;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Inner rim inner bevel
+  ctx.beginPath();
+  ctx.arc(cx, cy, innerFaceOuter - 1, 0, TAU);
+  ctx.fillStyle = '#0d0a1a';
   ctx.fill();
 
-  // Draw inner wheel (prizes)
-  drawWheelLayer(ctx, size, innerNames, innerRotation, innerHighlight, innerFaceInner, innerFaceOuter, INNER_PALETTE, INNER_WINNER);
+  // Draw inner wheel (prizes with icons)
+  drawPrizeWheelLayer(ctx, size, innerPrizes, innerRotation, innerHighlight, innerFaceInner, innerFaceOuter, INNER_PALETTE, INNER_WINNER);
 
   // Soft inner vignette for depth on inner wheel
   const v = ctx.createRadialGradient(cx, cy, innerFaceInner * 0.8, cx, cy, innerFaceOuter);
   v.addColorStop(0, 'rgba(0,0,0,0)');
-  v.addColorStop(1, 'rgba(0,0,0,0.3)');
+  v.addColorStop(1, 'rgba(0,0,0,0.4)');
   ctx.beginPath();
   ctx.arc(cx, cy, innerFaceOuter, 0, TAU);
   ctx.fillStyle = v;
   ctx.fill();
 
-  // Center hub
+  // Center hub with gold bevel
   const hub = Math.max(14, innerFaceInner * 0.9);
   ctx.save();
   ctx.shadowColor = 'rgba(0,0,0,0.5)';
   ctx.shadowBlur = hub * 0.5;
   const hubGrad = ctx.createLinearGradient(cx - hub, cy - hub, cx + hub, cy + hub);
   hubGrad.addColorStop(0, '#fff7c2');
-  hubGrad.addColorStop(0.5, '#d97706');
-  hubGrad.addColorStop(1, '#fde68a');
+  hubGrad.addColorStop(0.3, '#fbbf24');
+  hubGrad.addColorStop(0.7, '#d97706');
+  hubGrad.addColorStop(1, '#b45309');
   ctx.beginPath();
   ctx.arc(cx, cy, hub, 0, TAU);
   ctx.fillStyle = hubGrad;
   ctx.fill();
   ctx.restore();
 
+  // Center orb with highlight
   const orb = ctx.createRadialGradient(cx - hub * 0.3, cy - hub * 0.35, hub * 0.05, cx, cy, hub * 0.85);
   orb.addColorStop(0, '#fffbe6');
   orb.addColorStop(0.35, '#fcd34d');
@@ -591,7 +705,7 @@ export function NameSpinWheel({
         viewBox="0 0 40 40"
         className="absolute left-1/2 -translate-x-1/2 top-0 z-10 w-[9%] max-w-[64px] min-w-[26px]"
         style={{
-          filter: 'drop-shadow(0 0 10px rgba(251,191,36,0.85)) drop-shadow(0 4px 4px rgba(0,0,0,0.5))',
+          filter: 'drop-shadow(0 0 12px rgba(251,191,36,0.9)) drop-shadow(0 4px 4px rgba(0,0,0,0.6))',
         }}
         aria-hidden="true"
       >
@@ -602,8 +716,8 @@ export function NameSpinWheel({
             <stop offset="1" stopColor="#d97706" />
           </linearGradient>
         </defs>
-        <path d="M4 4 H36 Q38 4 36.8 6 L21.5 34 Q20 36.5 18.5 34 L3.2 6 Q2 4 4 4 Z" fill="url(#nsw-pointer-dual)" stroke="#92400e" strokeWidth="1.2" />
-        <path d="M9 7.5 H31 L20 27 Z" fill="rgba(255,255,255,0.25)" />
+        <path d="M4 4 H36 Q38 4 36.8 6 L21.5 34 Q20 36.5 18.5 34 L3.2 6 Q2 4 4 4 Z" fill="url(#nsw-pointer-dual)" stroke="#92400e" strokeWidth="1.5" />
+        <path d="M9 7.5 H31 L20 27 Z" fill="rgba(255,255,255,0.3)" />
       </svg>
     </div>
   );

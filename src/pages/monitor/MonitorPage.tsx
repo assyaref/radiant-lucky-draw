@@ -1436,7 +1436,14 @@ export default function MonitorPage() {
   // ─── Dual-Layer Wheel helper: extract prize segments for display ──────
   const dualWheelPrizeSegments = useMemo(() => {
     if (!nameSpin || !monitorState?.wheel.displayMode || monitorState.wheel.displayMode !== 'dual') return [];
-    return monitorState.wheel.prizeSegments ?? [];
+    const rawSegments = monitorState.wheel.prizeSegments ?? [];
+    // Convert string[] to PrizeSegment[] - extract prize name from nameSpin data
+    const prizeName = nameSpin.prizeName;
+    return rawSegments.map((seg, idx) => ({
+      id: seg,
+      name: prizeName ?? `Hadiah ${idx + 1}`,
+      icon: '🎁',
+    }));
   }, [nameSpin, monitorState?.wheel.displayMode, monitorState?.wheel.prizeSegments]);
 
   // ─── Render ─────────────────────────────────────────────────────────
@@ -1493,8 +1500,6 @@ export default function MonitorPage() {
               totalNames={monitorState?.wheel.totalNames ?? 0}
               totalPrizes={monitorState?.wheel.totalPrizes ?? 0}
               title={monitorState?.wheel.title}
-              prizeName={monitorState?.wheel.prizeName}
-              prizeImageUrl={monitorState?.wheel.prizeImageUrl}
               displayMode={monitorState?.wheel.displayMode ?? 'single'}
               spin={nameSpin}
               theme={monitorState?.theme}

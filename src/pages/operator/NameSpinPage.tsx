@@ -129,14 +129,18 @@ export default function NameSpinPage() {
   const wheelPayload = useCallback(
     () => ({
       names,
+      totalNames: names.length,
       title: title.trim() || null,
       prizeId: randomPrize ? null : (prizeChoice && prizeChoice !== 'custom' && prizeChoice !== 'random_list' ? prizeChoice : null),
       prizeName: randomPrize ? null : (prizeChoice === 'custom' ? customPrize.trim() || null : null),
+      prizeImageUrl: randomPrize ? null : (prizes.find((p) => p.id === prizeChoice)?.imageUrl ?? null),
       randomPrize,
       prizeList: randomPrize ? prizeList : undefined,
+      prizeSegments: displayMode === 'dual' ? idlePrizeSegments : undefined,
+      totalPrizes: displayMode === 'dual' ? prizeList.length : undefined,
       displayMode,
     }),
-    [names, title, prizeChoice, customPrize, randomPrize, prizeList, displayMode],
+    [names, title, prizeChoice, customPrize, randomPrize, prizeList, displayMode, idlePrizeSegments, prizes],
   );
 
   // While the Monitor shows the wheel, keep it in sync with this list (debounced).
@@ -240,6 +244,18 @@ export default function NameSpinPage() {
     void navigator.clipboard?.writeText(lines.join('\n'));
   };
 
+  const openMonitor = () => {
+    const monitorUrl = `${window.location.origin}/monitor`;
+    const monitorWindow = window.open(
+      monitorUrl,
+      'RadiantMonitor',
+      'width=1920,height=1080,fullscreen=yes,menubar=no,toolbar=no,location=no,status=no,scrollbars=no'
+    );
+    if (monitorWindow) {
+      monitorWindow.focus();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -273,6 +289,13 @@ export default function NameSpinPage() {
             </button>
           ))}
         </div>
+        <button
+          onClick={openMonitor}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm bg-primary-500/10 text-primary-300 hover:bg-primary-500/20 transition-colors border border-primary-500/20"
+        >
+          <HiOutlineTv className="w-4 h-4" />
+          Open Monitor
+        </button>
         <span className="text-xs text-dark-text-tertiary">
           {monitorMode === 'namespin'
             ? (syncNote ?? 'Daftar nama di bawah tampil sebagai roda di Monitor.')

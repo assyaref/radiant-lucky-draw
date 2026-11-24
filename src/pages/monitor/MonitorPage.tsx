@@ -1522,6 +1522,22 @@ export default function MonitorPage() {
     document.addEventListener('fullscreenchange', h);
     return () => document.removeEventListener('fullscreenchange', h);
   }, []);
+  useEffect(() => {
+    const enterFullscreen = async () => {
+      try {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+          setIsFullscreen(true);
+        }
+      } catch (err) {
+        console.log('[Monitor] Fullscreen not available or user denied:', err);
+      }
+    };
+    const timer = setTimeout(() => {
+      void enterFullscreen();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => () => stopCountdown(), [stopCountdown]);
 
@@ -1544,10 +1560,13 @@ export default function MonitorPage() {
           >
             <NameSpinStage
               segments={monitorState?.wheel.names ?? []}
+              prizeSegments={monitorState?.wheel.prizeSegments ?? []}
               totalNames={monitorState?.wheel.totalNames ?? 0}
+              totalPrizes={monitorState?.wheel.totalPrizes ?? 0}
               title={monitorState?.wheel.title}
               prizeName={monitorState?.wheel.prizeName}
               prizeImageUrl={monitorState?.wheel.prizeImageUrl}
+              displayMode={monitorState?.wheel.displayMode ?? 'single'}
               spin={nameSpin}
               theme={monitorState?.theme}
               variant="screen"

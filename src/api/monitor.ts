@@ -5,6 +5,7 @@
  */
 
 import api from './client';
+import type { DisplayMode } from './nameSpin';
 
 export type MonitorMode = 'event' | 'namespin';
 
@@ -14,6 +15,10 @@ export interface WheelDisplay {
   title: string | null;
   prizeName: string | null;
   prizeImageUrl: string | null;
+  prizeList?: string[];
+  prizeSegments?: string[];
+  totalPrizes?: number;
+  displayMode?: DisplayMode;
 }
 
 /** Per-event look & sound of the Spin Nama screen. */
@@ -47,6 +52,10 @@ export interface UpdateMonitorStatePayload {
     title?: string | null;
     prizeId?: string | null;
     prizeName?: string | null;
+    prizeList?: string[];
+    prizeSegments?: string[];
+    totalPrizes?: number;
+    displayMode?: DisplayMode;
   };
   theme?: Partial<MonitorTheme>;
 }

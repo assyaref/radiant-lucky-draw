@@ -314,8 +314,9 @@ export function drawDualWheel(
   const cx = size / 2;
   const cy = size / 2;
   const outerRadius = size / 2 - size * 0.025;
-  const rimWidth = Math.max(6, outerRadius * 0.055);
-  const outerFaceOuter = outerRadius;
+  // Thin but always-visible gold rim; names stop at its inner edge so it never gets covered.
+  const rimWidth = Math.max(5, outerRadius * 0.03);
+  const outerFaceOuter = outerRadius - rimWidth;
   // Larger, proportional name band so radial labels read hub->rim with room.
   const outerFaceInner = outerFaceOuter - outerRadius * 0.4;
   const innerFaceOuter = outerFaceInner - size * 0.02;
@@ -339,9 +340,9 @@ export function drawDualWheel(
   ctx.fill();
   ctx.restore();
 
-  // Outer rim inner bevel
+  // Outer rim inner bevel (dark edge just inside the gold ring)
   ctx.beginPath();
-  ctx.arc(cx, cy, outerFaceOuter - rimWidth + 1.5, 0, TAU);
+  ctx.arc(cx, cy, outerFaceOuter + 1, 0, TAU);
   ctx.fillStyle = '#1a1033';
   ctx.fill();
 

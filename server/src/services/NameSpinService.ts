@@ -176,10 +176,10 @@ export class NameSpinService {
           const { segments, totalUnits } = buildPrizeSegments(availablePrizes);
           const sampled = samplePrizeSegments(segments);
           prizeSegments = sampled;
-          prizeSegment = sampled.findIndex(s => s.id === `${selectedPrize.id}:0`);
+          prizeSegment = sampled.findIndex(s => s.id === `${selectedPrize!.id}:0`);
           if (prizeSegment < 0 && sampled.length > 0) {
             prizeSegment = randomInt(sampled.length);
-            sampled[prizeSegment] = { id: `${selectedPrize.id}:0`, name: selectedPrize.name, icon: TIER_ICONS[selectedPrize.tier] || TIER_ICONS.default };
+            sampled[prizeSegment] = { id: `${selectedPrize!.id}:0`, name: selectedPrize!.name, icon: TIER_ICONS[selectedPrize!.tier] || TIER_ICONS.default };
           }
           totalPrizes = totalUnits;
         } else {
@@ -235,6 +235,8 @@ export class NameSpinService {
       const winnerRecord = await prisma.winner.create({
         data: {
           id: randomUUID(),
+          eventId: data.eventId ?? null,
+          drawId: null,
           participantId: null,
           prizeId: prizeId,
           prizeTier: prizeTier ?? 'standard',

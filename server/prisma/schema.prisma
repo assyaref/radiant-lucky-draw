@@ -7,14 +7,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Supabase:
-//   DATABASE_URL → Supavisor transaction pooler (port 6543, ?pgbouncer=true) — runtime queries
-//   DIRECT_URL   → session pooler / direct connection (port 5432) — prisma migrate
-// Local Postgres / docker-compose: set DIRECT_URL to the same value as DATABASE_URL.
+// Connection URL is provided by prisma.config.ts (Prisma 7 driver adapter).
+// Provider must still be declared here so the schema is valid for tooling.
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 // ============================================================
@@ -202,8 +198,8 @@ model DrawParticipant {
 model Winner {
   id            String   @id @default(uuid()) @db.Uuid
   eventId       String?  @map("event_id") @db.Uuid
-  drawId        String   @unique @map("draw_id") @db.Uuid
-  participantId String   @map("participant_id") @db.Uuid
+  drawId        String?  @unique @map("draw_id") @db.Uuid
+  participantId String?  @map("participant_id") @db.Uuid
   prizeId       String   @map("prize_id") @db.Uuid
   prizeTier     String   @map("prize_tier") @db.VarChar(20)
   prizeValue    Float    @map("prize_value")
@@ -217,8 +213,8 @@ model Winner {
 
   // Relations
   event       Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  draw        Draw        @relation("DrawWinner", fields: [drawId], references: [id], onDelete: Cascade)
-  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  draw        Draw?        @relation("DrawWinner", fields: [drawId], references: [id], onDelete: Cascade)
+  participant Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
   prize       Prize       @relation(fields: [prizeId], references: [id], onDelete: Restrict)
 
   @@index([eventId])

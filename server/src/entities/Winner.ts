@@ -4,8 +4,8 @@
 
 export interface Winner {
   id: string;
-  drawId: string;
-  participantId: string;
+  drawId?: string;
+  participantId?: string;
   prizeId: string;
   prizeTier: string;
   prizeValue: number;

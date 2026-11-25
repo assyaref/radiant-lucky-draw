@@ -413,7 +413,7 @@ export class BoothService {
     if (!winner) throw new NotFoundError('Winner', id);
 
     // Also update the participant's claim status.
-    await this.participantRepository.update(winner.participantId, { claimStatus });
+    await this.participantRepository.update(winner.participantId!, { claimStatus });
 
     // Broadcast claim update via Socket.IO
     if (this.realtimeService) {
@@ -456,8 +456,8 @@ export class BoothService {
 
     return {
       id: winner.id,
-      drawId: winner.drawId,
-      participantId: winner.participantId,
+      drawId: winner.drawId!,
+      participantId: winner.participantId!,
       participantName: '',
       participantCompany: '',
       participantPhotoUrl: undefined,

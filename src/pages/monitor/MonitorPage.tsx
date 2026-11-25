@@ -1437,9 +1437,9 @@ export default function MonitorPage() {
   const dualWheelPrizeSegments =
     monitorState?.wheel.displayMode === 'dual'
       ? (monitorState.wheel.prizeSegments ?? []).map((seg, idx) => ({
-          id: seg,
-          name: /^[0-9a-f-]{36}:\d+$/i.test(seg) ? `Hadiah ${idx + 1}` : seg,
-          icon: '🎁',
+          id: seg.id || `prize-${idx}`,
+          name: seg.name,
+          icon: seg.icon || '🎁',
         }))
       : [];
 

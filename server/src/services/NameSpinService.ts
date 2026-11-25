@@ -23,6 +23,14 @@ import { ValidationError, NotFoundError } from '../utils';
 import { cleanNames, sampleForWheel } from '../utils/names';
 import { prisma } from '../lib/prisma';
 
+const TIER_ICONS: Record<string, string> = {
+  platinum: '🏆',
+  gold: '🥇',
+  silver: '🥈',
+  bronze: '🥉',
+  default: '🎁',
+};
+
 export type DisplayMode = 'single' | 'dual';
 
 export interface NameSpinRequest {
@@ -34,6 +42,12 @@ export interface NameSpinRequest {
   prizeList?: string[];
   displayMode?: DisplayMode;
   eventId?: string | null;
+}
+
+export interface PrizeSegment {
+  id: string;
+  name: string;
+  icon?: string;
 }
 
 export interface NameSpinResult {
@@ -49,7 +63,7 @@ export interface NameSpinResult {
   winnerId: string | null;
   segments: string[];
   winnerSegment: number;
-  prizeSegments?: string[];
+  prizeSegments?: PrizeSegment[];
   prizeSegment?: number;
   totalPrizes?: number;
   displayMode?: DisplayMode;
@@ -62,15 +76,19 @@ const SPIN_DURATION_MS = 9000;
 const REVEAL_HOLD_MS = 12000;
 const MAX_WHEEL_SEGMENTS = 60;
 
-function buildPrizeSegments(prizes: Array<{ id: string; name: string; remaining: number; imageUrl?: string; tier: string }>): { segments: string[]; prizeMap: Map<string, { id: string; name: string; imageUrl?: string; tier: string }>; totalUnits: number } {
-  const segments: string[] = [];
+function buildPrizeSegments(prizes: Array<{ id: string; name: string; remaining: number; imageUrl?: string; tier: string }>): { segments: PrizeSegment[]; prizeMap: Map<string, { id: string; name: string; imageUrl?: string; tier: string }>; totalUnits: number } {
+  const segments: PrizeSegment[] = [];
   const prizeMap = new Map<string, { id: string; name: string; imageUrl?: string; tier: string }>();
 
   for (const prize of prizes) {
     const units = Math.min(prize.remaining, MAX_WHEEL_SEGMENTS);
     for (let i = 0; i < units; i++) {
       const key = `${prize.id}:${i}`;
-      segments.push(key);
+      segments.push({
+        id: key,
+        name: prize.name,
+        icon: TIER_ICONS[prize.tier] || TIER_ICONS.default,
+      });
       prizeMap.set(key, {
         id: prize.id,
         name: prize.name,
@@ -83,7 +101,7 @@ function buildPrizeSegments(prizes: Array<{ id: string; name: string; remaining:
   return { segments, prizeMap, totalUnits: segments.length };
 }
 
-function samplePrizeSegments(prizeSegments: string[], max = MAX_WHEEL_SEGMENTS): string[] {
+function samplePrizeSegments(prizeSegments: PrizeSegment[], max = MAX_WHEEL_SEGMENTS): PrizeSegment[] {
   if (prizeSegments.length <= max) return [...prizeSegments];
   const step = prizeSegments.length / max;
   return Array.from({ length: max }, (_, i) => prizeSegments[Math.floor(i * step)]);
@@ -106,7 +124,7 @@ export class NameSpinService {
     let prizeTier: string | null = null;
     let prizeId: string | null = null;
     let selectedPrize: { id: string; name: string; imageUrl?: string; tier: string; value?: number } | null = null;
-    let prizeSegments: string[] | undefined;
+    let prizeSegments: PrizeSegment[] | undefined;
     let prizeSegment: number | undefined;
     let totalPrizes: number | undefined;
 
@@ -122,12 +140,16 @@ export class NameSpinService {
         prizeName = cleanedPrizeList[prizeIndex];
 
         if (isDualMode) {
-          const fullSegments = [...cleanedPrizeList];
-          prizeSegments = sampleForWheel(fullSegments);
-          prizeSegment = prizeSegments.indexOf(prizeName);
+          const fullSegments = cleanedPrizeList.map((name, idx) => ({
+            id: `prize-${idx}`,
+            name,
+            icon: TIER_ICONS.default,
+          }));
+          prizeSegments = fullSegments;
+          prizeSegment = prizeSegments.findIndex(s => s.name === prizeName);
           if (prizeSegment < 0) {
             prizeSegment = randomInt(prizeSegments.length);
-            prizeSegments[prizeSegment] = prizeName;
+            prizeSegments[prizeSegment] = { id: `prize-${prizeSegment}`, name: prizeName, icon: TIER_ICONS.default };
           }
           totalPrizes = cleanedPrizeList.length;
         }
@@ -154,10 +176,10 @@ export class NameSpinService {
           const { segments, totalUnits } = buildPrizeSegments(availablePrizes);
           const sampled = samplePrizeSegments(segments);
           prizeSegments = sampled;
-          prizeSegment = sampled.indexOf(`${selectedPrize.id}:0`);
+          prizeSegment = sampled.findIndex(s => s.id === `${selectedPrize.id}:0`);
           if (prizeSegment < 0 && sampled.length > 0) {
             prizeSegment = randomInt(sampled.length);
-            sampled[prizeSegment] = `${selectedPrize.id}:0`;
+            sampled[prizeSegment] = { id: `${selectedPrize.id}:0`, name: selectedPrize.name, icon: TIER_ICONS[selectedPrize.tier] || TIER_ICONS.default };
           }
           totalPrizes = totalUnits;
         } else {
@@ -179,17 +201,17 @@ export class NameSpinService {
       selectedPrize = prize;
 
       if (isDualMode) {
-        const availablePrizes = await this.prizeRepository.findActive(data.eventId ?? null);
-        const { segments, totalUnits } = buildPrizeSegments(availablePrizes);
-        const sampled = samplePrizeSegments(segments);
-        prizeSegments = sampled;
-        prizeSegment = sampled.indexOf(`${prize.id}:0`);
-        if (prizeSegment < 0 && sampled.length > 0) {
-          prizeSegment = randomInt(sampled.length);
-          sampled[prizeSegment] = `${prize.id}:0`;
+          const availablePrizes = await this.prizeRepository.findActive(data.eventId ?? null);
+          const { segments, totalUnits } = buildPrizeSegments(availablePrizes);
+          const sampled = samplePrizeSegments(segments);
+          prizeSegments = sampled;
+          prizeSegment = sampled.findIndex(s => s.id === `${prize.id}:0`);
+          if (prizeSegment < 0 && sampled.length > 0) {
+            prizeSegment = randomInt(sampled.length);
+            sampled[prizeSegment] = { id: `${prize.id}:0`, name: prize.name, icon: TIER_ICONS[prize.tier] || TIER_ICONS.default };
+          }
+          totalPrizes = totalUnits;
         }
-        totalPrizes = totalUnits;
-      }
     }
 
     const winnerIndex = randomInt(names.length);

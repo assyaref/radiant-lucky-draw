@@ -9,6 +9,12 @@ import type { DisplayMode } from './nameSpin';
 
 export type MonitorMode = 'event' | 'namespin';
 
+export interface PrizeSegment {
+  id: string;
+  name: string;
+  icon?: string;
+}
+
 export interface WheelDisplay {
   names: string[];
   totalNames: number;
@@ -16,7 +22,7 @@ export interface WheelDisplay {
   prizeName: string | null;
   prizeImageUrl: string | null;
   prizeList?: string[];
-  prizeSegments?: string[];
+  prizeSegments?: PrizeSegment[];
   totalPrizes?: number;
   displayMode?: DisplayMode;
 }
@@ -53,7 +59,7 @@ export interface UpdateMonitorStatePayload {
     prizeId?: string | null;
     prizeName?: string | null;
     prizeList?: string[];
-    prizeSegments?: string[];
+    prizeSegments?: PrizeSegment[];
     totalPrizes?: number;
     displayMode?: DisplayMode;
   };

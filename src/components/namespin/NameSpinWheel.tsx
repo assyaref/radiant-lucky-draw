@@ -76,6 +76,25 @@ const POINTER = -Math.PI / 2;
 const OUTER_IDLE_SPEED = 0.10;
 const INNER_IDLE_SPEED = 0.08;
 
+// Cache of preloaded prize images (URL -> HTMLImageElement). The render loop runs
+// every frame, so a segment simply shows its image once it finishes loading.
+const imageCache = new Map<string, HTMLImageElement>();
+function getImage(src: string): HTMLImageElement | null {
+  if (typeof window === 'undefined') return null;
+  const cached = imageCache.get(src);
+  if (cached) return cached.complete && cached.naturalWidth > 0 ? cached : null;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = src;
+  imageCache.set(src, img);
+  return null;
+}
+
+function isImageSrc(icon?: string): boolean {
+  if (!icon) return false;
+  return /^(https?:\/\/|data:|blob:|\/)/i.test(icon);
+}
+
 function hash(s: string): number {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
@@ -184,9 +203,7 @@ function drawSegmentWithIcon(
   fillStyle: CanvasGradient,
   label: string,
   icon: string | undefined,
-  fontSize: number,
   isHighlight: boolean,
-  maxTextWidth: number,
 ): void {
   ctx.beginPath();
   ctx.moveTo(cx + rInner * Math.cos(a0), cy + rInner * Math.sin(a0));
@@ -201,28 +218,32 @@ function drawSegmentWithIcon(
   ctx.strokeStyle = 'rgba(15,10,40,0.4)';
   ctx.stroke();
 
-  ctx.save();
-  const middle = a0 + segAngle / 2;
+  // Prize segment shows the icon only (image or emoji) — no text label.
+  const band = rOuter - rInner;
   const labelRadius = (rInner + rOuter) / 2;
-  const { rotate, flip } = radialTransform(middle);
+  const middle = a0 + segAngle / 2;
+  const iconSize = Math.min(band * 0.8, 2 * labelRadius * Math.sin(Math.min(segAngle / 2, Math.PI / 2)) * 0.8);
+  const img = icon && isImageSrc(icon) ? getImage(icon) : null;
+
+  ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate(rotate);
-  // Same radial layout as the name wheel: icon inline + name on one radial line.
-  let text = icon ? `${icon} ${label}` : label;
-  ctx.font = `700 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-  if (ctx.measureText(text).width > maxTextWidth) {
-    while (text.length > 1 && ctx.measureText(`${text}…`).width > maxTextWidth) {
-      text = text.slice(0, -1);
-    }
-    text = `${text}…`;
+  ctx.rotate(middle + Math.PI / 2); // keep icon upright relative to radius
+  if (img) {
+    const s = Math.max(8, iconSize);
+    ctx.drawImage(img, -s / 2, -labelRadius - s / 2, s, s);
+  } else if (icon) {
+    ctx.font = `${Math.max(10, iconSize)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(icon, 0, -labelRadius);
+  } else {
+    // Fallback: first letter of the prize name if no icon.
+    ctx.font = `800 ${Math.max(10, iconSize * 0.8)}px Poppins, Inter, system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = isHighlight ? '#1f1300' : '#ffffff';
+    ctx.fillText((label.trim()[0] ?? '?').toUpperCase(), 0, -labelRadius);
   }
-  ctx.shadowColor = 'rgba(0,0,0,0.4)';
-  ctx.shadowBlur = Math.max(2, fontSize * 0.2);
-  ctx.shadowOffsetY = 0.5;
-  ctx.fillStyle = isHighlight ? '#1f1300' : '#ffffff';
-  ctx.fillText(text, flip ? -labelRadius : labelRadius, 0);
   ctx.restore();
 }
 
@@ -280,12 +301,6 @@ function drawPrizeWheelLayer(
   const cx = size / 2;
   const cy = size / 2;
   const seg = TAU / n;
-  const band = rOuter - rInner;
-  const labelRadius = (rInner + rOuter) / 2;
-  const chord = 2 * labelRadius * Math.sin(Math.min(seg / 2, Math.PI / 2));
-  // Same radial sizing as the name wheel.
-  const fontSize = Math.max(12, Math.min(band * 0.4, chord * 0.55, rOuter * 0.2));
-  const maxText = band * 0.86;
 
   for (let i = 0; i < n; i++) {
     const a0 = rotation + i * seg;
@@ -297,7 +312,7 @@ function drawPrizeWheelLayer(
     g.addColorStop(0.55, light);
     g.addColorStop(1, dark);
 
-    drawSegmentWithIcon(ctx, cx, cy, rInner, rOuter, a0, seg, g, prize.name, prize.icon, fontSize, isHi, maxText);
+    drawSegmentWithIcon(ctx, cx, cy, rInner, rOuter, a0, seg, g, prize.name, prize.icon, isHi);
   }
 }
 
@@ -378,8 +393,8 @@ export function drawDualWheel(
   ctx.fillStyle = v;
   ctx.fill();
 
-  // Center hub with gold bevel
-  const hub = Math.max(14, innerFaceInner * 0.9);
+  // Center hub with gold bevel (smaller)
+  const hub = Math.max(10, innerFaceInner * 0.55);
   ctx.save();
   ctx.shadowColor = 'rgba(0,0,0,0.5)';
   ctx.shadowBlur = hub * 0.5;

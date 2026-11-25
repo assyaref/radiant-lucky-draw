@@ -292,8 +292,9 @@ export function NameSpinStage({
   const count = wheelSegments.length;
   const prizeCount = wheelPrizeSegments.length;
   const logo = theme?.logoUrl || defaultLogo;
-  const label = title || 'SPIN NAMA';
-  const shownTitle = displayMode === 'dual' ? 'SPIN NAMA & HADIAH' : label;
+  // Title is fully editable from the operator UI; fall back to a sensible default per mode.
+  const label = title || (displayMode === 'dual' ? 'SPIN NAMA & HADIAH' : 'SPIN NAMA');
+  const shownTitle = label;
   const winnerPrizeIcon = spin?.prizeName && wheelPrizeSegments.find(p => p.name === spin.prizeName)?.icon;
 
   const [revealedId, setRevealedId] = useState<string | null>(null);
@@ -341,9 +342,9 @@ export function NameSpinStage({
   };
 
   const renderDualWheel = () => (
-    <div className={`relative min-w-0 ${compact ? 'w-full max-w-[620px] lg:flex-[1.2]' : 'shrink-0'}`}>
+    <div className={`relative min-w-0 ${compact ? 'w-full max-w-[720px] lg:flex-[1.25]' : 'shrink-0'}`}>
       <div
-        className={compact ? 'w-full' : 'w-[min(82vh,50vw,760px)]'}
+        className={compact ? 'w-full' : 'w-[min(90vh,64vw,920px)]'}
         style={{ filter: 'drop-shadow(0 0 100px rgba(168,85,247,0.5)) drop-shadow(0 0 50px rgba(251,191,36,0.4))' }}
       >
         <NameSpinWheel
@@ -388,7 +389,7 @@ export function NameSpinStage({
   const renderSingleWheel = () => (
     <div className="relative shrink-0">
       <div
-        className={compact ? 'w-[min(80vw,400px)]' : 'w-[min(55vh,38vw)]'}
+        className={compact ? 'w-[min(84vw,480px)]' : 'w-[min(72vh,50vw)]'}
         style={{ filter: 'drop-shadow(0 0 60px rgba(251,191,36,0.5))' }}
       >
         <NameSpinWheel
@@ -523,14 +524,14 @@ export function NameSpinStage({
       </header>
 
       <div
-        className={`relative z-10 flex ${compact ? 'flex-col items-center gap-8 px-4 pb-6 pt-4 lg:flex-row lg:justify-center lg:gap-6 lg:px-6 lg:py-6' : 'flex-row items-center justify-center gap-[4vw] px-8 xl:px-14'}`}
+        className={`relative z-10 flex ${compact ? 'flex-col items-center gap-8 px-4 pb-6 pt-4 lg:flex-row lg:justify-center lg:gap-6 lg:px-6 lg:py-6' : 'flex-row items-center justify-center gap-[2.5vw] px-6 xl:px-10'}`}
         style={compact ? undefined : { height: 'calc(100% - 130px)' }}
       >
         {displayMode === 'dual' ? renderDualWheel() : renderSingleWheel()}
 
         <div
           className={`flex min-w-0 flex-col gap-8 ${
-            compact ? 'w-full max-w-md lg:w-0 lg:max-w-[430px] lg:flex-[0.85]' : 'w-[min(34vw,520px)]'
+            compact ? 'w-full max-w-md lg:w-0 lg:max-w-[400px] lg:flex-[0.8]' : 'w-[min(30vw,480px)]'
           }`}
         >
           <div

@@ -537,12 +537,14 @@ export default function NameSpinPage() {
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-xs text-dark-text-tertiary">Judul undian (opsional)</span>
+                  <span className="text-xs text-dark-text-tertiary">
+                    Judul / teks header roda (opsional) — kosongkan untuk default
+                  </span>
                   <input
                     className={inputCls}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="mis. Doorprize Sesi 1"
+                    placeholder="mis. SPIN NAMA & HADIAH / Doorprize Sesi 1"
                     maxLength={120}
                     disabled={spinning}
                   />

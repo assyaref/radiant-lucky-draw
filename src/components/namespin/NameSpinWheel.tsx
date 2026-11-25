@@ -90,12 +90,6 @@ function mod(a: number, n: number): number {
   return ((a % n) + n) % n;
 }
 
-function readableTangent(angle: number): number {
-  const tangent = angle + Math.PI / 2;
-  const normalized = mod(tangent, TAU);
-  return tangent + (normalized > Math.PI / 2 && normalized < (Math.PI * 3) / 2 ? Math.PI : 0);
-}
-
 /**
  * Radial text orientation: label runs from the hub outward along the segment
  * midpoint. On the left half the label is flipped 180° so it never reads
@@ -209,23 +203,13 @@ function drawSegmentWithIcon(
 
   ctx.save();
   const middle = a0 + segAngle / 2;
-  const textRadius = rInner + (rOuter - rInner) * 0.38;
-
-  if (icon) {
-    const iconRadius = rInner + (rOuter - rInner) * 0.7;
-    ctx.save();
-    ctx.translate(cx + iconRadius * Math.cos(middle), cy + iconRadius * Math.sin(middle));
-    ctx.font = `${fontSize * 1.2}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-    ctx.fillText(icon, 0, 0);
-    ctx.restore();
-  }
-
-  ctx.translate(cx + textRadius * Math.cos(middle), cy + textRadius * Math.sin(middle));
-  ctx.rotate(readableTangent(middle));
-  let text = label;
-  ctx.font = `800 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
+  const labelRadius = (rInner + rOuter) / 2;
+  const { rotate, flip } = radialTransform(middle);
+  ctx.translate(cx, cy);
+  ctx.rotate(rotate);
+  // Same radial layout as the name wheel: icon inline + name on one radial line.
+  let text = icon ? `${icon} ${label}` : label;
+  ctx.font = `700 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
   if (ctx.measureText(text).width > maxTextWidth) {
@@ -234,11 +218,11 @@ function drawSegmentWithIcon(
     }
     text = `${text}…`;
   }
-  ctx.shadowColor = 'rgba(0,0,0,0.6)';
-  ctx.shadowBlur = 5;
-  ctx.shadowOffsetY = 1;
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = Math.max(2, fontSize * 0.2);
+  ctx.shadowOffsetY = 0.5;
   ctx.fillStyle = isHighlight ? '#1f1300' : '#ffffff';
-  ctx.fillText(text, 0, 0);
+  ctx.fillText(text, flip ? -labelRadius : labelRadius, 0);
   ctx.restore();
 }
 
@@ -296,9 +280,12 @@ function drawPrizeWheelLayer(
   const cx = size / 2;
   const cy = size / 2;
   const seg = TAU / n;
-  const fontSize = Math.max(14, Math.min(rOuter * 0.13, seg * rOuter * 0.65));
-  const textRadius = rInner + (rOuter - rInner) * 0.38;
-  const maxText = 2 * textRadius * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.9;
+  const band = rOuter - rInner;
+  const labelRadius = (rInner + rOuter) / 2;
+  const chord = 2 * labelRadius * Math.sin(Math.min(seg / 2, Math.PI / 2));
+  // Same radial sizing as the name wheel.
+  const fontSize = Math.max(12, Math.min(band * 0.4, chord * 0.55, rOuter * 0.2));
+  const maxText = band * 0.86;
 
   for (let i = 0; i < n; i++) {
     const a0 = rotation + i * seg;

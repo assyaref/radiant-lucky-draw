@@ -3869,9 +3869,10 @@ h = I.length;
 }
 } else {
 let I = await this.prizeRepository.findActive(e.eventId ?? null);
-if (I.length === 0)
-throw new R("Tidak ada hadiah yang tersedia dengan stok tersisa");
-if (l) {
+if (I.length === 0) {
+if (l)
+throw new R("Tidak ada stok hadiah tersisa untuk mode dual");
+} else if (l) {
 let b = I.flatMap((ae) => Array.from({ length: Math.min(ae.remaining, wi) }, () => ae));
 if (b.length === 0)
 throw new R("Tidak ada stok hadiah tersisa untuk mode dual");

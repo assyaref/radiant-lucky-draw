@@ -156,10 +156,11 @@ export class NameSpinService {
       } else {
         const availablePrizes = await this.prizeRepository.findActive(data.eventId ?? null);
         if (availablePrizes.length === 0) {
-          throw new ValidationError('Tidak ada hadiah yang tersedia dengan stok tersisa');
-        }
-
-        if (isDualMode) {
+          // Single wheel can still spin without a prize; only dual mode needs stock.
+          if (isDualMode) {
+            throw new ValidationError('Tidak ada stok hadiah tersisa untuk mode dual');
+          }
+        } else if (isDualMode) {
           const prizeUnits = availablePrizes.flatMap(p =>
             Array.from({ length: Math.min(p.remaining, MAX_WHEEL_SEGMENTS) }, () => p)
           );

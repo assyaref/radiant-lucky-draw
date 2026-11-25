@@ -12,7 +12,7 @@
 //   - Active / Inactive toggle
 // ============================================================
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   HiOutlineMagnifyingGlass,
@@ -22,10 +22,12 @@ import {
   HiOutlineTrash,
   HiXMark,
   HiOutlineArrowPath,
+  HiOutlineArrowUpTray,
+  HiOutlineDocumentArrowDown,
 } from 'react-icons/hi2';
 
 import { prizeApi, type Prize } from '@/api/prize';
-import { normalizeImageUrl } from '@/utils';
+import { normalizeImageUrl, parsePrizesFromExcel, downloadPrizeTemplate } from '@/utils';
 
 const tierColors: Record<string, string> = {
   grand: 'bg-warning-500/20 text-warning-400',
@@ -85,6 +87,9 @@ export default function PrizesPage() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Prize | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importNote, setImportNote] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,6 +104,45 @@ export default function PrizesPage() {
       setLoading(false);
     }
   }, [page, search]);
+
+  const handleImportFile = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = ''; // allow re-selecting the same file
+      if (!file) return;
+      setImporting(true);
+      setImportNote('');
+      setError('');
+      try {
+        const { rows, errors } = await parsePrizesFromExcel(file);
+        if (rows.length === 0) {
+          setImportNote(
+            errors.length ? `Gagal impor:\n${errors.join('\n')}` : 'Tidak ada data untuk diimpor.',
+          );
+          return;
+        }
+        let ok = 0;
+        const failed: string[] = [...errors];
+        for (let i = 0; i < rows.length; i++) {
+          try {
+            await prizeApi.create(rows[i]);
+            ok++;
+          } catch (err: any) {
+            failed.push(`Baris ${i + 2} (${rows[i].name}): ${err?.message ?? 'gagal'}`);
+          }
+        }
+        const parts = [`Berhasil impor ${ok} hadiah.`];
+        if (failed.length) parts.push(`Gagal ${failed.length}:\n${failed.join('\n')}`);
+        setImportNote(parts.join('\n'));
+        await load();
+      } catch (err: any) {
+        setImportNote(`Gagal membaca file: ${err?.message ?? 'format tidak didukung'}`);
+      } finally {
+        setImporting(false);
+      }
+    },
+    [load],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -219,6 +263,30 @@ export default function PrizesPage() {
             Refresh
           </button>
           <button
+            onClick={() => downloadPrizeTemplate()}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-surface-secondary text-dark-text-secondary hover:bg-dark-surface-tertiary transition-colors text-sm border border-dark-border"
+            title="Unduh template Excel untuk import hadiah"
+          >
+            <HiOutlineDocumentArrowDown className="w-4 h-4" />
+            Template
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition-colors text-sm disabled:opacity-50"
+            title="Import hadiah dari file Excel/CSV"
+          >
+            <HiOutlineArrowUpTray className="w-4 h-4" />
+            {importing ? 'Mengimpor...' : 'Import Excel'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={handleImportFile}
+          />
+          <button
             onClick={openCreate}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500 text-white hover:bg-primary-400 transition-colors text-sm font-medium"
           >
@@ -246,6 +314,12 @@ export default function PrizesPage() {
       {error && (
         <div className="p-4 rounded-xl bg-danger-500/20 border border-danger-500/30 text-danger-400 text-sm">
           {error}
+        </div>
+      )}
+
+      {importNote && (
+        <div className="p-4 rounded-xl bg-dark-surface-secondary border border-dark-border text-dark-text-secondary text-sm whitespace-pre-wrap">
+          {importNote}
         </div>
       )}
 

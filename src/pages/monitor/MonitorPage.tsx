@@ -1593,15 +1593,16 @@ export default function MonitorPage() {
           className="absolute top-16 bottom-9 left-0 right-0 z-10 grid"
           style={{
             gridTemplateColumns: 'minmax(280px, 0.8fr) minmax(500px, 1.8fr) minmax(280px, 0.8fr)',
+            gridTemplateRows: 'minmax(0, 1fr)',
           }}
         >
           {/* LEFT: Prize List */}
-          <div className="relative border-r border-white/[0.03]">
+          <div className="relative min-h-0 overflow-hidden border-r border-white/[0.03]">
             <PrizeListPanel prizes={prizes} highlightedPrizeId={highlightedPrizeId} />
           </div>
 
           {/* CENTER: Lucky Draw */}
-          <div className="relative">
+          <div className="relative min-h-0 overflow-hidden">
             <CenterPanel
               drawState={drawState}
               drawData={drawData}
@@ -1614,7 +1615,7 @@ export default function MonitorPage() {
           </div>
 
           {/* RIGHT: Winner List */}
-          <div className="relative border-l border-white/[0.03]">
+          <div className="relative min-h-0 overflow-hidden border-l border-white/[0.03]">
             <WinnerListPanel winners={winners} />
           </div>
         </div>

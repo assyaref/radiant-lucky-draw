@@ -323,10 +323,10 @@ export function drawDualWheel(
 
   ctx.clearRect(0, 0, size, size);
 
-  // Outer gold rim with glow
+  // Outer gold rim with glow (matches single wheel gold ring)
   ctx.save();
-  ctx.shadowColor = 'rgba(251,191,36,0.85)';
-  ctx.shadowBlur = size * 0.06;
+  ctx.shadowColor = 'rgba(251,191,36,0.75)';
+  ctx.shadowBlur = size * 0.045;
   const outerRimGrad = ctx.createLinearGradient(cx - outerRadius, cy - outerRadius, cx + outerRadius, cy + outerRadius);
   outerRimGrad.addColorStop(0, '#fff3b0');
   outerRimGrad.addColorStop(0.25, '#fbbf24');
@@ -342,7 +342,7 @@ export function drawDualWheel(
   // Outer rim inner bevel
   ctx.beginPath();
   ctx.arc(cx, cy, outerFaceOuter - rimWidth + 1.5, 0, TAU);
-  ctx.fillStyle = '#0d0a1a';
+  ctx.fillStyle = '#1a1033';
   ctx.fill();
 
   // Draw outer wheel (names)

@@ -306,12 +306,6 @@ export function NameSpinStage({
   const audio = useSpinSound({ enabled: sound });
   const revealed = !!spin && spin.spinId === revealedId;
   const spinning = !!spin && !revealed;
-  const canSpin =
-    !!onSpinAgain &&
-    !spinDisabled &&
-    !spinning &&
-    count >= 2 &&
-    (displayMode !== 'dual' || prizeCount > 0);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -364,23 +358,6 @@ export function NameSpinStage({
             onRevealed?.(id);
           }}
         />
-        <motion.button
-          type="button"
-          onClick={onSpinAgain}
-          disabled={!canSpin}
-          whileHover={canSpin ? { scale: 1.06 } : undefined}
-          whileTap={canSpin ? { scale: 0.96 } : undefined}
-          aria-label={canSpin ? 'Mulai spin nama dan hadiah' : 'SPIN dikendalikan dari halaman operator'}
-          title={canSpin ? 'Mulai spin' : 'SPIN dikendalikan dari halaman operator'}
-          className="absolute left-1/2 top-1/2 z-20 flex aspect-square w-[27%] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-[3px] border-amber-200/90 text-[#3b1b00] shadow-[0_0_26px_rgba(251,191,36,0.75),inset_0_2px_4px_rgba(255,255,255,0.85),inset_0_-5px_8px_rgba(146,64,14,0.28)] transition-[filter,opacity] disabled:cursor-not-allowed"
-          style={{
-            background: 'radial-gradient(circle at 35% 25%, #fff7c2 0%, #fcd34d 38%, #f59e0b 72%, #b45309 100%)',
-            opacity: onSpinAgain && !spinDisabled && !spinning ? 1 : 0.96,
-          }}
-        >
-          <HiOutlineArrowPath className="h-[24%] w-[24%] drop-shadow-sm" />
-          <span className="mt-1 text-[clamp(10px,2.1vw,24px)] font-black leading-none tracking-wide">SPIN</span>
-        </motion.button>
       </div>
       <div className="absolute left-1/2 -translate-x-1/2 -bottom-5 w-4/5 h-12 rounded-full bg-gradient-to-r from-purple-500/50 via-pink-500/50 to-amber-500/50 blur-3xl" />
     </div>

@@ -1445,6 +1445,7 @@ export default function MonitorPage() {
       id: seg.id || `prize-${idx}`,
       name: seg.name,
       icon: seg.icon || '🎁',
+      imageUrl: seg.imageUrl ? normalizeImageUrl(seg.imageUrl) : undefined,
     }));
     console.log('[Monitor] dualWheelPrizeSegments - result:', result);
     return result;

@@ -13,6 +13,7 @@ export interface PrizeSegment {
   id: string;
   name: string;
   icon?: string;
+  imageUrl?: string;
 }
 
 export interface WheelDisplay {

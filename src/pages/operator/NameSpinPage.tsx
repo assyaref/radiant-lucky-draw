@@ -160,6 +160,7 @@ export default function NameSpinPage() {
           id: `${p.id}:${i}`,
           name: p.name,
           icon: TIER_ICONS[p.tier] ?? '🎁',
+          imageUrl: p.imageUrl ? normalizeImageUrl(p.imageUrl) : undefined,
         });
       }
     });

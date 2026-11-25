@@ -25,6 +25,7 @@ export interface PrizeSegment {
   id: string;
   name: string;
   icon?: string; // emoji or image URL
+  imageUrl?: string; // prize image URL (preferred over icon when set)
   color?: string;
 }
 
@@ -201,9 +202,8 @@ function drawSegmentWithIcon(
   a0: number,
   segAngle: number,
   fillStyle: CanvasGradient,
-  label: string,
   icon: string | undefined,
-  isHighlight: boolean,
+  imageUrl: string | undefined,
 ): void {
   ctx.beginPath();
   ctx.moveTo(cx + rInner * Math.cos(a0), cy + rInner * Math.sin(a0));
@@ -223,7 +223,9 @@ function drawSegmentWithIcon(
   const labelRadius = (rInner + rOuter) / 2;
   const middle = a0 + segAngle / 2;
   const iconSize = Math.min(band * 0.8, 2 * labelRadius * Math.sin(Math.min(segAngle / 2, Math.PI / 2)) * 0.8);
-  const img = icon && isImageSrc(icon) ? getImage(icon) : null;
+  // Prefer the prize image URL; fall back to the icon (emoji/URL), then a default gift.
+  const src = imageUrl && isImageSrc(imageUrl) ? imageUrl : icon && isImageSrc(icon) ? icon : null;
+  const img = src ? getImage(src) : null;
 
   ctx.save();
   ctx.translate(cx, cy);
@@ -231,18 +233,13 @@ function drawSegmentWithIcon(
   if (img) {
     const s = Math.max(8, iconSize);
     ctx.drawImage(img, -s / 2, -labelRadius - s / 2, s, s);
-  } else if (icon) {
+  } else {
+    // Default image (tier icon emoji, or a gift) while a URL image loads / when none set.
+    const glyph = icon && !isImageSrc(icon) ? icon : '🎁';
     ctx.font = `${Math.max(10, iconSize)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(icon, 0, -labelRadius);
-  } else {
-    // Fallback: first letter of the prize name if no icon.
-    ctx.font = `800 ${Math.max(10, iconSize * 0.8)}px Poppins, Inter, system-ui, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = isHighlight ? '#1f1300' : '#ffffff';
-    ctx.fillText((label.trim()[0] ?? '?').toUpperCase(), 0, -labelRadius);
+    ctx.fillText(glyph, 0, -labelRadius);
   }
   ctx.restore();
 }
@@ -312,7 +309,7 @@ function drawPrizeWheelLayer(
     g.addColorStop(0.55, light);
     g.addColorStop(1, dark);
 
-    drawSegmentWithIcon(ctx, cx, cy, rInner, rOuter, a0, seg, g, prize.name, prize.icon, isHi);
+    drawSegmentWithIcon(ctx, cx, cy, rInner, rOuter, a0, seg, g, prize.icon, prize.imageUrl);
   }
 }
 

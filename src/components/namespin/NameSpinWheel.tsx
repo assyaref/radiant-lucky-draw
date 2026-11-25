@@ -275,7 +275,7 @@ function drawWheelLayer(
     g.addColorStop(0.55, light);
     g.addColorStop(1, dark);
 
-    drawSegment(ctx, cx, cy, rInner, rOuter, a0, seg, g, `#${i + 1} ${names[i]}`, fontSize, isHi, maxText);
+    drawSegment(ctx, cx, cy, rInner, rOuter, a0, seg, g, names[i], fontSize, isHi, maxText);
   }
 }
 
@@ -329,10 +329,10 @@ export function drawDualWheel(
   const outerRadius = size / 2 - size * 0.025;
   const rimWidth = Math.max(6, outerRadius * 0.055);
   const outerFaceOuter = outerRadius;
-  // Wider name band so radial labels have room to read hub→rim.
-  const outerFaceInner = outerFaceOuter - rimWidth * 5;
+  // Larger, proportional name band so radial labels read hub->rim with room.
+  const outerFaceInner = outerFaceOuter - outerRadius * 0.4;
   const innerFaceOuter = outerFaceInner - size * 0.02;
-  const innerFaceInner = Math.max(16, innerFaceOuter * 0.38);
+  const innerFaceInner = Math.max(16, innerFaceOuter * 0.4);
 
   ctx.clearRect(0, 0, size, size);
 
@@ -516,7 +516,7 @@ export function drawSingleWheel(
       ctx.translate(cx, cy);
       ctx.rotate(rotate);
       ctx.font = `700 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
-      let label = `#${i + 1} ${names[i]}`;
+      let label = names[i];
       if (ctx.measureText(label).width > maxText) {
         while (label.length > 1 && ctx.measureText(`${label}…`).width > maxText) {
           label = label.slice(0, -1);

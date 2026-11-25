@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { createValidate } from 'typia-zod';
 
 export const nameSpinSchema = z.object({
   body: z
@@ -16,5 +15,3 @@ export const nameSpinSchema = z.object({
       displayMode: z.enum(['single', 'dual']).optional(),
     }),
 });
-
-export const validateNameSpin = createValidate(nameSpinSchema);

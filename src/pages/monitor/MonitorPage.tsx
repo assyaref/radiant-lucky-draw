@@ -1450,6 +1450,32 @@ export default function MonitorPage() {
     return result;
   }, [monitorState?.wheel.prizeSegments]);
 
+  // ─── [DUAL-WHEEL-DIAGNOSTIC] Temporary runtime diagnostics ───────────
+  // Logs the full render path so we can confirm whether the deployed bundle
+  // actually selects the dual-layer wheel. Remove once verified in production.
+  const BUILD_ID = (import.meta as any).env?.VITE_BUILD_ID ?? 'dev';
+  useEffect(() => {
+    const dMode = monitorState?.wheel.displayMode ?? 'single';
+    const dPrizes = dualWheelPrizeSegments.length;
+    const effectiveMode = dPrizes > 0 ? 'dual' : dMode;
+    console.log('[DUAL-WHEEL-DIAGNOSTIC] route =', window.location.pathname);
+    console.log('[DUAL-WHEEL-DIAGNOSTIC] build =', BUILD_ID);
+    console.log('[DUAL-WHEEL-DIAGNOSTIC] monitorState.wheel.displayMode =', monitorState?.wheel.displayMode);
+    console.log('[DUAL-WHEEL-DIAGNOSTIC] monitorState.wheel.prizeSegments =', monitorState?.wheel.prizeSegments);
+    console.log('[DUAL-WHEEL-DIAGNOSTIC] prizeSegments.length =', dPrizes);
+    console.log('[DUAL-WHEEL-DIAGNOSTIC] NameSpinStage props =', {
+      segments: monitorState?.wheel.names?.length ?? 0,
+      prizeSegments: dPrizes,
+      totalNames: monitorState?.wheel.totalNames ?? 0,
+      totalPrizes: monitorState?.wheel.totalPrizes ?? 0,
+      displayMode: effectiveMode,
+      variant: 'screen',
+    });
+    console.log('[DUAL-WHEEL-DIAGNOSTIC] selected branch =', effectiveMode === 'dual' ? 'renderDualWheel()' : 'renderSingleWheel()');
+    console.log('[DUAL-WHEEL-DIAGNOSTIC] renderDualWheel executes =', effectiveMode === 'dual');
+    console.log('[DUAL-WHEEL-DIAGNOSTIC] renderSingleWheel executes =', effectiveMode !== 'dual');
+  }, [monitorState, dualWheelPrizeSegments.length]);
+
   // ─── Render ─────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#020617] select-none font-sans">

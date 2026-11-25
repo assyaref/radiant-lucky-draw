@@ -57,3 +57,6 @@ next-env.d.ts
 .cache
 tmp
 temp
+
+# Supabase CLI local artifacts
+supabase/.temp/

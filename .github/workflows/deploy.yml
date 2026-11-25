@@ -169,6 +169,47 @@ jobs:
           fi
           echo "backend_url=${BACKEND_URL}" >> "$GITHUB_OUTPUT"
 
+  # ─── Deploy Supabase Edge Function (Shared API backend) ────
+  # The SPA rewrites /api/* to the Supabase `api` edge function, NOT
+  # Railway. The committed supabase/functions/api/app.bundle.js is a
+  # BUILD ARTIFACT generated from server/src by server/scripts/build-edge.ts.
+  # If it is not rebuilt on every push, the deployed backend silently
+  # strips newly-added wheel fields (displayMode / prizeSegments) and the
+  # Monitor renders a single wheel. Always rebuild + redeploy it here.
+  deploy-edge:
+    name: Build & Deploy Supabase Edge Function
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        contains(toJSON(github.event.commits), 'server/') ||
+        contains(toJSON(github.event.commits), 'supabase/')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install backend dependencies
+        working-directory: ./server
+        run: bun install
+
+      - name: Rebuild edge bundle from server/src
+        working-directory: ./server
+        run: bun run build:edge
+
+      - name: Deploy to Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          npx --yes supabase@latest functions deploy api \
+            --project-ref emwmnghbxsoudfxxltna --yes
+
   # ─── Deploy to Vercel (Frontend) ──────────────────────────
   # Frontend deploys AFTER the backend is healthy so the SPA
   # never references an API or schema that does not exist yet.
@@ -177,11 +218,12 @@ jobs:
     if: >-
       ${{
         always() &&
-        (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
+        (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped') &&
+        (needs.deploy-edge.result == 'success' || needs.deploy-edge.result == 'skipped')
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [deploy-backend]
+    needs: [deploy-backend, deploy-edge]
     environment:
       name: ${{ github.event.inputs.environment || 'production' }}
       url: ${{ steps.vercel-deploy.outputs.deployment_url }}
@@ -207,6 +249,7 @@ jobs:
           VITE_API_TIMEOUT: "30000"
           VITE_ENABLE_MOCK: "false"
           VITE_ENABLE_DEBUG: "false"
+          VITE_BUILD_ID: "${{ github.sha }}"
 
       - name: Deploy to Vercel
         id: vercel-deploy

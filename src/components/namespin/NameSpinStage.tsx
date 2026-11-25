@@ -342,9 +342,9 @@ export function NameSpinStage({
   };
 
   const renderDualWheel = () => (
-    <div className={`relative min-w-0 ${compact ? 'w-full max-w-[720px] lg:flex-[1.25]' : 'shrink-0'}`}>
+    <div className={`relative min-w-0 ${compact ? 'w-full max-w-[720px] lg:flex-[1.25]' : 'flex h-full items-center justify-center'}`}>
       <div
-        className={compact ? 'w-full' : 'w-[min(90vh,64vw,920px)]'}
+        className={compact ? 'w-full' : 'aspect-square h-full max-w-[68vw]'}
         style={{ filter: 'drop-shadow(0 0 100px rgba(168,85,247,0.5)) drop-shadow(0 0 50px rgba(251,191,36,0.4))' }}
       >
         <NameSpinWheel

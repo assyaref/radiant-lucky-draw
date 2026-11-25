@@ -544,7 +544,8 @@ import { z as D } from "npm:zod@^3.23.8";
 var Xt = D.string().trim().max(2000).refine((e) => e === "" || /^https?:\/\/\S+$/i.test(e), "Link harus diawali http:// atau https://"), _n = D.object({
 id: D.string(),
 name: D.string().max(200),
-icon: D.string().optional()
+icon: D.string().optional(),
+imageUrl: D.string().trim().max(2000).optional()
 }), Kt = D.object({
 body: D.object({
 mode: D.enum(["event", "namespin"]).optional(),

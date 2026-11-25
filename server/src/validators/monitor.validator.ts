@@ -15,6 +15,7 @@ const prizeSegmentSchema = z.object({
   id: z.string(),
   name: z.string().max(200),
   icon: z.string().optional(),
+  imageUrl: z.string().trim().max(2000).optional(),
 });
 
 export const updateMonitorStateSchema = z.object({

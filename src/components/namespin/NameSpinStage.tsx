@@ -11,7 +11,7 @@
  * - 'dual': NEW Dual-layer wheel - outer ring = participants, inner ring = prizes
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   HiOutlineArrowPath,
@@ -303,7 +303,18 @@ export function NameSpinStage({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [shareNote, setShareNote] = useState<string | null>(null);
 
-  const audio = useSpinSound({ enabled: sound });
+  const audio = useSpinSound({
+    enabled: sound,
+    spinUrl: theme?.spinSoundUrl ?? null,
+    winUrl: theme?.winSoundUrl ?? null,
+  });
+
+  // Start the custom spin loop when a new spin begins (stopped + win on spin end).
+  const spinId = spin?.spinId;
+  useEffect(() => {
+    if (spinId) audio.spinStart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spinId]);
   const revealed = !!spin && spin.spinId === revealedId;
   const spinning = !!spin && !revealed;
 

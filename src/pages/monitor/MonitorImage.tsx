@@ -14,6 +14,7 @@
  */
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { normalizeImageUrl } from '@/utils';
 
 // ─── Downsampling cache ──────────────────────────────────────────────
 
@@ -119,7 +120,7 @@ export function MonitorImage({
   /** Shown while loading/after repeated failures. */
   fallback?: ReactNode;
 }) {
-  const shown = useDownscaled(src, displaySize);
+  const shown = useDownscaled(normalizeImageUrl(src), displaySize);
   const [attempt, setAttempt] = useState(0);
   const [failed, setFailed] = useState(false);
 

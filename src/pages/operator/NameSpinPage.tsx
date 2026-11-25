@@ -32,6 +32,7 @@ import {
   type MonitorTheme,
 } from '@api/monitor';
 import { ThemeSettings } from '@components/namespin/ThemeSettings';
+import { normalizeImageUrl } from '@/utils';
 
 const STORAGE_KEY = 'radiant:namespin:v2';
 
@@ -794,7 +795,7 @@ export default function NameSpinPage() {
                           <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center border border-white/10">
                             {p.imageUrl ? (
                               <img
-                                src={p.imageUrl}
+                                src={normalizeImageUrl(p.imageUrl)}
                                 alt={p.name}
                                 className="w-full h-full object-cover"
                               />

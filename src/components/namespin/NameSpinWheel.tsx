@@ -85,7 +85,8 @@ function getImage(src: string): HTMLImageElement | null {
   const cached = imageCache.get(src);
   if (cached) return cached.complete && cached.naturalWidth > 0 ? cached : null;
   const img = new Image();
-  img.crossOrigin = 'anonymous';
+  // No crossOrigin: we only drawImage (never read pixels), so a tainted canvas is
+  // fine. Setting crossOrigin would make non-CORS hosts (Drive/CDN) fail to load.
   img.src = src;
   imageCache.set(src, img);
   return null;

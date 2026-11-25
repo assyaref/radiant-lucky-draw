@@ -641,19 +641,6 @@ export function NameSpinStage({
                       />
                     </motion.div>
                   )}
-
-                  {/* Winner badge */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 18, delay: 0.5 }}
-                    className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/40 backdrop-blur-sm"
-                  >
-                    <span className="text-xl">🎉</span>
-                    <p className="text-lg md:text-xl font-bold text-amber-200 tracking-wide">
-                      PEMENANG KE-1
-                    </p>
-                  </motion.div>
                 </motion.div>
               ) : (
                 <motion.div
@@ -667,7 +654,7 @@ export function NameSpinStage({
                     animate={{ opacity: spinning ? [0.5, 1, 0.5] : 1 }}
                     transition={{ repeat: spinning ? Infinity : 0, duration: 1 }}
                   >
-                    {spinning ? '🎯 MENGUNDI…' : count > 0 ? '🎯 SIAP DIUNDI' : '🎯 MENUNGGU DAFTAR NAMA'}
+                    {spinning ? 'MENGUNDI…' : count > 0 ? 'SIAP DIUNDI' : 'MENUNGGU DAFTAR NAMA'}
                   </motion.p>
                   <motion.p
                     className={`font-black leading-[1.05] tracking-tight truncate text-white/35 ${compact ? 'text-5xl' : 'text-7xl xl:text-8xl'}`}

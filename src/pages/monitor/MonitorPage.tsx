@@ -1530,7 +1530,7 @@ export default function MonitorPage() {
               totalNames={monitorState?.wheel.totalNames ?? 0}
               totalPrizes={monitorState?.wheel.totalPrizes ?? 0}
               title={monitorState?.wheel.title}
-              displayMode={dualWheelPrizeSegments.length > 0 ? 'dual' : (monitorState?.wheel.displayMode ?? 'single')}
+              displayMode={monitorState?.wheel.displayMode ?? 'single'}
               spin={nameSpin}
               theme={monitorState?.theme}
               variant="screen"

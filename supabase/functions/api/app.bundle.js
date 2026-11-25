@@ -4004,6 +4004,8 @@ if (e.wheel.prizeSegments !== void 0)
 i.prizeSegments = e.wheel.prizeSegments;
 if (e.wheel.totalPrizes !== void 0)
 i.totalPrizes = e.wheel.totalPrizes;
+if (i.displayMode === "single")
+i.prizeSegments = [], i.totalPrizes = 0;
 if (e.wheel.prizeId) {
 let a = await this.prizeRepository.findById(e.wheel.prizeId);
 if (!a)

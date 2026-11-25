@@ -138,6 +138,11 @@ export class MonitorService {
       if (req.wheel.displayMode !== undefined) wheel.displayMode = req.wheel.displayMode;
       if (req.wheel.prizeSegments !== undefined) wheel.prizeSegments = req.wheel.prizeSegments;
       if (req.wheel.totalPrizes !== undefined) wheel.totalPrizes = req.wheel.totalPrizes;
+      // Single mode must never retain stale dual-layer prize data.
+      if (wheel.displayMode === 'single') {
+        wheel.prizeSegments = [];
+        wheel.totalPrizes = 0;
+      }
       if (req.wheel.prizeId) {
         const prize = await this.prizeRepository.findById(req.wheel.prizeId);
         if (!prize) throw new NotFoundError('Prize', req.wheel.prizeId);

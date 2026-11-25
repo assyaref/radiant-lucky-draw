@@ -96,6 +96,17 @@ function readableTangent(angle: number): number {
   return tangent + (normalized > Math.PI / 2 && normalized < (Math.PI * 3) / 2 ? Math.PI : 0);
 }
 
+/**
+ * Radial text orientation: label runs from the hub outward along the segment
+ * midpoint. On the left half the label is flipped 180° so it never reads
+ * upside down (it then reads outer→inner but stays upright).
+ */
+function radialTransform(angle: number): { rotate: number; flip: boolean } {
+  const normalized = mod(angle, TAU);
+  const flip = normalized > Math.PI / 2 && normalized < (Math.PI * 3) / 2;
+  return { rotate: angle + (flip ? Math.PI : 0), flip };
+}
+
 export function planTarget(
   from: number,
   winnerSegment: number,
@@ -147,8 +158,9 @@ function drawSegment(
   ctx.save();
   const middle = a0 + segAngle / 2;
   const labelRadius = (rInner + rOuter) / 2;
-  ctx.translate(cx + labelRadius * Math.cos(middle), cy + labelRadius * Math.sin(middle));
-  ctx.rotate(readableTangent(middle));
+  const { rotate, flip } = radialTransform(middle);
+  ctx.translate(cx, cy);
+  ctx.rotate(rotate);
   let text = label;
   ctx.font = `700 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
   ctx.textBaseline = 'middle';
@@ -159,11 +171,11 @@ function drawSegment(
     }
     text = `${text}…`;
   }
-  ctx.shadowColor = 'rgba(0,0,0,0.35)';
-  ctx.shadowBlur = Math.max(2, fontSize * 0.18);
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = Math.max(2, fontSize * 0.2);
   ctx.shadowOffsetY = 0.5;
   ctx.fillStyle = isHighlight ? '#1f1300' : '#ffffff';
-  ctx.fillText(text, 0, 0);
+  ctx.fillText(text, flip ? -labelRadius : labelRadius, 0);
   ctx.restore();
 }
 
@@ -247,9 +259,12 @@ function drawWheelLayer(
   const cx = size / 2;
   const cy = size / 2;
   const seg = TAU / n;
-  const fontSize = Math.max(12, Math.min(rOuter * 0.14, seg * rOuter * 0.8));
+  const band = rOuter - rInner;
   const labelRadius = (rInner + rOuter) / 2;
-  const maxText = 2 * labelRadius * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.92;
+  const chord = 2 * labelRadius * Math.sin(Math.min(seg / 2, Math.PI / 2));
+  // Radial text: height limited by band thickness & chord; length by band thickness.
+  const fontSize = Math.max(12, Math.min(band * 0.4, chord * 0.55, rOuter * 0.2));
+  const maxText = band * 0.86;
 
   for (let i = 0; i < n; i++) {
     const a0 = rotation + i * seg;
@@ -260,7 +275,7 @@ function drawWheelLayer(
     g.addColorStop(0.55, light);
     g.addColorStop(1, dark);
 
-    drawSegment(ctx, cx, cy, rInner, rOuter, a0, seg, g, names[i], fontSize, isHi, maxText);
+    drawSegment(ctx, cx, cy, rInner, rOuter, a0, seg, g, `#${i + 1} ${names[i]}`, fontSize, isHi, maxText);
   }
 }
 
@@ -314,9 +329,10 @@ export function drawDualWheel(
   const outerRadius = size / 2 - size * 0.025;
   const rimWidth = Math.max(6, outerRadius * 0.055);
   const outerFaceOuter = outerRadius;
-  const outerFaceInner = outerFaceOuter - rimWidth * 2.5;
+  // Wider name band so radial labels have room to read hub→rim.
+  const outerFaceInner = outerFaceOuter - rimWidth * 5;
   const innerFaceOuter = outerFaceInner - size * 0.02;
-  const innerFaceInner = Math.max(16, innerFaceOuter * 0.35);
+  const innerFaceInner = Math.max(16, innerFaceOuter * 0.38);
 
   ctx.clearRect(0, 0, size, size);
 
@@ -466,11 +482,13 @@ export function drawSingleWheel(
     ctx.fillText(variant === 'prize' ? 'Belum ada hadiah' : 'Belum ada nama', cx, cy + r * 0.3);
   } else {
     const seg = TAU / n;
-    const fontSize = Math.max(12, Math.min(r * 0.14, seg * r * 0.8));
-    ctx.font = `700 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
+    const band = r * 0.62;
+    const labelRadius = r * 0.68;
+    const chord = 2 * labelRadius * Math.sin(Math.min(seg / 2, Math.PI / 2));
+    const fontSize = Math.max(12, Math.min(band * 0.4, chord * 0.55, r * 0.2));
+    const maxText = band * 0.86;
     ctx.textBaseline = 'middle';
-    ctx.textAlign = 'right';
-    const maxText = 2 * r * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.92;
+    ctx.textAlign = 'center';
 
     for (let i = 0; i < n; i++) {
       const a0 = rotation + i * seg;
@@ -494,22 +512,22 @@ export function drawSingleWheel(
 
       ctx.save();
       const middle = a0 + seg / 2;
-      const labelRadius = r * 0.68;
-      ctx.translate(cx + labelRadius * Math.cos(middle), cy + labelRadius * Math.sin(middle));
-      ctx.rotate(readableTangent(middle));
-      ctx.textAlign = 'center';
-      let label = names[i];
+      const { rotate, flip } = radialTransform(middle);
+      ctx.translate(cx, cy);
+      ctx.rotate(rotate);
+      ctx.font = `700 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
+      let label = `#${i + 1} ${names[i]}`;
       if (ctx.measureText(label).width > maxText) {
         while (label.length > 1 && ctx.measureText(`${label}…`).width > maxText) {
           label = label.slice(0, -1);
         }
         label = `${label}…`;
       }
-      ctx.shadowColor = 'rgba(0,0,0,0.35)';
-      ctx.shadowBlur = Math.max(2, fontSize * 0.18);
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = Math.max(2, fontSize * 0.2);
       ctx.shadowOffsetY = 0.5;
       ctx.fillStyle = isHi ? '#1f1300' : '#ffffff';
-      ctx.fillText(label, 0, 0);
+      ctx.fillText(label, flip ? -labelRadius : labelRadius, 0);
       ctx.restore();
     }
 

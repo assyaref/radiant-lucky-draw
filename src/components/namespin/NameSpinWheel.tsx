@@ -150,7 +150,7 @@ function drawSegment(
   ctx.translate(cx + labelRadius * Math.cos(middle), cy + labelRadius * Math.sin(middle));
   ctx.rotate(readableTangent(middle));
   let text = label;
-  ctx.font = `800 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
+  ctx.font = `700 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'center';
   if (ctx.measureText(text).width > maxTextWidth) {
@@ -159,9 +159,9 @@ function drawSegment(
     }
     text = `${text}…`;
   }
-  ctx.shadowColor = 'rgba(0,0,0,0.6)';
-  ctx.shadowBlur = 5;
-  ctx.shadowOffsetY = 1;
+  ctx.shadowColor = 'rgba(0,0,0,0.35)';
+  ctx.shadowBlur = Math.max(2, fontSize * 0.18);
+  ctx.shadowOffsetY = 0.5;
   ctx.fillStyle = isHighlight ? '#1f1300' : '#ffffff';
   ctx.fillText(text, 0, 0);
   ctx.restore();
@@ -247,9 +247,9 @@ function drawWheelLayer(
   const cx = size / 2;
   const cy = size / 2;
   const seg = TAU / n;
-  const fontSize = Math.max(16, Math.min(rOuter * 0.15, seg * rOuter * 0.75));
+  const fontSize = Math.max(12, Math.min(rOuter * 0.14, seg * rOuter * 0.8));
   const labelRadius = (rInner + rOuter) / 2;
-  const maxText = 2 * labelRadius * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.9;
+  const maxText = 2 * labelRadius * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.92;
 
   for (let i = 0; i < n; i++) {
     const a0 = rotation + i * seg;
@@ -466,11 +466,11 @@ export function drawSingleWheel(
     ctx.fillText(variant === 'prize' ? 'Belum ada hadiah' : 'Belum ada nama', cx, cy + r * 0.3);
   } else {
     const seg = TAU / n;
-    const fontSize = Math.max(16, Math.min(r * 0.15, seg * r * 0.75));
-    ctx.font = `800 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
+    const fontSize = Math.max(12, Math.min(r * 0.14, seg * r * 0.8));
+    ctx.font = `700 ${fontSize}px Poppins, Inter, system-ui, sans-serif`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'right';
-    const maxText = 2 * r * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.9;
+    const maxText = 2 * r * Math.sin(Math.min(seg / 2, Math.PI / 2)) * 0.92;
 
     for (let i = 0; i < n; i++) {
       const a0 = rotation + i * seg;
@@ -505,9 +505,9 @@ export function drawSingleWheel(
         }
         label = `${label}…`;
       }
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 5;
-      ctx.shadowOffsetY = 1;
+      ctx.shadowColor = 'rgba(0,0,0,0.35)';
+      ctx.shadowBlur = Math.max(2, fontSize * 0.18);
+      ctx.shadowOffsetY = 0.5;
       ctx.fillStyle = isHi ? '#1f1300' : '#ffffff';
       ctx.fillText(label, 0, 0);
       ctx.restore();

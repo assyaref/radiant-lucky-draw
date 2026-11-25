@@ -1356,6 +1356,9 @@ export default function MonitorPage() {
   const [monitorState, setMonitorState] = useState<MonitorState | null>(null);
   const applyMonitorState = useCallback((st: MonitorState | null | undefined) => {
     if (!st?.mode) return;
+    console.log('[Monitor] Received state:', st);
+    console.log('[Monitor] displayMode:', st.wheel?.displayMode);
+    console.log('[Monitor] prizeSegments:', st.wheel?.prizeSegments);
     setMonitorState((prev) =>
       prev && Date.parse(prev.updatedAt) > Date.parse(st.updatedAt) ? prev : st,
     );
@@ -1434,14 +1437,18 @@ export default function MonitorPage() {
   useEffect(() => () => stopCountdown(), [stopCountdown]);
 
   // ─── Dual-Layer Wheel helper: extract prize segments for display ──────
-  const dualWheelPrizeSegments =
-    monitorState?.wheel.displayMode === 'dual'
-      ? (monitorState.wheel.prizeSegments ?? []).map((seg, idx) => ({
-          id: seg.id || `prize-${idx}`,
-          name: seg.name,
-          icon: seg.icon || '🎁',
-        }))
-      : [];
+  const dualWheelPrizeSegments = useMemo(() => {
+    console.log('[Monitor] dualWheelPrizeSegments - displayMode:', monitorState?.wheel.displayMode);
+    console.log('[Monitor] dualWheelPrizeSegments - prizeSegments:', monitorState?.wheel.prizeSegments);
+    const prizeSegments = monitorState?.wheel.prizeSegments ?? [];
+    const result = prizeSegments.map((seg, idx) => ({
+      id: seg.id || `prize-${idx}`,
+      name: seg.name,
+      icon: seg.icon || '🎁',
+    }));
+    console.log('[Monitor] dualWheelPrizeSegments - result:', result);
+    return result;
+  }, [monitorState?.wheel.prizeSegments]);
 
   // ─── Render ─────────────────────────────────────────────────────────
   return (
@@ -1497,7 +1504,7 @@ export default function MonitorPage() {
               totalNames={monitorState?.wheel.totalNames ?? 0}
               totalPrizes={monitorState?.wheel.totalPrizes ?? 0}
               title={monitorState?.wheel.title}
-              displayMode={monitorState?.wheel.displayMode ?? 'single'}
+              displayMode={dualWheelPrizeSegments.length > 0 ? 'dual' : (monitorState?.wheel.displayMode ?? 'single')}
               spin={nameSpin}
               theme={monitorState?.theme}
               variant="screen"

@@ -11,6 +11,12 @@ const assetUrl = z
   .max(2000)
   .refine((v) => v === '' || /^https?:\/\/\S+$/i.test(v), 'Link harus diawali http:// atau https://');
 
+const prizeSegmentSchema = z.object({
+  id: z.string(),
+  name: z.string().max(200),
+  icon: z.string().optional(),
+});
+
 export const updateMonitorStateSchema = z.object({
   body: z
     .object({
@@ -21,7 +27,7 @@ export const updateMonitorStateSchema = z.object({
           title: z.string().trim().max(120).nullable().optional(),
           prizeId: z.string().uuid().nullable().optional(),
           prizeName: z.string().trim().max(200).nullable().optional(),
-          prizeSegments: z.array(z.string().max(200)).max(60).optional(),
+          prizeSegments: z.array(prizeSegmentSchema).max(60).optional(),
           totalPrizes: z.number().int().min(0).optional(),
           displayMode: z.enum(['single', 'dual']).optional(),
         })

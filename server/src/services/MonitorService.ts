@@ -18,6 +18,12 @@ import { cleanNames, sampleForWheel } from '../utils/names';
 
 export type MonitorMode = 'event' | 'namespin';
 
+export interface PrizeSegment {
+  id: string;
+  name: string;
+  icon?: string;
+}
+
 export interface WheelDisplay {
   /** Names drawn on the wheel (sample when the list is long). */
   names: string[];
@@ -26,7 +32,7 @@ export interface WheelDisplay {
   prizeName: string | null;
   prizeImageUrl: string | null;
   /** Prize segments for dual-layer wheel (each unit = 1 segment). */
-  prizeSegments?: string[];
+  prizeSegments?: PrizeSegment[];
   /** Total prize units available. */
   totalPrizes?: number;
   /** Display mode: 'single' or 'dual'. */
@@ -61,7 +67,7 @@ export interface UpdateMonitorStateRequest {
     title?: string | null;
     prizeId?: string | null;
     prizeName?: string | null;
-    prizeSegments?: string[];
+    prizeSegments?: PrizeSegment[];
     totalPrizes?: number;
     displayMode?: 'single' | 'dual';
   };
@@ -116,6 +122,9 @@ export class MonitorService {
   }
 
   async update(req: UpdateMonitorStateRequest): Promise<MonitorState> {
+    console.log('[MonitorService] Update request received:', req);
+    console.log('[MonitorService] req.wheel:', req.wheel);
+    console.log('[MonitorService] req.wheel?.displayMode:', req.wheel?.displayMode);
     const current = await this.get();
     const wheel: WheelDisplay = { ...current.wheel };
 
